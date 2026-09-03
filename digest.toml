@@ -1,0 +1,212 @@
+# Weekly world digest. The rubric in digest/prompts/rubric.md is the product;
+# this file is only plumbing.
+
+[run]
+weekday = "friday"
+max_words = 8500
+max_items = 60
+contest_share = 0.20
+fetch_days = 8
+output_dir = "~/digests"
+
+[models]
+# Verified against the installed google-genai SDK, September 2026.
+# Each stage picks its own provider. The filtering runs locally through Ollama
+# because it is bulk work over 286 headlines a week and costs nothing there; the
+# writing stays hosted, because that is where quality shows.
+provider = "gemini"                    # gemini | anthropic | ollama
+classify_provider = "ollama"
+classify = "qwen3:30b"
+synthesize = "gemini-3.8-flash"
+# 25 measured better than 5 or 10 against the labelled set — not on exact scores,
+# which smaller batches win, but on which items end up selected. Judging items
+# alongside two dozen peers calibrates a model that otherwise rates everything it
+# sees in isolation as important. Costs the same either way; it is token-bound.
+classify_batch_size = 25
+
+# Both stages default to Flash because that is what the free tier serves most
+# generously. If your AI Studio limits allow it, lift the writing (not the
+# filtering) to a Pro model: synthesize = "gemini-2.5-pro".
+#
+# This API takes no temperature. `seed` is the reproducibility lever, and
+# `thinking_level` (minimal | low | medium | high) trades depth for tokens —
+# free-tier per-minute token caps count thinking tokens too, so `high` is a
+# quick way to start seeing 429s.
+seed = 7
+classify_temperature = 0.0             # ignored by Gemini, used by Ollama and Claude
+classify_thinking = "low"
+synthesize_thinking = "medium"
+
+# Free-tier accounts are capped on requests per minute, and that number is only
+# visible on your AI Studio rate-limit page. 4 seconds paces the run at about
+# 15 requests a minute; lower it if your limit is higher. A week is roughly 70
+# calls, so the whole run takes about five minutes of wall clock at this pace.
+# qwen3:30b is a reasoning model, and a thinking block in front of a
+# schema-constrained answer comes back empty rather than as an error — every item
+# then falls through as unjudged. Measured: thinking on scored 0 exact and
+# dropped 11 of the 11 items that belonged; thinking off scored 76% exact and
+# dropped none. Leave this false for any model whose `ollama show` lists
+# `thinking` in its capabilities.
+ollama_think = false
+ollama_num_ctx = 32768
+
+# Measured, not guessed: on a free-tier account in September 2026 the limit was
+# 5 requests a minute for gemini-3.8-flash. The API says so in its own 429 text,
+# "limit: 5, model: gemini-3.8-flash". 12 seconds is exactly that rate. With
+# classification running locally a week is about 60 hosted calls, so synthesis
+# takes roughly 12 minutes of wall clock, nearly all of it waiting politely.
+min_interval_seconds = 12.0
+max_attempts = 5
+backoff_seconds = [10, 20, 40, 60]
+max_backoff_seconds = 120
+
+# Each stage picks its own provider, so the filtering can run on a local Ollama
+# model while the writing stays hosted. Classification is 12 of the ~74 calls a
+# week and reads every headline, so moving it local is the change that matters:
+#   classify_provider = "ollama"
+#   classify = "qwen3:30b"
+#   ollama_host = "http://localhost:11434"
+#   ollama_num_ctx = 32768             # rubric + a 25-item batch needs ~4k
+# Set provider = "ollama" for both stages to run with no network at all.
+# Ollama is given a JSON schema rather than just "give me JSON", because without
+# one a local model answers a 25-item batch with a single object and stops.
+# Score any local model against the labelled set before trusting it:
+#   python scripts/eval_rubric.py --provider ollama --model <name>
+#
+# To run on Claude instead, set provider = "anthropic" with:
+#   classify = "claude-haiku-4-5"
+#   synthesize = "claude-sonnet-5"
+#   classify_temperature = 0.0        # Haiku accepts it; Sonnet 5 rejects it
+#   min_interval_seconds = 0.0
+# and export ANTHROPIC_API_KEY instead of GEMINI_API_KEY.
+
+[tts]
+enabled = false
+engine = "edge"          # edge | piper
+voice = "en-GB-RyanNeural"
+offline = false
+chunk_chars = 3000
+
+[pdf]
+# html2pdf (a headless-Chrome wrapper already on PATH) is the default so the
+# machine needs no extra rendering stack. Set to "weasyprint" to use the library.
+engine = "html2pdf"
+
+[credentials]
+# Optional. Keys are read from the environment first, then GEMINI_API_KEY /
+# ANTHROPIC_API_KEY in a .env beside this file, then ~/.config/digest/<provider>_key,
+# then the macOS Keychain. Set a path here only to keep a key somewhere else.
+# Never put the key itself in this file — it is checked into the repository,
+# unlike .env, which is gitignored.
+# gemini_key_file = "~/.config/digest/gemini_key"
+
+[drive]
+enabled = false          # set true once folder_id is filled in
+folder_id = ""           # owner fills in
+method = "oauth"         # oauth | rclone
+rclone_remote = ""       # e.g. "gdrive:digests" when method = "rclone"
+
+# ---------------------------------------------------------------- sources
+# Spine: The Economist section feeds. All thirteen verified September 2026.
+
+[[sources]]
+name = "Economist — The World This Week"
+url = "https://www.economist.com/the-world-this-week/rss.xml"
+section = "the-world-this-week"
+weight = 1.0
+
+[[sources]]
+name = "Economist — Leaders"
+url = "https://www.economist.com/leaders/rss.xml"
+section = "leaders"
+weight = 1.0
+
+[[sources]]
+name = "Economist — Business"
+url = "https://www.economist.com/business/rss.xml"
+section = "business"
+weight = 1.0
+
+[[sources]]
+name = "Economist — Finance and Economics"
+url = "https://www.economist.com/finance-and-economics/rss.xml"
+section = "finance-and-economics"
+weight = 1.0
+
+[[sources]]
+name = "Economist — Asia"
+url = "https://www.economist.com/asia/rss.xml"
+section = "asia"
+weight = 1.0
+
+[[sources]]
+name = "Economist — China"
+url = "https://www.economist.com/china/rss.xml"
+section = "china"
+weight = 1.0
+
+[[sources]]
+name = "Economist — Europe"
+url = "https://www.economist.com/europe/rss.xml"
+section = "europe"
+weight = 1.0
+
+[[sources]]
+name = "Economist — Britain"
+url = "https://www.economist.com/britain/rss.xml"
+section = "britain"
+weight = 1.0
+
+[[sources]]
+name = "Economist — International"
+url = "https://www.economist.com/international/rss.xml"
+section = "international"
+weight = 1.0
+
+[[sources]]
+name = "Economist — United States"
+url = "https://www.economist.com/united-states/rss.xml"
+section = "united-states"
+weight = 1.0
+
+[[sources]]
+name = "Economist — Middle East and Africa"
+url = "https://www.economist.com/middle-east-and-africa/rss.xml"
+section = "middle-east-and-africa"
+weight = 1.0
+
+[[sources]]
+name = "Economist — The Americas"
+url = "https://www.economist.com/the-americas/rss.xml"
+section = "the-americas"
+weight = 1.0
+
+[[sources]]
+name = "Economist — Science and Technology"
+url = "https://www.economist.com/science-and-technology/rss.xml"
+section = "science-and-technology"
+weight = 1.0
+
+# Secondary sources, verified September 2026. International Intrigue serves no RSS
+# feed at any of the usual paths, so it is not listed.
+
+[[sources]]
+name = "Nikkei Asia"
+url = "https://asia.nikkei.com/rss/feed/nar"
+section = "asia"
+weight = 0.9
+
+[[sources]]
+name = "FT — World"
+url = "https://www.ft.com/world?format=rss"
+section = "world"
+weight = 0.9
+
+# Semafor publishes one all-sections feed, not a Flagship-only feed. Weighted
+# below the section feeds because most of it is off-lens and the classifier
+# has to do more work.
+[[sources]]
+name = "Semafor"
+url = "https://www.semafor.com/rss.xml"
+section = "mixed"
+weight = 0.7

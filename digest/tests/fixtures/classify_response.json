@@ -1,0 +1,4 @@
+{
+  "note": "A recorded-shape response for the classifier. Hand-authored: the machine has no API credentials, so no live response could be recorded. Replace with a real captured response once a key is configured.",
+  "text": "[\n{\"id\": \"ID0\", \"fit\": 3, \"kind\": \"architecture\", \"novelty\": 3, \"region\": \"east_asia\", \"domain\": \"finance\", \"mechanism\": \"reserve quantity target replaces price target\", \"reason\": \"central bank adopts a new operating framework\"},\n{\"id\": \"ID1\", \"fit\": 0, \"kind\": \"contest\", \"novelty\": 0, \"region\": \"uk\", \"domain\": \"state\", \"mechanism\": null, \"reason\": \"polling, no mechanism\"},\n{\"id\": \"ID2\", \"fit\": 3, \"kind\": \"architecture\", \"novelty\": 3, \"region\": \"south_asia\", \"domain\": \"trade\", \"mechanism\": \"export proceeds retained onshore by rule\", \"reason\": \"new capital control regime\"}\n]"
+}

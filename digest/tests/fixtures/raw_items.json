@@ -1,0 +1,62 @@
+[
+  {
+    "id": "will-be-recomputed",
+    "source": "Economist — Finance and Economics",
+    "section": "finance-and-economics",
+    "title": "  The Bank of Japan   rewrites its   operating framework  ",
+    "blurb": "<p>The central bank will target the <b>quantity</b> of reserves rather than their price, &amp; the shift is permanent.</p>",
+    "url": "https://www.economist.com/finance-and-economics/2026/09/01/boj-framework?utm_source=rss&utm_medium=feed&fbclid=abc#section",
+    "published": "2026-09-01T06:00:00+00:00",
+    "weight": 1.0
+  },
+  {
+    "id": "will-be-recomputed",
+    "source": "FT — World",
+    "section": "world",
+    "title": "Bank of Japan rewrites its operating framework",
+    "blurb": "Tokyo shifts to a quantity target.",
+    "url": "https://www.ft.com/content/boj-framework",
+    "published": "2026-09-01T07:30:00+00:00",
+    "weight": 0.9
+  },
+  {
+    "id": "will-be-recomputed",
+    "source": "Semafor",
+    "section": "mixed",
+    "title": "The Bank of Japan rewrites its operating framework",
+    "blurb": "A quantity target replaces a price target.",
+    "url": "https://www.semafor.com/article/boj-framework",
+    "published": "2026-09-01T09:00:00+00:00",
+    "weight": 0.7
+  },
+  {
+    "id": "will-be-recomputed",
+    "source": "Economist — Britain",
+    "section": "britain",
+    "title": "The polls tighten again before the by-election",
+    "blurb": "Both parties claim momentum.",
+    "url": "https://www.economist.com/britain/2026/08/30/by-election-polls",
+    "published": "2026-08-30T10:00:00+00:00",
+    "weight": 1.0
+  },
+  {
+    "id": "will-be-recomputed",
+    "source": "Nikkei Asia",
+    "section": "asia",
+    "title": "Indonesia imposes capital controls on nickel earnings",
+    "blurb": "Exporters must hold proceeds onshore for a year, a rule with no sunset clause and a long list of exemptions that were quietly dropped in the final draft after a month of consultation with the mining industry and the central bank, whose reserves have fallen for six straight quarters and which now expects the measure to add several billion dollars to its buffer over the coming year, according to people who saw the drafts.",
+    "url": "https://asia.nikkei.com/economy/indonesia-nickel-capital-controls",
+    "published": "2026-08-29T02:00:00+00:00",
+    "weight": 0.9
+  },
+  {
+    "id": "will-be-recomputed",
+    "source": "Economist — Business",
+    "section": "business",
+    "title": "",
+    "blurb": "An item with no title should be discarded.",
+    "url": "https://www.economist.com/business/2026/09/01/empty",
+    "published": "2026-09-01T01:00:00+00:00",
+    "weight": 1.0
+  }
+]

@@ -1,0 +1,180 @@
+{
+ "_note": "Ground truth for the rubric, hand-labelled 2026-09-02 (fit, novelty and kind) from digest/prompts/rubric.md against the items in eval_items.json. Keyed by the opening words of each title. These are a considered reading of the rubric, not gospel: the owner should correct any they disagree with, and every model score in scripts/eval_rubric.py moves when they do.",
+ "labels": [
+  {
+   "title": "Graham wins South Carolina",
+   "fit": 1,
+   "novelty": 2,
+   "kind": "contest",
+   "why": "election result, no structural consequence given"
+  },
+  {
+   "title": "Saudi revamps derivatives",
+   "fit": 3,
+   "novelty": 3,
+   "kind": "architecture",
+   "why": "market plumbing: a new instrument class to admit foreign capital"
+  },
+  {
+   "title": "'This is crazy",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "opinion piece, no mechanism"
+  },
+  {
+   "title": "Vance supporters dismiss",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "contest",
+   "why": "tactical manoeuvring three years out"
+  },
+  {
+   "title": "Court decision boosts Democrats",
+   "fit": 2,
+   "novelty": 3,
+   "kind": "architecture",
+   "why": "court decision changing what an institution may spend"
+  },
+  {
+   "title": "Lawyers see imminent decision",
+   "fit": 2,
+   "novelty": 1,
+   "kind": "architecture",
+   "why": "ruling would change deportation capacity"
+  },
+  {
+   "title": "Four in 10 Americans believe UFOs",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "poll"
+  },
+  {
+   "title": "IMF says AI is helping",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "assessment, not a change in arrangement"
+  },
+  {
+   "title": "Markets eye Nvidia earnings",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "neither",
+   "why": "market anticipation"
+  },
+  {
+   "title": "Global trade tensions grow",
+   "fit": 1,
+   "novelty": 0,
+   "kind": "contest",
+   "why": "saga update, nothing structurally new stated"
+  },
+  {
+   "title": "Beijing looks to cutting-edge",
+   "fit": 2,
+   "novelty": 1,
+   "kind": "architecture",
+   "why": "industrial policy direction with state money behind it"
+  },
+  {
+   "title": "Ebola spreading",
+   "fit": 1,
+   "novelty": 2,
+   "kind": "neither",
+   "why": "crisis report; funding and infrastructure named but not changed"
+  },
+  {
+   "title": "Pennsylvania records first measles",
+   "fit": 1,
+   "novelty": 3,
+   "kind": "neither",
+   "why": "an event, not a rule change"
+  },
+  {
+   "title": "DR Congo president warns",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "architecture",
+   "why": "administrative capacity failure with named cause"
+  },
+  {
+   "title": "Why smugglers are stealing",
+   "fit": 0,
+   "novelty": 3,
+   "kind": "neither",
+   "why": "curiosity piece"
+  },
+  {
+   "title": "American diplomats return",
+   "fit": 1,
+   "novelty": 2,
+   "kind": "contest",
+   "why": "diplomatic posture; restaffing is thin as capacity"
+  },
+  {
+   "title": "Telecoms giant MTN",
+   "fit": 3,
+   "novelty": 3,
+   "kind": "architecture",
+   "why": "a telco acquiring banking capacity reorganises financial access"
+  },
+  {
+   "title": "South African platinum miner",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "architecture",
+   "why": "sector consolidation with real money"
+  },
+  {
+   "title": "Abu Dhabi's M42",
+   "fit": 2,
+   "novelty": 3,
+   "kind": "architecture",
+   "why": "state health capacity contracted out for ten years"
+  },
+  {
+   "title": "AI billionaires could drive",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "speculative, conditional"
+  },
+  {
+   "title": "Remembering America's queen",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "neither",
+   "why": "culture, no structural shift"
+  },
+  {
+   "title": "Trump's new affordability push",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "architecture",
+   "why": "industrial policy with money attached"
+  },
+  {
+   "title": "SpaceX plans to build",
+   "fit": 2,
+   "novelty": 3,
+   "kind": "architecture",
+   "why": "a durable capacity change in launch"
+  },
+  {
+   "title": "How salmon evolved",
+   "fit": 0,
+   "novelty": 3,
+   "kind": "neither",
+   "why": "natural history"
+  },
+  {
+   "title": "A former Democratic operative",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "contest",
+   "why": "party positioning interview"
+  }
+ ]
+}

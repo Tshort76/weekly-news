@@ -1,0 +1,65 @@
+[
+  {
+    "item": {"id": "a1", "source": "Economist — Finance and Economics", "section": "finance-and-economics",
+             "title": "Bank of Japan rewrites its operating framework", "blurb": "Quantity target replaces price target.",
+             "url": "https://example.com/a1", "published": "2026-09-01T06:00:00+00:00", "weight": 1.0, "also_in": []},
+    "fit": 3, "kind": "architecture", "novelty": 3, "region": "east_asia", "domain": "finance",
+    "mechanism": "reserve quantity target replaces price target", "reason": "new operating framework"
+  },
+  {
+    "item": {"id": "a2", "source": "Nikkei Asia", "section": "asia",
+             "title": "Indonesia imposes capital controls on nickel earnings", "blurb": "Proceeds held onshore.",
+             "url": "https://example.com/a2", "published": "2026-08-29T02:00:00+00:00", "weight": 0.9, "also_in": []},
+    "fit": 3, "kind": "architecture", "novelty": 3, "region": "south_asia", "domain": "trade",
+    "mechanism": "export proceeds retained onshore by rule", "reason": "new capital control regime"
+  },
+  {
+    "item": {"id": "a3", "source": "Economist — Europe", "section": "europe",
+             "title": "Brussels extends the tariff regime on steel", "blurb": "Safeguards rolled forward.",
+             "url": "https://example.com/a3", "published": "2026-08-31T09:00:00+00:00", "weight": 1.0, "also_in": []},
+    "fit": 2, "kind": "architecture", "novelty": 2, "region": "europe", "domain": "trade",
+    "mechanism": "safeguard quota extended past sunset", "reason": "tariff regime extended"
+  },
+  {
+    "item": {"id": "b1", "source": "Economist — Britain", "section": "britain",
+             "title": "The by-election polls tighten", "blurb": "Both parties claim momentum.",
+             "url": "https://example.com/b1", "published": "2026-08-30T10:00:00+00:00", "weight": 1.0, "also_in": []},
+    "fit": 0, "kind": "contest", "novelty": 0, "region": "uk", "domain": "state",
+    "mechanism": null, "reason": "horse race"
+  },
+  {
+    "item": {"id": "b2", "source": "Economist — United States", "section": "united-states",
+             "title": "The primary field narrows", "blurb": "Two candidates withdraw.",
+             "url": "https://example.com/b2", "published": "2026-08-28T10:00:00+00:00", "weight": 1.0, "also_in": []},
+    "fit": 2, "kind": "contest", "novelty": 2, "region": "us", "domain": "state",
+    "mechanism": "primary calendar shapes candidate entry", "reason": "leadership race"
+  },
+  {
+    "item": {"id": "b3", "source": "Economist — Europe", "section": "europe",
+             "title": "A coalition quarrel over the budget", "blurb": "Ministers trade blame.",
+             "url": "https://example.com/b3", "published": "2026-08-27T10:00:00+00:00", "weight": 1.0, "also_in": []},
+    "fit": 2, "kind": "contest", "novelty": 3, "region": "europe", "domain": "state",
+    "mechanism": "coalition bargaining over spending ceiling", "reason": "who is winning"
+  },
+  {
+    "item": {"id": "c1", "source": "Economist — China", "section": "china",
+             "title": "Another round of the property developer saga", "blurb": "A missed coupon payment.",
+             "url": "https://example.com/c1", "published": "2026-08-26T10:00:00+00:00", "weight": 1.0, "also_in": []},
+    "fit": 2, "kind": "architecture", "novelty": 1, "region": "east_asia", "domain": "finance",
+    "mechanism": "developer presales fund construction", "reason": "ongoing story"
+  },
+  {
+    "item": {"id": "c2", "source": "Economist — Science and Technology", "section": "science-and-technology",
+             "title": "A cheaper way to verify chip provenance", "blurb": "A new attestation standard.",
+             "url": "https://example.com/c2", "published": "2026-08-25T10:00:00+00:00", "weight": 1.0, "also_in": []},
+    "fit": 1, "kind": "architecture", "novelty": 3, "region": "global", "domain": "tech",
+    "mechanism": "attestation lowers cost of export control", "reason": "new structural fact"
+  },
+  {
+    "item": {"id": "c3", "source": "Semafor", "section": "mixed",
+             "title": "A film studio changes hands", "blurb": "A private equity buyer.",
+             "url": "https://example.com/c3", "published": "2026-08-24T10:00:00+00:00", "weight": 0.7, "also_in": []},
+    "fit": 1, "kind": "neither", "novelty": 1, "region": "us", "domain": "other",
+    "mechanism": null, "reason": "celebrity adjacent"
+  }
+]

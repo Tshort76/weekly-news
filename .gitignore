@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+
+# Secrets. Never commit; .env.example is the committed template.
+.env
+
+# Generated digests, if anyone points output_dir at the checkout
+/digests/
+*.mp3
+
+# Editor and OS scratch
+.lsp/
+.clj-kondo/
+.idea/
+.vscode/
+.DS_Store
