@@ -165,6 +165,7 @@ MANDATED_EXPANSIONS = frozenset(
 
 _WORD = re.compile(r"[A-Za-z][A-Za-z.'’-]*")
 _SENTENCE = re.compile(r"(?<=[.!?])\s+")
+_POSSESSIVE = re.compile(r"[’']s$")
 
 
 def _capitalised_spans(text: str) -> list[str]:
@@ -176,7 +177,9 @@ def _capitalised_spans(text: str) -> list[str]:
     """
     spans: list[str] = []
     for sentence in _SENTENCE.split(text):
-        tokens = [t.rstrip(".'’-") for t in _WORD.findall(sentence)]
+        # A possessive is the same name wearing an apostrophe: "Bank of Japan's"
+        # must match a source that says "Bank of Japan".
+        tokens = [_POSSESSIVE.sub("", t).rstrip(".'’-") for t in _WORD.findall(sentence)]
         tokens = [t for t in tokens if t]
         run: list[str] = []
         pending: list[str] = []

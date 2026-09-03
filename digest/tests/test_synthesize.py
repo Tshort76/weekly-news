@@ -156,6 +156,14 @@ def test_a_clean_entry_is_written_once():
     assert len(client.calls) == 1
 
 
+def test_a_possessive_is_the_same_name_wearing_an_apostrophe():
+    """"Bank of Japan's" is the Bank of Japan. Reading the apostrophe as part of
+    the name makes the guard drop entries about institutions the stories named."""
+    from digest.synthesize import novel_names
+
+    assert novel_names("The Bank of Japan’s decision held.", "Bank of Japan holds rates") == []
+
+
 def test_geography_the_stories_imply_is_left_alone():
     """Saying Egypt is in North Africa is reasoning, not invention, and a guard
     that needs a gazetteer to tell the difference rots."""
