@@ -54,10 +54,27 @@ FRAME_SCHEMA = {
 }
 
 
+NO_PRIOR_COVERAGE = (
+    "No prior coverage of this mechanism exists. Do not write a sentence about what "
+    "is different from earlier reporting, and do not mention 'previous coverage', "
+    "'prior expectations', or anything being 'unlike' an earlier edition — there is "
+    "no earlier edition to compare to. A model that invents one anyway is fabricating "
+    "the comparison, which the rubric forbids."
+)
+
+
 def _prior_note(cluster: Cluster, prior_entries: list[dict]) -> str:
-    """If we covered this mechanism before, hand the writer what was said then."""
+    """If we covered this mechanism before, hand the writer what was said then.
+
+    Returns an explicit sentinel rather than an empty string in the negative
+    case: a blank {prior_coverage} slot reads, to a weaker model, as silence
+    rather than as "nothing to compare to", and a model that has just been told
+    to "say what is different" will invent a comparison to fill the gap. gemma3
+    did this in 29 of 60 entries on a week with zero prior editions — Gemini
+    happened not to, but nothing here relied on it not to.
+    """
     if not cluster.shared_mechanism and not any(c.mechanism for c in cluster.items):
-        return ""
+        return NO_PRIOR_COVERAGE
     mechanisms = [cluster.shared_mechanism, *(c.mechanism for c in cluster.items)]
     for prior in prior_entries:
         pm = prior.get("mechanism")
@@ -73,7 +90,7 @@ def _prior_note(cluster: Cluster, prior_entries: list[dict]) -> str:
                 f"  hook: {prior.get('hook')}\n"
                 "Say in one sentence what is different now. Do not repeat that ground."
             )
-    return ""
+    return NO_PRIOR_COVERAGE
 
 
 def _render_cluster(cluster: Cluster) -> str:

@@ -64,6 +64,17 @@ def test_no_prior_note_when_nothing_matches():
     assert "covered in an earlier edition" not in client.calls[0]["prompt"]
 
 
+def test_the_writer_is_told_explicitly_when_there_is_nothing_to_compare_to():
+    """A blank {prior_coverage} slot reads, to a weaker model, as silence rather
+    than as 'nothing to compare to' — and a model just told to say what changed
+    will invent a comparison to fill the gap. The negative case has to be as
+    explicit as the positive one."""
+    client = ScriptedClient(RECORDED["entry"])
+    write_entry(_cluster(), Config(), client, [])
+    assert "No prior coverage" in client.calls[0]["prompt"]
+    assert "fabricating the comparison" in client.calls[0]["prompt"]
+
+
 def test_a_failed_entry_is_skipped_and_marks_the_edition_partial():
     class Broken(ScriptedClient):
         def complete(self, **kwargs):

@@ -23,8 +23,10 @@ Return a single JSON object and nothing else — no prose, no markdown fence:
 }}
 
 The body says: what changed structurally; why that matters; which larger system it
-sits inside. If prior coverage is given above, one sentence says what is different
-from what was said then.
+sits inside. The note above tells you whether earlier coverage of this mechanism
+exists. Only when it hands you an actual earlier headline and hook does one sentence
+say what is different from what was said then — otherwise say nothing about prior
+coverage, other editions, or what is "unlike" earlier reporting.
 
 The hook is one sentence a listener could repeat in conversation: a concrete fact
 plus the mechanism behind it. Never a take, never a prediction, never "some say" or
