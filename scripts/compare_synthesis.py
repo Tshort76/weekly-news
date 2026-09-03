@@ -32,6 +32,13 @@ def main() -> None:
     parser.add_argument("--provider", required=True, choices=["gemini", "anthropic", "ollama"])
     parser.add_argument("--model", required=True)
     parser.add_argument("--label", required=True, help="suffix for the output filenames")
+    parser.add_argument(
+        "--limit", type=int,
+        help="write only the first N clusters. Selection and clustering are both "
+             "deterministic, so the same N are the same entries every run — which is "
+             "what makes a prompt A/B on a subset mean anything. Sixty entries on a "
+             "local 27b model is over half an hour; ten is six minutes.",
+    )
     args = parser.parse_args()
 
     cfg = config.load()
@@ -58,6 +65,9 @@ def main() -> None:
         # between the two editions and the comparison isolates synthesis.
         clusters = cluster_stage.singletons(selected)
         print(f"clusters: {len(clusters)} (singleton fallback, matching the Gemini run)")
+        if args.limit:
+            clusters = clusters[: args.limit]
+            print(f"limited to the first {len(clusters)}")
 
         client = Client(cfg)
         edition = synth_stage.synthesize(

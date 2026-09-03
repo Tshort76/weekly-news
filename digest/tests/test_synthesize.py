@@ -75,6 +75,24 @@ def test_the_writer_is_told_explicitly_when_there_is_nothing_to_compare_to():
     assert "fabricating the comparison" in client.calls[0]["prompt"]
 
 
+def test_the_weak_model_rules_stay_out_of_the_hosted_writers_prompt():
+    """These rules were measured against one local model's habits. The hosted
+    writer does not have them, and two of the rules would cost it something it
+    does it on purpose — so it never sees them."""
+    client = ScriptedClient(RECORDED["entry"])
+    write_entry(_cluster(), Config(), client, [])
+    assert "Habits to avoid" not in client.calls[0]["prompt"]
+
+
+def test_a_local_writer_is_given_the_weak_model_rules():
+    from digest.config import ModelsCfg
+
+    client = ScriptedClient(RECORDED["entry"])
+    cfg = Config(models=ModelsCfg(synthesize_provider="ollama"))
+    write_entry(_cluster(), cfg, client, [])
+    assert "Habits to avoid" in client.calls[0]["prompt"]
+
+
 def test_a_failed_entry_is_skipped_and_marks_the_edition_partial():
     class Broken(ScriptedClient):
         def complete(self, **kwargs):
@@ -106,11 +124,22 @@ def test_the_frame_reorders_entries_and_names_the_theme():
         Entry(cluster_id="c1", headline="A", body="", hook="", fit=3),
     ]
     opening, closing, ordered, theme, degraded = write_frame(
-        entries, Config(), ScriptedClient(RECORDED["frame"]), None
+        entries, Config(), ScriptedClient(RECORDED["frame"]), _cluster("c1", n=3)
     )
     assert [e.cluster_id for e in ordered] == ["c1", "c2"]
     assert theme == "Rules that close off an option"
     assert len(closing) == 3 and opening and not degraded
+
+
+def test_the_frame_cannot_name_a_theme_when_no_cluster_qualifies():
+    """Told there is no theme and to return null, gemma3 named one anyway — in
+    the same edition whose own opening said the entries had nothing in common.
+    Whether a theme exists is decided upstream; the model only names it."""
+    entries = [Entry(cluster_id="c1", headline="A", body="", hook="", fit=3)]
+    _, _, _, theme, _ = write_frame(
+        entries, Config(), ScriptedClient(RECORDED["frame"]), None
+    )
+    assert theme is None
 
 
 def test_an_entry_the_frame_forgot_is_still_published():

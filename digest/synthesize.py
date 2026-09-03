@@ -63,6 +63,51 @@ NO_PRIOR_COVERAGE = (
 )
 
 
+# Habits a weaker writer has and a strong one does not. Measured on gemma3:27b
+# against the same week Gemini wrote: eighty-one country abbreviations, fifty-eight
+# filler sentences of the "operates within the broader system of" shape, forty
+# hedges. Gemini scored zero on every one of them, so these rules would only be
+# telling it not to do things it was not doing — and two of them actively cost it
+# something, because it writes three-sentence bodies and reaches for an occasional
+# intensifier on purpose. They are handed to a local model and to nothing else.
+WRITER_NOTES = """
+Habits to avoid, because they show up in writing that is generated rather than
+composed:
+- What changed, why it matters and the larger system are three things the body must
+  cover, not three sentences to write in turn. The rubric's words are the lens for
+  choosing what to say, not the vocabulary for saying it.
+- Never "operates within", "sits within", "occurs within", "exists within", "the
+  broader system", "represents a shift", "this signals" — whatever the subject of the
+  sentence, these say nothing. Say what named thing the change acts on instead. Not
+  "The expansion occurs within a centrally planned energy system" but "China's grid
+  must now absorb a third of its capacity from a source that stops at night."
+- No hedging: not "reportedly", "potentially", "appears to", "suggests", "could" or
+  "may". If the stories state a thing, state it. If they do not, leave it out.
+- No intensifiers: not "massive", "significant", "substantial", "rapid", "sweeping",
+  "fundamentally" or "landmark". The number or the fact carries the weight on its own.
+- Plain words a listener who has never seen the rubric can follow. "Operating
+  parameters", "locus", "node", "calculus", "trajectory" and "dynamics" are analysis
+  jargon, not briefing prose.
+- The hook takes a cause only when the stories give one. When they state a fact but
+  not its cause, the hook is the fact alone: a hook that explains is worth less than
+  a hook that is true. It is in the present or past tense and contains no "will",
+  "would", "could" or "may".
+- A one-line blurb gets a two-sentence body. Length is not a target, and a body that
+  says less than the stories do is better than one that says more.
+"""
+
+
+def _writer_notes(cfg: Config) -> str:
+    """The weak-model rules, and only when a weak model is writing.
+
+    The prompt file is shared with the hosted writer, which is the production
+    path and cannot be regression-tested on demand — its quota is a day long.
+    Rules that fix a local model's habits therefore go in behind a slot rather
+    than into the prompt every backend sees.
+    """
+    return WRITER_NOTES if cfg.models.provider_for("synthesize") == "ollama" else ""
+
+
 def _prior_note(cluster: Cluster, prior_entries: list[dict]) -> str:
     """If we covered this mechanism before, hand the writer what was said then.
 
@@ -131,6 +176,7 @@ def write_entry(
         rubric=cfg.prompt("rubric.md"),
         cluster=_render_cluster(cluster),
         prior_coverage=_prior_note(cluster, prior_entries),
+        writer_notes=_writer_notes(cfg),
     )
     try:
         payload = client.complete_json(
@@ -231,7 +277,12 @@ def write_frame(
     ordered = [by_id[i] for i in payload.get("order", []) if i in by_id]
     ordered += [e for e in entries if e not in ordered]
 
-    theme_name = payload.get("theme")
+    # The prompt says "set theme to null" when no cluster qualifies, and the
+    # schema allows a string there too. gemma3 named one anyway, in the same
+    # edition whose opening said the entries had nothing in common. Whether a
+    # theme exists was decided upstream by theme_candidate; the model only
+    # gets to name it.
+    theme_name = payload.get("theme") if theme is not None else None
     if isinstance(theme_name, str):
         theme_name = theme_name.strip() or None
     else:

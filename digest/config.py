@@ -62,6 +62,11 @@ class ModelsCfg:
     ollama_host: str = "http://localhost:11434"
     ollama_num_ctx: int = 32768
     ollama_think: bool | None = None  # False disables a reasoning model's think block
+    # Sampling temperature for a stage whose own `*_temperature` is unset. None
+    # leaves the model's Modelfile default in force (1.0 for gemma3). Ollama-scoped
+    # because the Anthropic backend forwards any stage temperature and Sonnet 5
+    # rejects one, so the shared synthesize_temperature slot has to stay empty.
+    ollama_temperature: float | None = None
 
     def provider_for(self, stage: str) -> str:
         override = self.classify_provider if stage == "classify" else self.synthesize_provider
@@ -191,6 +196,7 @@ def load(path: str | Path | None = None) -> Config:
             ollama_host=models.get("ollama_host", "http://localhost:11434"),
             ollama_num_ctx=int(models.get("ollama_num_ctx", 32768)),
             ollama_think=models.get("ollama_think"),
+            ollama_temperature=models.get("ollama_temperature"),
         ),
         tts=TtsCfg(
             enabled=bool(tts.get("enabled", False)),

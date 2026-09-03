@@ -32,10 +32,15 @@ Ordering rules:
 
 The opening describes the shape of the week: what these items have in common, or
 that they have nothing in common. It may name the theme. It states, it does not
-argue, and it makes no prediction.
+argue, and it makes no prediction. It does not characterise the week — no "a world in
+flux", no "the architecture of power" — and it does not borrow the rubric's vocabulary.
+It says in plain words which items share a mechanism and which stand alone, drawing only
+on the headlines and hooks given above, and stops.
 
 The closing is three questions to chew on, drawn from across the entries rather than
 from one of them. Questions, not statements dressed as questions.
 
 Write both passages for the ear: third person, short sentences, no parentheticals,
-no URLs, acronyms spelled out, numbers phrased the way a person says them.
+no URLs, acronyms spelled out, numbers phrased the way a person says them. "United
+States", never "US"; "artificial intelligence", never "AI"; "European Union", never "EU"
+— a speech engine reads "US" as the word "us".

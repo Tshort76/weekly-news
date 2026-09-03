@@ -230,10 +230,19 @@ class OllamaBackend:
 
     name = "ollama"
 
-    def __init__(self, host: str = "http://localhost:11434", num_ctx: int = 32768, timeout: int = 900):
+    def __init__(
+        self,
+        host: str = "http://localhost:11434",
+        num_ctx: int = 32768,
+        timeout: int = 900,
+        temperature: float | None = None,
+    ):
         self.host = host.rstrip("/")
         self.num_ctx = num_ctx
         self.timeout = timeout
+        # Applied when the stage leaves its own temperature unset. Otherwise the
+        # Modelfile default rules, and for gemma3 that is 1.0.
+        self.temperature = temperature
 
     def generate(self, *, model, prompt, system, max_tokens, opts) -> str:
         import urllib.error  # noqa: PLC0415
@@ -245,8 +254,11 @@ class OllamaBackend:
         }
         # Local models take sampling parameters, so the classify stage really can
         # be pinned rather than merely seeded.
-        if opts.get("temperature") is not None:
-            options["temperature"] = opts["temperature"]
+        temperature = opts.get("temperature")
+        if temperature is None:
+            temperature = self.temperature
+        if temperature is not None:
+            options["temperature"] = temperature
         if opts.get("seed") is not None:
             options["seed"] = opts["seed"]
 
@@ -297,7 +309,11 @@ def make_backend(provider: str, cfg=None) -> Backend:
     kwargs: dict[str, Any] = {}
     if provider == "ollama":
         if cfg is not None:
-            kwargs = {"host": cfg.models.ollama_host, "num_ctx": cfg.models.ollama_num_ctx}
+            kwargs = {
+                "host": cfg.models.ollama_host,
+                "num_ctx": cfg.models.ollama_num_ctx,
+                "temperature": cfg.models.ollama_temperature,
+            }
     else:
         from .credentials import api_key, describe_sources  # noqa: PLC0415
 

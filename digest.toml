@@ -49,6 +49,16 @@ synthesize_thinking = "medium"
 # `thinking` in its capabilities.
 ollama_think = false
 ollama_num_ctx = 32768
+# Sampling temperature for an Ollama stage whose own `*_temperature` is unset —
+# in practice the synthesize stage, whose slot stays empty so the Anthropic path
+# (Sonnet 5 rejects a temperature) keeps working. Left out, the Modelfile default
+# applies, and gemma3:27b ships with 1.0. Measured on the same ten entries with
+# the same prompt, 1.0 against 0.3: twice the names and institutions the blurbs
+# never mentioned (8 vs 4), more hedging (5 vs 2), more filler sentences (2 vs 1).
+# Lower is not free: at 0.3 the old prompt's template sentences got more frequent,
+# not less — a low temperature amplifies whatever habit the prompt permits.
+# Gemini never sees this setting.
+ollama_temperature = 0.3
 
 # Measured, not guessed: on a free-tier account in September 2026 the limit was
 # 5 requests a minute for gemini-3.8-flash. The API says so in its own 429 text,
