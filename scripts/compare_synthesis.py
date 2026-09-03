@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import logging
 import sys
 from pathlib import Path
 
@@ -41,6 +42,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Without this the guard's warnings about invented names go nowhere, and a
+    # run looks clean whether it was or not.
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s %(message)s", stream=sys.stderr
+    )
     cfg = config.load()
     cfg = dataclasses.replace(
         cfg,
