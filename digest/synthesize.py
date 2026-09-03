@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import datetime, timezone
 
 from rapidfuzz import fuzz
@@ -138,6 +139,139 @@ def _prior_note(cluster: Cluster, prior_entries: list[dict]) -> str:
     return NO_PRIOR_COVERAGE
 
 
+# Words that start a sentence or join a name without being part of one. A span
+# is only evidence of invention when the capitalised words in it are.
+STOP_CAPS = frozenset(
+    """A An The This That These Those It Its He She They Their There Here When While
+    Where What Which Who Whose Why How If Because Since After Before During Under
+    Over Both Each Every Some Most Many Few More Less Other Another Such No Not Now
+    Then Than But And Or So Yet For Nor As At By In On To Up Of Off Out From With
+    Without Within Into Onto About Against Between Among Across Through Monday
+    Tuesday Wednesday Thursday Friday Saturday Sunday January February March April
+    May June July August September October November December""".split()
+)
+
+# Lowercase words that sit inside a proper name without breaking it, so that
+# "Bureau of Industry and Security" is read as one span rather than three
+# unremarkable single words.
+NAME_JOINERS = frozenset("of and the for in on de du van der la le el bin al".split())
+
+# Expansions the prompt itself demands. A source that says "US" gets "United
+# States" back by instruction, and the guard must not read its own rule as a
+# fabrication.
+MANDATED_EXPANSIONS = frozenset(
+    ["united states", "european union", "united kingdom", "united nations"]
+)
+
+_WORD = re.compile(r"[A-Za-z][A-Za-z.'’-]*")
+_SENTENCE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _capitalised_spans(text: str) -> list[str]:
+    """Runs of capitalised words, joined across "of"/"and" and the like.
+
+    A single capitalised word is not returned: "Parliament" on its own is how
+    anyone writes about a parliament, while "Committee on Foreign Investment"
+    is a claim about a specific body that either was in the stories or was not.
+    """
+    spans: list[str] = []
+    for sentence in _SENTENCE.split(text):
+        tokens = [t.rstrip(".'’-") for t in _WORD.findall(sentence)]
+        tokens = [t for t in tokens if t]
+        run: list[str] = []
+        pending: list[str] = []
+        for n, tok in enumerate(tokens):
+            capitalised = tok[0].isupper() and tok not in STOP_CAPS
+            # A sentence's first word is capitalised by grammar, not by name.
+            if n == 0 and capitalised and not run:
+                nxt = tokens[1] if len(tokens) > 1 else ""
+                if not (nxt and nxt[0].isupper() and nxt not in STOP_CAPS):
+                    continue
+            if capitalised:
+                run.extend(pending)
+                pending = []
+                run.append(tok)
+            elif run and tok.lower() in NAME_JOINERS:
+                pending.append(tok)
+            else:
+                if len(run) > 1:
+                    spans.append(" ".join(run))
+                run, pending = [], []
+        if len(run) > 1:
+            spans.append(" ".join(run))
+    return spans
+
+
+def _initials(span: str) -> str:
+    return "".join(w[0] for w in span.split() if w[0].isupper())
+
+
+# What a fabricated detail is made of. Geography is not on this list on purpose:
+# a writer that says Egypt is in North Africa is reasoning, not inventing, and a
+# guard that has to know every sea and region is a gazetteer waiting to rot. A
+# named body, law or treaty is different — either the stories named it or the
+# model reached outside them for it.
+INSTITUTION_WORDS = frozenset(
+    """Act Administration Agency Agreement Alliance Assembly Association Authority
+    Bank Board Bureau Cabinet Coalition Commission Committee Community Congress
+    Convention Corporation Council Court Department Directorate Federation Fund
+    Institute Ministry Office Organisation Organization Pact Parliament Partnership
+    Programme Protocol Secretariat Service Society Treaty Tribunal Union""".split()
+)
+
+# Abbreviations whose expansion the prompt actively demands, where the initials
+# of the expansion do not spell the abbreviation back.
+ACRONYM_EXPANSIONS = {
+    "G20": "group of twenty",
+    "G7": "group of seven",
+    "G8": "group of eight",
+}
+
+
+def novel_names(text: str, source: str) -> list[str]:
+    """Institutions, laws and treaties in `text` that `source` never mentions.
+
+    The writer is told that detail it knows from elsewhere counts as invented.
+    Telling it so is not enough — gemma3 answered a one-line blurb about chip
+    export controls with two agencies by name, neither of them anywhere in the
+    stories, and then said what those agencies would now face. This is the same
+    judgement made where the model cannot talk its way past it.
+
+    Deliberately narrow. It asks only whether a named body appeared in the
+    stories, which is a question with an answer, and leaves every other kind of
+    invention to the prompt. A guard that drops good entries is worse than one
+    that misses bad ones, because a dropped entry is news the briefing loses.
+    """
+    src = source.lower().replace("_", " ")
+    src_acronyms = set(re.findall(r"\b[A-Z][A-Z0-9]{1,4}\b", source))
+    allowed = {ACRONYM_EXPANSIONS[a] for a in src_acronyms if a in ACRONYM_EXPANSIONS}
+    found: dict[str, None] = {}
+
+    for span in _capitalised_spans(text):
+        low = span.lower()
+        if low in src or low in MANDATED_EXPANSIONS or low in allowed:
+            continue
+        if not any(w in INSTITUTION_WORDS for w in span.split()):
+            continue
+        # A source naming the acronym has named the thing: "IMF" in the stories
+        # licenses "International Monetary Fund" in the entry.
+        if _initials(span) in src_acronyms:
+            continue
+        missing = [w for w in span.split() if w[0].isupper() and w.lower() not in src]
+        # One unfamiliar word beside familiar ones is a rephrasing. Two or more
+        # is a name the stories do not contain.
+        if len(missing) >= 2:
+            found[span] = None
+
+    # An acronym on its own is the compact form of the same offence. The ones the
+    # prompt already governs are a style fault, caught elsewhere, not invention.
+    for acronym in re.findall(r"\b[A-Z]{3,5}\b", text):
+        if acronym not in src_acronyms and acronym.lower() not in src:
+            found[acronym] = None
+
+    return list(found)
+
+
 def _render_cluster(cluster: Cluster) -> str:
     return json.dumps(
         {
@@ -169,26 +303,69 @@ def _sources(cluster: Cluster) -> list[dict]:
     return [s for s in out if not (s["url"] in seen or seen.add(s["url"]))]
 
 
+INVENTION_NOTE = (
+    "Your draft named these, and the stories above name none of them: {names}. "
+    "Every one of them is something you know from elsewhere rather than something "
+    "you were given, which is exactly what this brief forbids. Write the entry "
+    "again without them. Do not substitute a different name, and where a sentence "
+    "has nothing left once the name is gone, drop the sentence — a shorter entry "
+    "that stays inside the stories is the point, not a cost."
+)
+
+
+def _spoken_text(payload: dict) -> str:
+    return " ".join(
+        str(x) for x in [
+            payload.get("headline", ""), payload.get("body", ""),
+            payload.get("hook", ""), *(payload.get("questions") or []),
+        ]
+    )
+
+
 def write_entry(
     cluster: Cluster, cfg: Config, client: Client, prior_entries: list[dict]
 ) -> Entry | None:
+    rendered = _render_cluster(cluster)
+    prior = _prior_note(cluster, prior_entries)
     prompt = cfg.prompt("synthesize_entry.md").format(
         rubric=cfg.prompt("rubric.md"),
-        cluster=_render_cluster(cluster),
-        prior_coverage=_prior_note(cluster, prior_entries),
+        cluster=rendered,
+        prior_coverage=prior,
         writer_notes=_writer_notes(cfg),
     )
-    try:
-        payload = client.complete_json(
-            stage="synthesize", prompt=prompt, max_tokens=4000, schema=ENTRY_SCHEMA
-        )
-    except LLMError as exc:
-        log.error("entry failed for cluster %s: %s", cluster.cluster_id, exc)
-        return None
+    source_text = f"{rendered}\n{prior}"
 
-    if not isinstance(payload, dict) or not payload.get("headline"):
-        log.error("entry for cluster %s came back unusable", cluster.cluster_id)
-        return None
+    payload = None
+    for attempt in range(2):
+        try:
+            payload = client.complete_json(
+                stage="synthesize", prompt=prompt, max_tokens=4000, schema=ENTRY_SCHEMA
+            )
+        except LLMError as exc:
+            log.error("entry failed for cluster %s: %s", cluster.cluster_id, exc)
+            return None
+
+        if not isinstance(payload, dict) or not payload.get("headline"):
+            log.error("entry for cluster %s came back unusable", cluster.cluster_id)
+            return None
+
+        invented = novel_names(_spoken_text(payload), source_text)
+        if not invented:
+            break
+        if attempt == 0:
+            log.warning(
+                "cluster %s named %s, which the stories do not — asking again",
+                cluster.cluster_id, ", ".join(invented),
+            )
+            prompt = f"{prompt}\n\n{INVENTION_NOTE.format(names=', '.join(invented))}"
+        else:
+            # Better a shorter briefing than a fluent false one. The edition is
+            # marked [PARTIAL] by the caller, so the loss is visible.
+            log.error(
+                "dropping cluster %s: still names %s after being told not to",
+                cluster.cluster_id, ", ".join(invented),
+            )
+            return None
 
     questions = payload.get("questions") or []
     return Entry(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from digest.config import Config, RunCfg
 from digest.llm import extract_json
 from digest.models import Cluster, Entry
@@ -91,6 +93,75 @@ def test_a_local_writer_is_given_the_weak_model_rules():
     cfg = Config(models=ModelsCfg(synthesize_provider="ollama"))
     write_entry(_cluster(), cfg, client, [])
     assert "Habits to avoid" in client.calls[0]["prompt"]
+
+
+def _payload(body: str, headline: str = "A headline about a change") -> str:
+    return json.dumps(
+        {"headline": headline, "body": body, "hook": "A hook.", "questions": []}
+    )
+
+
+def _bank_cluster() -> Cluster:
+    """A cluster whose stories mention an acronym but never spell it out."""
+    return Cluster(
+        cluster_id="c1",
+        title="The IMF raises its forecast",
+        items=[make_classified(
+            item={"title": "The IMF raises its forecast",
+                  "blurb": "The fund lifted its estimate for the year."},
+            mechanism="forecast revision",
+        )],
+        shared_mechanism="forecast revision",
+    )
+
+
+def test_an_invented_institution_is_named_back_to_the_writer():
+    """Told that outside detail counts as invented, gemma3 still answered a
+    one-line blurb on chip controls with two agencies by name. Saying it again
+    with the names in it is the only version the model cannot read past."""
+    client = ScriptedClient(
+        _payload("The Bureau of Industry and Security will now act."),
+        _payload("The stories describe a change in export controls."),
+    )
+    entry = write_entry(_cluster(), Config(), client, [])
+    assert len(client.calls) == 2
+    assert "Bureau of Industry and Security" in client.calls[1]["prompt"]
+    assert entry is not None and "Bureau" not in entry.body
+
+
+def test_an_entry_that_keeps_inventing_is_dropped():
+    """A shorter briefing beats a fluent false one. The caller marks the
+    edition [PARTIAL], so the loss shows."""
+    client = ScriptedClient(
+        _payload("The Dodd-Frank Act applies here."),
+        _payload("The Dodd-Frank Act still applies here."),
+    )
+    assert write_entry(_cluster(), Config(), client, []) is None
+    assert len(client.calls) == 2
+
+
+def test_spelling_out_an_acronym_the_stories_use_is_not_invention():
+    """The prompt tells the writer to spell acronyms out. A guard that then
+    calls the expansion invented would punish the rule it enforces."""
+    client = ScriptedClient(
+        _payload("The International Monetary Fund lifted its estimate.")
+    )
+    assert write_entry(_bank_cluster(), Config(), client, []) is not None
+    assert len(client.calls) == 1
+
+
+def test_a_clean_entry_is_written_once():
+    client = ScriptedClient(RECORDED["entry"])
+    assert write_entry(_cluster(), Config(), client, []) is not None
+    assert len(client.calls) == 1
+
+
+def test_geography_the_stories_imply_is_left_alone():
+    """Saying Egypt is in North Africa is reasoning, not invention, and a guard
+    that needs a gazetteer to tell the difference rots."""
+    from digest.synthesize import novel_names
+
+    assert novel_names("The jets flew over North Africa.", "Chinese jets over Egypt") == []
 
 
 def test_a_failed_entry_is_skipped_and_marks_the_edition_partial():
