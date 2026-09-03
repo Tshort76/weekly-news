@@ -187,12 +187,42 @@ url = "https://www.economist.com/science-and-technology/rss.xml"
 section = "science-and-technology"
 weight = 1.0
 
+# Ars Technica and IEEE Spectrum, added September 2026 for dedicated science and
+# technology coverage beyond the Economist's one section feed. Both mix policy
+# and engineering pieces; the classifier does the filtering, same as everywhere
+# else. MIT Technology Review was checked and rejected: its feed interleaves
+# unmarked-looking "sponsored" category items with editorial ones, and ingest
+# has no way to tell them apart.
+[[sources]]
+name = "Ars Technica"
+url = "http://feeds.arstechnica.com/arstechnica/index"
+section = "science-and-technology"
+weight = 0.8
+
+[[sources]]
+name = "IEEE Spectrum"
+url = "https://spectrum.ieee.org/feeds/feed.rss"
+section = "science-and-technology"
+weight = 0.8
+
 # Secondary sources, verified September 2026. International Intrigue serves no RSS
 # feed at any of the usual paths, so it is not listed.
 
+# Nikkei Asia's RSS (asia.nikkei.com/rss/feed/nar) publishes title and link only —
+# no date, no blurb — so every item fell out at the freshness cutoff and it
+# contributed nothing to a real run. Replaced with the South China Morning Post's
+# "This Week in Asia" vertical, split across its two structurally-relevant
+# sub-feeds; its own "World" and general Hong Kong feeds are excluded as
+# tabloid/local and off-lens.
 [[sources]]
-name = "Nikkei Asia"
-url = "https://asia.nikkei.com/rss/feed/nar"
+name = "SCMP — This Week in Asia (Politics)"
+url = "https://www.scmp.com/rss/323046/feed"
+section = "asia"
+weight = 0.9
+
+[[sources]]
+name = "SCMP — This Week in Asia (Economics)"
+url = "https://www.scmp.com/rss/323048/feed"
 section = "asia"
 weight = 0.9
 
