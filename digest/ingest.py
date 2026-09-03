@@ -63,12 +63,16 @@ def fetch_source(source: Source, cutoff: datetime) -> list[Item]:
     raw = fetch_bytes(source.url)
     parsed = feedparser.parse(raw)
     items: list[Item] = []
+    undated = 0
     for entry in parsed.entries:
         url = entry.get("link") or ""
         if not url:
             continue
         published = _published(entry)
-        if published is None or published < cutoff:
+        if published is None:
+            undated += 1
+            continue
+        if published < cutoff:
             continue
         items.append(
             Item(
@@ -81,6 +85,15 @@ def fetch_source(source: Source, cutoff: datetime) -> list[Item]:
                 published=published,
                 weight=source.weight,
             )
+        )
+    # A feed that parses fine but yields nothing looks identical to a healthy
+    # quiet week in the log. Nikkei's RSS, for one, carries no dates at all, so
+    # every entry falls out here and the source silently contributes zero.
+    if not items and parsed.entries:
+        log.warning(
+            "%s parsed %d entries but contributed none (%d had no date) — "
+            "check whether the feed still publishes what we need",
+            source.name, len(parsed.entries), undated,
         )
     return items
 

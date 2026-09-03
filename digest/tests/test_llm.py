@@ -495,3 +495,58 @@ def test_a_header_still_wins_over_the_message():
     exc = FakeStatusError(429, retry_after="9")
     exc.args = ("Please retry in 46.1s",)
     assert retry_after_of(exc) == 9.0
+
+
+# ------------------------------------------------------- exhausted quota
+
+
+def test_a_429_after_honouring_the_hint_stops_the_run(fast):
+    """A per-minute window clears if you wait it out; a per-day budget does not.
+    Waiting the advised delay and being refused anyway tells the two apart."""
+    backend = ScriptedBackend(
+        FakeStatusError(429, retry_after="55"),
+        FakeStatusError(429, retry_after="55"),
+    )
+    with pytest.raises(LLMError, match="quota is exhausted"):
+        Client(_cfg(), backend).complete(stage="classify", prompt="p", max_tokens=10)
+    # Stopped on the second refusal rather than using all three attempts.
+    assert len(backend.calls) == 2
+    assert fast == [55.0]
+
+
+def test_once_the_quota_is_spent_later_calls_do_not_touch_the_network(fast):
+    """The failure that mattered in the acceptance run: 60 entries each burning
+    four 56-second waits on a budget that was already gone."""
+    backend = ScriptedBackend(
+        FakeStatusError(429, retry_after="55"),
+        FakeStatusError(429, retry_after="55"),
+    )
+    client = Client(_cfg(), backend)
+    with pytest.raises(LLMError, match="quota is exhausted"):
+        client.complete(stage="classify", prompt="p", max_tokens=10)
+    for _ in range(5):
+        with pytest.raises(LLMError, match="quota is exhausted"):
+            client.complete(stage="synthesize", prompt="p", max_tokens=10)
+    assert len(backend.calls) == 2
+    assert fast == [55.0]
+
+
+def test_a_clamped_hint_does_not_trip_the_breaker(fast):
+    """We came back early, so a further 429 says nothing about the budget."""
+    backend = ScriptedBackend(
+        FakeStatusError(429, retry_after="9999"),
+        FakeStatusError(429, retry_after="9999"),
+        "ok",
+    )
+    cfg = _cfg(max_backoff_seconds=120.0)
+    assert Client(cfg, backend).complete(stage="classify", prompt="p", max_tokens=10) == "ok"
+    assert len(backend.calls) == 3
+
+
+def test_a_retryable_server_error_does_not_trip_the_breaker(fast):
+    backend = ScriptedBackend(
+        FakeStatusError(429, retry_after="55"),
+        FakeStatusError(500),
+        "ok",
+    )
+    assert Client(_cfg(), backend).complete(stage="classify", prompt="p", max_tokens=10) == "ok"

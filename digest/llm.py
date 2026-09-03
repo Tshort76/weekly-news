@@ -103,6 +103,10 @@ def is_credentials_problem(exc: Exception) -> bool:
     return status == 400 and "API_KEY_INVALID" in str(exc)
 
 
+def is_rate_limited(exc: Exception) -> bool:
+    return status_of(exc) == 429
+
+
 def is_transient(exc: Exception) -> bool:
     status = status_of(exc)
     if status is not None:
@@ -328,6 +332,13 @@ class Client:
         self._override = backend
         self._backends: dict[str, Backend] = {}
         self._last_call: dict[str, float] = {}
+        # Backends whose quota is spent for this run. Gemini says "retry in 55s"
+        # for a per-day budget exactly as it does for a per-minute one, so the
+        # only way to tell them apart is to honour the wait and see whether the
+        # next call is still refused. Once that happens the remaining calls
+        # cannot succeed either, and attempting them costs an hour of backoff
+        # in a job that runs unattended. Recorded per backend, never retried.
+        self._spent: dict[str, str] = {}
 
     def backend_for(self, stage: str) -> Backend:
         """One backend per provider, built on first use so an unused provider
@@ -396,6 +407,11 @@ class Client:
             opts = {**opts, "schema": schema}
         attempts = self.cfg.models.max_attempts
         last: Exception | None = None
+        spent = self._spent.get(backend.name)
+        if spent is not None:
+            raise LLMError(spent)
+        # Set to the delay once we have slept one the server itself asked for.
+        honoured_delay: float | None = None
 
         for attempt in range(attempts):
             self._wait_turn(backend)
@@ -416,9 +432,26 @@ class Client:
                 if not is_transient(exc):
                     raise LLMError(f"{model} rejected the request: {exc}") from exc
                 last = exc
+                if is_rate_limited(exc) and honoured_delay is not None:
+                    # We waited exactly as long as the server asked and it is
+                    # still refusing, so this is not a per-minute window that
+                    # waiting will clear. Stop the whole run's calls to this
+                    # backend rather than burning the same wait on every one.
+                    self._spent[backend.name] = (
+                        f"{backend.name} quota is exhausted for now — waited the "
+                        f"{honoured_delay:.0f}s it asked for and the next call was "
+                        f"refused again. Remaining {backend.name} calls are being skipped; "
+                        "check your limits at https://ai.dev/rate-limit"
+                    )
+                    log.error("%s", self._spent[backend.name])
+                    raise LLMError(self._spent[backend.name]) from exc
                 if attempt == attempts - 1:
                     break
+                hinted = retry_after_of(exc)
                 delay = self._backoff(attempt, exc)
+                # Only a hint we followed in full tells us anything; a hint the
+                # cap trimmed means we came back early and a 429 proves nothing.
+                honoured_delay = delay if (hinted is not None and delay >= hinted) else None
                 log.warning(
                     "%s on attempt %d/%d for %s, waiting %.0fs",
                     type(exc).__name__, attempt + 1, attempts, model, delay,

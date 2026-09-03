@@ -244,16 +244,38 @@ them.
 
 ## Rate limits
 
-The free tier caps requests per minute, and only your AI Studio page knows the number.
-`min_interval_seconds` in `digest.toml` spaces the calls out; the default of 4 seconds
-paces a run at about 15 requests a minute, which puts a full week at roughly five
-minutes of wall clock. Lower it if your limit is higher.
+Google no longer publishes the free-tier numbers; they are per-account, and the only
+authoritative source is your own dashboard at <https://ai.dev/rate-limit>. Check it
+before your first real run, because the shape of the limit decides whether this works
+on the free tier at all.
 
-If a call is rate-limited anyway the run does not fail: it waits for however long the
-server's `Retry-After` header asks for, capped at two minutes, and tries up to five
-times. Only after that does the stage degrade. Raising `synthesize_thinking` to `high`
-is the quickest way to start seeing limits, because per-minute token caps count
-thinking tokens too.
+There are two different limits and they need different handling.
+
+A **per-minute** cap is what `min_interval_seconds` in `digest.toml` is for. It spaces
+calls out — the shipped value of 12 seconds paces a run at 5 requests a minute. Lower
+it if your dashboard says you have more room.
+
+A **per-day** cap is not something pacing can solve. A full week costs roughly one
+clustering call, one call per entry (up to 60), and one framing call — about 62 requests
+against whatever your daily budget is. If that budget is smaller, most of the run cannot
+succeed no matter how patiently it waits.
+
+The awkward part is that the API reports both the same way: a 429 saying "please retry
+in 55s", even when the budget it refers to renews tomorrow. So the run tells them apart
+by experiment. It waits exactly as long as the server asks; if the very next call is
+refused again, the window is not one that waiting will clear, and it stops calling that
+provider for the rest of the run rather than spending another hour discovering the same
+thing 60 more times. The edition still gets written, marked `[PARTIAL]`.
+
+Short of that, a rate-limited call is simply retried — the server's own delay if it gave
+one, capped at two minutes, up to five attempts — before the stage degrades. Raising
+`synthesize_thinking` to `high` is the quickest way to start seeing limits, because
+token caps count thinking tokens too.
+
+If your daily budget is too small for a full week, the options are to move synthesis to
+a local model (`synthesize_provider = "ollama"`, which is free and unlimited but slower),
+to switch to a model with a larger free allowance, or to enable billing — measured cost
+on the paid path is about $0.60 a week.
 
 `--dry-run` still writes the files and the classifications, because `audit` reads the
 classifications. What it withholds is the durable state: `seen`, `editions` and
