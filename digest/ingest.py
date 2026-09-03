@@ -7,6 +7,7 @@ from memory. One dead feed warns and is skipped; every feed dead aborts.
 from __future__ import annotations
 
 import logging
+import re
 import ssl
 import urllib.error
 import urllib.request
@@ -59,11 +60,46 @@ def _blurb(entry) -> str:
     return content[0].get("value", "") if content else ""
 
 
+# A newsletter or podcast trailer, which a news feed carries alongside the news.
+# The title is the giveaway on some, the blurb on the rest.
+PROMOTIONAL_TITLE = re.compile(
+    r"\bnewsletter\b|\bDispatch:|^\s*FirstFT\b|\bis hiring\b|^The Economist asks\b",
+    re.IGNORECASE,
+)
+
+# A blurb that introduces the writer instead of the event: "Gregg Carlstrom, our
+# Middle East correspondent, on the reasons for the recent skirmishes". Every
+# word of that is about who is talking, and nothing in it says what happened.
+# "our" and the seniority words are load-bearing. A bare article would also
+# match "the CEO is going after a Variety reporter", which is a story about a
+# journalist rather than a trailer written by one.
+BYLINE_BLURB = re.compile(
+    r"\b(our|chief|senior|executive|deputy)\s+(\w+\s+){0,2}"
+    r"(correspondent|editor|columnist|reporter)\b",
+    re.IGNORECASE,
+)
+
+
+def is_promotional(title: str, blurb: str) -> bool:
+    """A trailer for journalism rather than the journalism.
+
+    These are the one input no prompt can survive. Handed "our Middle East
+    correspondent, on the reasons for the recent skirmishes", a writer asked
+    for what changed and why has been given a subject and no facts, and the
+    fluent thing to do is supply some — gemma3 answered this exact item with a
+    Red Sea shipping story assembled out of nothing. Dropping it here also
+    keeps it out of the classifier, which was spending judgements on roughly a
+    dozen of these a week.
+    """
+    return bool(PROMOTIONAL_TITLE.search(title) or BYLINE_BLURB.search(blurb))
+
+
 def fetch_source(source: Source, cutoff: datetime) -> list[Item]:
     raw = fetch_bytes(source.url)
     parsed = feedparser.parse(raw)
     items: list[Item] = []
     undated = 0
+    promotional = 0
     for entry in parsed.entries:
         url = entry.get("link") or ""
         if not url:
@@ -74,18 +110,25 @@ def fetch_source(source: Source, cutoff: datetime) -> list[Item]:
             continue
         if published < cutoff:
             continue
+        title = entry.get("title", "").strip()
+        blurb = _blurb(entry)
+        if is_promotional(title, blurb):
+            promotional += 1
+            continue
         items.append(
             Item(
                 id=item_id(url),
                 source=source.name,
                 section=source.section,
-                title=entry.get("title", "").strip(),
-                blurb=_blurb(entry),
+                title=title,
+                blurb=blurb,
                 url=canonical_url(url),
                 published=published,
                 weight=source.weight,
             )
         )
+    if promotional:
+        log.info("%s: skipped %d newsletter or podcast trailers", source.name, promotional)
     # A feed that parses fine but yields nothing looks identical to a healthy
     # quiet week in the log. Nikkei's RSS, for one, carries no dates at all, so
     # every entry falls out here and the source silently contributes zero.
