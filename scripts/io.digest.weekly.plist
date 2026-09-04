@@ -10,10 +10,10 @@
        cp scripts/io.digest.weekly.plist ~/Library/LaunchAgents/
        launchctl load ~/Library/LaunchAgents/io.digest.weekly.plist -->
   <key>WorkingDirectory</key>
-  <string>/Users/CHANGEME/Dev/tlong/weekly-digest</string>
+  <string>/Users/CHANGEME/Dev/tlong/weekly-news</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/CHANGEME/Dev/tlong/weekly-digest/.venv/bin/python</string>
+    <string>/Users/CHANGEME/Dev/tlong/weekly-news/.venv/bin/python</string>
     <string>-m</string>
     <string>digest</string>
     <string>run</string>
