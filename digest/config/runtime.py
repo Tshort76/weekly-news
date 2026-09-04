@@ -1,4 +1,11 @@
-"""Load digest.toml into a typed config. No side effects beyond reading the file."""
+"""The config the pipeline actually receives.
+
+These dataclasses are the runtime shape and have not changed: every stage still
+takes the same `Config` it took before there was an installer. What changed is
+where the values come from — an installed app reads the four validated files in
+`paths.config_dir()`, while a checkout can still hand `load()` a `digest.toml`.
+Both paths end here, so no stage knows the difference.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +14,8 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .models import Source
+from ..models import Source
+from . import paths as app_paths
 
 DEFAULT_CONFIG_PATHS = [
     Path("digest.toml"),
@@ -133,9 +141,14 @@ class Config:
     pdf: PdfCfg = field(default_factory=PdfCfg)
     credentials: CredentialsCfg = field(default_factory=CredentialsCfg)
     sources: list[Source] = field(default_factory=list)
-    prompts_dir: Path = Path(__file__).parent / "prompts"
+    prompts_dir: Path = Path(__file__).resolve().parent.parent / "prompts"
     state_dir: Path = STATE_DIR
     config_path: Path | None = None  # so a .env is looked for beside digest.toml
+    # The editorial lens. `lens_path` is the user's copy once installed; without
+    # one the packaged rubric is used, which is what a checkout does today.
+    lens_path: Path | None = None
+    lens_spec_path: Path | None = None
+    title: str = ""
 
     @property
     def db_path(self) -> Path:
@@ -146,7 +159,32 @@ class Config:
         return self.state_dir / "logs"
 
     def prompt(self, name: str) -> str:
+        """One of the four machinery prompts, which ship with the package."""
         return (self.prompts_dir / name).read_text(encoding="utf-8")
+
+    @property
+    def lens_text(self) -> str:
+        """The rubric, verbatim. The user's file wins over the packaged one."""
+        if self.lens_path and self.lens_path.exists():
+            return self.lens_path.read_text(encoding="utf-8")
+        return self.prompt("rubric.md")
+
+    @property
+    def lens(self):
+        """The lens as fields — the regions, domains and kind words the model is
+        offered. Falls back to the shipped preset, whose lists are the ones that
+        were hardcoded in `classify.md` before any of this existed."""
+        cached = getattr(self, "_lens_cache", None)
+        if cached is not None:
+            return cached
+        from ..lens.schema import LensSpec  # noqa: PLC0415
+
+        path = self.lens_spec_path
+        if path is None or not Path(path).exists():
+            path = Path(__file__).resolve().parent.parent / "lenses" / "architecture-of-rule.toml"
+        spec = LensSpec.from_toml(path)
+        object.__setattr__(self, "_lens_cache", spec)
+        return spec
 
 
 def _expand(p: str | Path) -> Path:

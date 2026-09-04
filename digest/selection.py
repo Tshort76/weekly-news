@@ -57,17 +57,23 @@ def select(
             survivors.append(c)
     kept = survivors
 
-    # 4: balance rule. Contest items may not exceed cfg.contest_share of the
+    # 4: balance rule. Items in the ADJACENT slot — whatever this lens calls it,
+    # "contest" in the original — may not exceed cfg.contest_share of the
     # selected set. Dropping one shrinks the denominator too, so this iterates.
+    #
+    # The slot does more than balance. A local model rarely answers "neither"
+    # and files most off-lens items as adjacent instead, so this cap is quietly
+    # the last off-lens filter as well.
+    word = cfg.lens.kinds.adjacent
     contest = sorted(
-        [c for c in kept if c.kind == "contest"], key=lambda c: (c.fit, c.novelty, c.id)
+        [c for c in kept if c.kind == "adjacent"], key=lambda c: (c.fit, c.novelty, c.id)
     )
     while contest and len(contest) > cfg.run.contest_share * len(kept):
         loser = contest.pop(0)
         kept.remove(loser)
         drop(
             loser,
-            f"balance rule: contest items capped at {cfg.run.contest_share:.0%} of the set",
+            f"balance rule: {word} items capped at {cfg.run.contest_share:.0%} of the set",
         )
 
     # 5: hard cap before clustering, best first.
@@ -83,4 +89,4 @@ def select(
 def contest_share(entries_kinds: list[str]) -> float:
     if not entries_kinds:
         return 0.0
-    return sum(1 for k in entries_kinds if k == "contest") / len(entries_kinds)
+    return sum(1 for k in entries_kinds if k == "adjacent") / len(entries_kinds)

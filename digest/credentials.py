@@ -29,6 +29,12 @@ DEFAULT_KEY_FILES = {
 KEYCHAIN_SERVICES = {"gemini": "digest-gemini", "anthropic": "digest-anthropic",
                      "brave": "digest-brave"}
 
+# One service name for the cross-platform store, with the provider as the
+# account. `keyring` wraps the macOS Keychain, the Windows Credential Locker and
+# the Linux Secret Service, and falls back to a file it encrypts itself on a
+# headless box with none of those.
+KEYRING_SERVICE = "digest"
+
 
 def parse_dotenv(text: str) -> dict[str, str]:
     """A deliberately small .env parser: KEY=value, one per line.
@@ -106,13 +112,42 @@ def _from_keychain(service: str) -> str | None:
     return result.stdout.strip() or None if result.returncode == 0 else None
 
 
+def _from_keyring(provider: str) -> str | None:
+    """The app's own store. Absent `keyring`, this is simply skipped."""
+    try:
+        import keyring  # noqa: PLC0415
+
+        return (keyring.get_password(KEYRING_SERVICE, provider) or "").strip() or None
+    except Exception as exc:  # no backend, locked store, not installed
+        log.debug("keyring unavailable: %s", exc)
+        return None
+
+
+def store(provider: str, key: str) -> str:
+    """Put a key where the app will find it. Raises if there is no backend."""
+    import keyring  # noqa: PLC0415
+
+    keyring.set_password(KEYRING_SERVICE, provider, key.strip())
+    return f"the credential store, account {provider!r}"
+
+
+def forget(provider: str) -> bool:
+    try:
+        import keyring  # noqa: PLC0415
+
+        keyring.delete_password(KEYRING_SERVICE, provider)
+        return True
+    except Exception:
+        return False
+
+
 def resolve(
     provider: str,
     key_file: Path | None = None,
     config_path: Path | None = None,
 ) -> tuple[str | None, str]:
     """Return (key, where it came from): the real environment, then a .env file,
-    then a key file, then the Keychain.
+    then a key file, then the credential store, then the old macOS Keychain.
 
     A real environment variable beats .env, which is the dotenv convention and
     what makes a one-off override work. Callers that report the source use this
@@ -135,6 +170,12 @@ def resolve(
         if key:
             return key, str(expanded)
 
+    key = _from_keyring(provider)
+    if key:
+        return key, f"the credential store, account {provider!r}"
+
+    # The old macOS-only lookup, kept so an existing install keeps working
+    # without being asked to re-enter anything.
     service = KEYCHAIN_SERVICES.get(provider)
     if service:
         key = _from_keychain(service)
@@ -163,6 +204,8 @@ def describe_sources(
         f"  1. ${env_var} in the environment\n"
         f"  2. {env_var} in {dotenv}\n"
         f"  3. {path}\n"
-        f"  4. the macOS Keychain, service {service!r}\n"
-        f"Set one with:  printf '{env_var}=%s\\n' 'YOUR_KEY' > {dotenv} && chmod 600 {dotenv}"
+        f"  4. the credential store, account {provider!r}\n"
+        f"  5. the macOS Keychain, service {service!r}\n"
+        f"Add one with:  digest key set {provider}\n"
+        f"or:            printf '{env_var}=%s\\n' 'YOUR_KEY' > {dotenv} && chmod 600 {dotenv}"
     )

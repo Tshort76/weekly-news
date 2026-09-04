@@ -51,6 +51,47 @@ CREATE INDEX IF NOT EXISTS entries_week ON entries(week);
 CREATE INDEX IF NOT EXISTS classified_week ON classified(week);
 """
 
+# The database carries its own version in PRAGMA user_version. Everything above
+# is version 1, so a store written before this existed is already at 1 once the
+# script has run — nothing to migrate for an existing user.
+SCHEMA_VERSION = 2
+
+RUNS = """
+CREATE TABLE IF NOT EXISTS runs (
+    week TEXT NOT NULL,
+    started TEXT NOT NULL,
+    finished TEXT,
+    status TEXT NOT NULL,
+    fetched INTEGER, selected INTEGER, entries INTEGER, words INTEGER,
+    note TEXT,
+    PRIMARY KEY (week, started)
+);
+"""
+
+
+def _m002_kind_slots(conn) -> None:
+    """Rewrite stored kinds from the first lens's words to the fixed slots.
+
+    Load-bearing rather than cosmetic. `select` is pure and `audit` re-runs it
+    over the stored classifications, so a past week has to keep giving the same
+    answer. After the rename the balance rule looks for "adjacent"; every stored
+    row says "contest", and an audit of an old week would quietly cap nothing.
+    """
+    conn.execute(RUNS)
+    rows = conn.execute("SELECT id, week, kind, json FROM classified").fetchall()
+    mapping = {"architecture": "core", "contest": "adjacent"}
+    for row in rows:
+        slot = mapping.get(row["kind"], row["kind"])
+        blob = json.loads(row["json"])
+        blob["kind"] = mapping.get(blob.get("kind"), blob.get("kind"))
+        conn.execute(
+            "UPDATE classified SET kind = ?, json = ? WHERE id = ? AND week = ?",
+            (slot, json.dumps(blob), row["id"], row["week"]),
+        )
+
+
+MIGRATIONS = {1: _m002_kind_slots}
+
 
 class State:
     def __init__(self, path: Path):
@@ -58,11 +99,53 @@ class State:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.path)
         self.conn.row_factory = sqlite3.Row
-        self.conn.executescript(SCHEMA)
+        self.conn.executescript(SCHEMA + RUNS)
+        self._migrate()
         self.conn.commit()
+
+    def _migrate(self) -> None:
+        version = self.conn.execute("PRAGMA user_version").fetchone()[0]
+        # A store that predates versioning has already had SCHEMA applied, so
+        # it is at 1 by construction rather than at 0.
+        version = version or 1
+        while version < SCHEMA_VERSION:
+            MIGRATIONS[version](self.conn)
+            version += 1
+        self.conn.execute(f"PRAGMA user_version = {version}")
 
     def close(self) -> None:
         self.conn.close()
+
+    # ---------------------------------------------------------------- runs
+
+    def start_run(self, week: str) -> str:
+        started = datetime.now(timezone.utc).isoformat()
+        self.conn.execute(
+            "INSERT OR REPLACE INTO runs (week, started, status) VALUES (?,?,?)",
+            (week, started, "running"),
+        )
+        self.conn.commit()
+        return started
+
+    def finish_run(self, week: str, started: str, status: str, **counts) -> None:
+        self.conn.execute(
+            """UPDATE runs SET finished = ?, status = ?, fetched = ?, selected = ?,
+                               entries = ?, words = ?, note = ?
+               WHERE week = ? AND started = ?""",
+            (
+                datetime.now(timezone.utc).isoformat(), status,
+                counts.get("fetched"), counts.get("selected"), counts.get("entries"),
+                counts.get("words"), counts.get("note"),
+                week, started,
+            ),
+        )
+        self.conn.commit()
+
+    def recent_runs(self, limit: int = 10) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT * FROM runs ORDER BY started DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(r) for r in rows]
 
     def __enter__(self) -> "State":
         return self

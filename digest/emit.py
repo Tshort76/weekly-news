@@ -7,6 +7,7 @@ owner's text-to-speech reads, so it carries no urls, no markdown and no headers.
 from __future__ import annotations
 
 import logging
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -17,6 +18,10 @@ log = logging.getLogger("digest.emit")
 
 DIVIDER = "-" * 60
 
+# How a region code is said out loud in the "Next, East Asia" bridges. A lens
+# with its own region list supplies its own names; anything it does not name
+# falls back to the code with its underscores opened up, which reads acceptably
+# ("south_asia" becomes "south asia") and never crashes the spoken track.
 REGION_NAMES = {
     "east_asia": "East Asia",
     "south_asia": "South Asia",
@@ -28,6 +33,11 @@ REGION_NAMES = {
     "latam": "Latin America",
     "global": "the wider world",
 }
+
+
+def region_name(region: str, names: dict | None = None) -> str:
+    names = names or REGION_NAMES
+    return names.get(region) or region.replace("_", " ") or "elsewhere"
 
 STYLE = """
 :root {
@@ -92,7 +102,7 @@ def _transition(previous_region: str | None, region: str) -> str:
     """A short spoken bridge between entries. Silent when the region has not moved."""
     if region == previous_region:
         return ""
-    name = REGION_NAMES.get(region, "elsewhere")
+    name = region_name(region)
     if previous_region is None:
         return f"First, {name}."
     return f"Next, {name}."
@@ -105,7 +115,7 @@ def render_txt(edition: Edition) -> str:
         lines.append("[PARTIAL] This edition is incomplete. Some items could not be written.")
         lines.append("")
 
-    lines.append(f"The weekly digest, week {edition.week}.")
+    lines.append(f"{edition.title}, week {edition.week}.")
     lines.append("")
     if edition.opening:
         lines.append(edition.opening)
@@ -212,8 +222,12 @@ def render_html(markdown_text: str, edition: Edition) -> str:
 
 
 def write_pdf(html_path: Path, pdf_path: Path, cfg: Config) -> bool:
-    """html2pdf by default — a headless-Chrome wrapper already on the machine, so
-    nothing has to be installed. weasyprint is opt-in via digest.toml."""
+    """Print the page with whatever browser this machine has.
+
+    WeasyPrint stays opt-in for anyone who already has it — it needs system
+    libraries an installer cannot assume. `html2pdf` is still honoured because
+    the owner's machine has it and the scheduled job there names it.
+    """
     if cfg.pdf.engine == "weasyprint":
         try:
             from weasyprint import HTML  # noqa: PLC0415
@@ -221,17 +235,21 @@ def write_pdf(html_path: Path, pdf_path: Path, cfg: Config) -> bool:
             HTML(filename=str(html_path)).write_pdf(str(pdf_path))
             return True
         except Exception as exc:
-            log.warning("weasyprint failed (%s), falling back to html2pdf", exc)
+            log.warning("weasyprint failed (%s), falling back to a browser", exc)
 
-    try:
-        subprocess.run(
-            ["html2pdf", str(html_path), "--out", str(pdf_path)],
-            check=True, capture_output=True, timeout=180,
-        )
-        return True
-    except (OSError, subprocess.SubprocessError) as exc:
-        log.error("pdf generation failed: %s", exc)
-        return False
+    if cfg.pdf.engine == "html2pdf" and shutil.which("html2pdf"):
+        try:
+            subprocess.run(
+                ["html2pdf", str(html_path), "--out", str(pdf_path)],
+                check=True, capture_output=True, timeout=180,
+            )
+            return True
+        except (OSError, subprocess.SubprocessError) as exc:
+            log.warning("html2pdf failed (%s), falling back to a browser", exc)
+
+    from .pdf import html_to_pdf  # noqa: PLC0415
+
+    return html_to_pdf(html_path, pdf_path)
 
 
 def emit(

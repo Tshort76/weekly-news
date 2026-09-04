@@ -72,3 +72,118 @@ neither_gloss = "off-lens entirely"
 high_interest = ["East Asia", "Britain", "Europe"]
 extra = "A US item scores exactly as any other."
 
+# The feeds this lens was built on. A lens without feeds that carry its kind of
+# story is a lens that has a quiet week every week, so a preset ships both.
+[[feeds]]
+name = "Economist — The World This Week"
+url = "https://www.economist.com/the-world-this-week/rss.xml"
+section = "the-world-this-week"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — Leaders"
+url = "https://www.economist.com/leaders/rss.xml"
+section = "leaders"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — Business"
+url = "https://www.economist.com/business/rss.xml"
+section = "business"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — Finance and Economics"
+url = "https://www.economist.com/finance-and-economics/rss.xml"
+section = "finance-and-economics"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — Asia"
+url = "https://www.economist.com/asia/rss.xml"
+section = "asia"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — China"
+url = "https://www.economist.com/china/rss.xml"
+section = "china"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — Europe"
+url = "https://www.economist.com/europe/rss.xml"
+section = "europe"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — Britain"
+url = "https://www.economist.com/britain/rss.xml"
+section = "britain"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — International"
+url = "https://www.economist.com/international/rss.xml"
+section = "international"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — United States"
+url = "https://www.economist.com/united-states/rss.xml"
+section = "united-states"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — Middle East and Africa"
+url = "https://www.economist.com/middle-east-and-africa/rss.xml"
+section = "middle-east-and-africa"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — The Americas"
+url = "https://www.economist.com/the-americas/rss.xml"
+section = "the-americas"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — Science and Technology"
+url = "https://www.economist.com/science-and-technology/rss.xml"
+section = "science-and-technology"
+weight = 1.0
+
+[[feeds]]
+name = "Ars Technica"
+url = "http://feeds.arstechnica.com/arstechnica/index"
+section = "science-and-technology"
+weight = 0.8
+
+[[feeds]]
+name = "IEEE Spectrum"
+url = "https://spectrum.ieee.org/feeds/feed.rss"
+section = "science-and-technology"
+weight = 0.8
+
+[[feeds]]
+name = "SCMP — This Week in Asia (Politics)"
+url = "https://www.scmp.com/rss/323046/feed"
+section = "asia"
+weight = 0.9
+
+[[feeds]]
+name = "SCMP — This Week in Asia (Economics)"
+url = "https://www.scmp.com/rss/323048/feed"
+section = "asia"
+weight = 0.9
+
+[[feeds]]
+name = "FT — World"
+url = "https://www.ft.com/world?format=rss"
+section = "world"
+weight = 0.9
+
+[[feeds]]
+name = "Semafor"
+url = "https://www.semafor.com/rss.xml"
+section = "mixed"
+weight = 0.7

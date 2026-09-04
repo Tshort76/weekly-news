@@ -5,6 +5,15 @@
     python -m digest audit --week ...
     python -m digest render --week ... --html --pdf
     python -m digest speak --week ...
+
+Setting up, once:
+
+    digest init                     answer or press Enter through the questions
+    digest import                   bring a digest.toml checkout into the app
+    digest key set anthropic        store an API key in the system credential store
+    digest lens list|use|show       the editorial lens: what gets in
+    digest feeds add|check|list     where the headlines come from
+    digest where                    print the config and data directories
 """
 
 from __future__ import annotations
@@ -23,11 +32,11 @@ from .state import State
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="digest",
-        description="Weekly world digest — the architecture of rule, not the contest for it.",
+        description="A weekly briefing, filtered and written to your own editorial lens.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__.split("\n", 2)[2],
     )
-    parser.add_argument("--config", help="path to digest.toml")
+    parser.add_argument("--config", help="path to a digest.toml (a checkout, not an install)")
     parser.add_argument("-v", "--verbose", action="store_true")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -60,6 +69,25 @@ def build_parser() -> argparse.ArgumentParser:
     speak.add_argument("--week")
 
     sub.add_parser("doctor", help="check credentials, feeds and local models")
+
+    sub.add_parser("init", help="set up the app, answering a few questions")
+    imp = sub.add_parser("import", help="bring an existing digest.toml into the app")
+    imp.add_argument("--from", dest="source", help="path to the digest.toml")
+    sub.add_parser("where", help="print the config and data directories")
+
+    key = sub.add_parser("key", help="store or forget an API key")
+    key.add_argument("action", choices=("set", "show", "forget"))
+    key.add_argument("provider", choices=("anthropic", "gemini", "brave"))
+
+    lens = sub.add_parser("lens", help="the editorial lens: what gets into the briefing")
+    lens.add_argument("action", choices=("list", "show", "use", "path"), nargs="?",
+                      default="show")
+    lens.add_argument("name", nargs="?")
+
+    feeds = sub.add_parser("feeds", help="where the headlines come from")
+    feeds.add_argument("action", choices=("list", "add", "check", "remove"), nargs="?",
+                       default="list")
+    feeds.add_argument("url", nargs="?")
 
     return parser
 
@@ -125,9 +153,27 @@ def doctor(cfg) -> int:
     return 1 if problems else 0
 
 
+NEEDS_NO_CONFIG = {"init", "import", "where"}
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    cfg = config_module.load(args.config)
+
+    if args.command in NEEDS_NO_CONFIG:
+        return _setup_command(args)
+
+    try:
+        cfg = config_module.load(args.config)
+    except FileNotFoundError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    except config_module.ConfigError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+
+    if args.command in {"key", "lens", "feeds"}:
+        return _admin_command(args, cfg)
+
     week = getattr(args, "week", None) or pipeline.iso_week()
     log_path = setup_logging(cfg.log_dir, week, args.verbose)
 
@@ -187,6 +233,125 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
     return 1
+
+
+def _setup_command(args) -> int:
+    from .config import legacy, paths  # noqa: PLC0415
+
+    if args.command == "where":
+        print(f"config  {paths.config_dir()}")
+        print(f"data    {paths.data_dir()}")
+        print(f"lens    {paths.lens_file()}")
+        return 0
+
+    if args.command == "init":
+        from .init import main as init_main  # noqa: PLC0415
+
+        return init_main()
+
+    try:
+        report = legacy.import_legacy(Path(args.source) if args.source else None)
+    except FileNotFoundError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    print(f"imported {report['from']}")
+    print(f"  config   {report['config_dir']}")
+    print(f"  data     {report['data_dir']}")
+    print(f"  feeds    {report['feeds']}")
+    if report["database_copied"]:
+        print("  copied the record of what you have already seen")
+    return 0
+
+
+def _admin_command(args, cfg) -> int:
+    from . import credentials  # noqa: PLC0415
+    from .config import paths  # noqa: PLC0415
+    from .lens import presets, store  # noqa: PLC0415
+
+    if args.command == "key":
+        if args.action == "show":
+            key, source = credentials.resolve(args.provider, config_path=cfg.config_path)
+            print(f"{args.provider}: " + (f"…{key[-4:]} from {source}" if key else "not set"))
+            return 0 if key else 1
+        if args.action == "forget":
+            print("forgotten" if credentials.forget(args.provider) else "nothing stored")
+            return 0
+        import getpass  # noqa: PLC0415
+
+        value = getpass.getpass(f"{args.provider} API key (not shown): ").strip()
+        if not value:
+            print("nothing entered", file=sys.stderr)
+            return 1
+        print(f"stored in {credentials.store(args.provider, value)}")
+        return 0
+
+    if args.command == "lens":
+        if args.action == "list":
+            for name in presets.available():
+                print(f"  {name:<24} {presets.load(name).name}")
+            return 0
+        if args.action == "path":
+            print(paths.lens_file())
+            return 0
+        if args.action == "use":
+            if not args.name:
+                print("which preset? try `digest lens list`", file=sys.stderr)
+                return 1
+            store.install_preset(args.name)
+            print(f"lens set to {args.name}; written to {paths.lens_file()}")
+            return 0
+        print(cfg.lens_text)
+        return 0
+
+    return _feeds_command(args, cfg)
+
+
+def _feeds_command(args, cfg) -> int:
+    from .config import paths  # noqa: PLC0415
+    from .config.schema import validate_feeds  # noqa: PLC0415
+    from .config.write import dumps_feeds, write  # noqa: PLC0415
+    from .ingest import probe  # noqa: PLC0415
+
+    path = paths.feeds_file()
+    raw = {}
+    if path.exists():
+        import tomllib  # noqa: PLC0415
+
+        raw = tomllib.loads(path.read_text(encoding="utf-8"))
+    feeds = validate_feeds(raw) if raw else []
+
+    if args.action == "list":
+        for feed in feeds:
+            mark = " " if feed["enabled"] else "-"
+            print(f" {mark} {feed['name']}\n      {feed['url']}")
+        print(f"\n{len(feeds)} feeds in {path}")
+        return 0
+
+    if not args.url:
+        print("which feed? pass a URL", file=sys.stderr)
+        return 1
+
+    if args.action == "remove":
+        kept = [f for f in feeds if f["url"] != args.url]
+        if len(kept) == len(feeds):
+            print("no feed with that URL", file=sys.stderr)
+            return 1
+        write(path, dumps_feeds(kept))
+        print(f"removed; {len(kept)} feeds left")
+        return 0
+
+    report = probe(args.url)
+    print(report.describe())
+    if args.action == "check" or not report.usable:
+        return 0 if report.usable else 1
+
+    feeds.append({
+        "name": report.name, "url": args.url, "section": "other",
+        "weight": 1.0, "enabled": True, "verified": report.checked_on,
+    })
+    write(path, dumps_feeds(feeds))
+    print(f"added; {len(feeds)} feeds now")
+    return 0
 
 
 if __name__ == "__main__":

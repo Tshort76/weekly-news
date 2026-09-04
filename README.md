@@ -23,12 +23,59 @@ bodies, never behind a paywall. See [Attribution](#attribution).
 **What it does not do:** breaking news, daily cadence, full-text scraping of paywalled
 articles, opinion, forecasting, horse-race politics, celebrity, or sport.
 
-## Setup
+## Install
+
+Two ways in, depending on whether you want to run this or work on it.
+
+### As an app
+
+```bash
+uv tool install "weekly-news[ollama]"     # or [anthropic] / [gemini]
+digest init                               # press Enter through it if you like
+digest run --dry-run
+```
+
+`digest init` looks for a local Ollama, says what it found and what it recommends,
+and writes a config you can read. Every question has a default, so answering none of
+them still produces something that runs.
+
+Config and data live outside any checkout, in the conventional place for your
+platform — `digest where` prints both. `DIGEST_HOME` overrides them, which is how
+you run two lenses out of one install.
+
+| File | What it is |
+| --- | --- |
+| `lens.md` | The editorial lens. **This is the product.** Edit it. |
+| `lens.toml` | The same lens as form fields, for the setup UI. |
+| `config.toml` | Plumbing: models, output, schedule. `[advanced]` holds the measured settings. |
+| `feeds.toml` | Where the headlines come from. |
+
+Already running this from a checkout? `digest import` brings your `digest.toml`,
+your feeds and — importantly — your record of what you have already seen across into
+the app. It copies rather than moves, and never deletes anything.
+
+### As a checkout
 
 ```bash
 uv venv --python 3.12
 uv pip install -e ".[dev]"          # add ",audio" / ",drive" as needed
+python -m digest run --dry-run      # reads digest.toml from the working directory
 ```
+
+A checkout keeps working exactly as it did: `digest.toml` in the working directory is
+still found and still read, with no import step.
+
+### The commands
+
+| Command | What it does |
+| --- | --- |
+| `digest run` | Fetch, filter, write, deliver. `--dry-run` writes files but remembers nothing. |
+| `digest audit --week …` | What got dropped, and why. |
+| `digest lens show \| use \| list` | The editorial lens. |
+| `digest feeds list \| add \| check` | Feeds. `check` fetches once and reports what a feed would contribute. |
+| `digest key set <provider>` | Put an API key in the system credential store. |
+| `digest doctor` | Check keys, backends, feeds and paths without spending anything. |
+| `digest where` | Print the config and data directories. |
 
 ### Where the API key goes
 
@@ -49,8 +96,10 @@ The key is looked up in this order, first hit winning:
 2. `GEMINI_API_KEY` in `.env` — beside `digest.toml` first, then the project root,
    then the working directory
 3. `~/.config/digest/gemini_key`, or wherever `[credentials]` in `digest.toml` points
-4. the macOS Keychain, service `digest-gemini` —
-   `security add-generic-password -s digest-gemini -a "$USER" -w`
+4. the system credential store — `digest key set gemini`, which uses the macOS
+   Keychain, the Windows Credential Locker or the Linux Secret Service
+5. the older macOS-only Keychain entry, service `digest-gemini`, so an existing
+   install keeps working without being asked to re-enter anything
 
 The real environment beating `.env` is the usual dotenv convention. The two options
 below `.env` exist for cases where a key in the working tree is awkward: several

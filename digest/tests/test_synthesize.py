@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from digest.config import Config, RunCfg
 from digest.llm import extract_json
 from digest.models import Cluster, Entry
@@ -86,13 +88,21 @@ def test_the_weak_model_rules_stay_out_of_the_hosted_writers_prompt():
     assert "Habits to avoid" not in client.calls[0]["prompt"]
 
 
-def test_a_local_writer_is_given_the_weak_model_rules():
+@pytest.mark.parametrize(
+    "provider, model, wanted",
+    [
+        ("ollama", "gemma3:27b", True),          # measured: these are its habits
+        ("ollama", "some-new-local-model", True),  # unmeasured, so assume it needs them
+        ("anthropic", "claude-sonnet-5", False),   # scored zero on every habit
+    ],
+)
+def test_the_weak_model_rules_follow_the_writer_not_the_provider(provider, model, wanted):
     from digest.config import ModelsCfg
 
     client = ScriptedClient(RECORDED["entry"])
-    cfg = Config(models=ModelsCfg(synthesize_provider="ollama"))
+    cfg = Config(models=ModelsCfg(synthesize_provider=provider, synthesize=model))
     write_entry(_cluster(), cfg, client, [])
-    assert "Habits to avoid" in client.calls[0]["prompt"]
+    assert ("Habits to avoid" in client.calls[0]["prompt"]) is wanted
 
 
 def _payload(body: str, headline: str = "A headline about a change") -> str:

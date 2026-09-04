@@ -12,24 +12,27 @@ from .models import Classified, Item
 
 log = logging.getLogger("digest.classify")
 
-VALID_KINDS = {"architecture", "contest", "neither"}
-VALID_REGIONS = {
-    "east_asia", "south_asia", "europe", "uk", "us",
-    "mena", "africa", "latam", "global",
-}
-VALID_DOMAINS = {
-    "finance", "trade", "industry", "state", "tech",
-    "energy", "demography", "security", "other",
-}
+# The three fixed slots every lens sorts into. The words the model is shown are
+# the lens's ("architecture" / "contest" here); the slot is what the code keys
+# on, so the balance rule keeps working whatever a lens calls its own subject.
+KIND_SLOTS = ("core", "adjacent", "neither")
 
 
-def batch_schema(count: int) -> dict:
+def enum_line(words) -> str:
+    """The literal the prompt shows: \"a\" | \"b\" | \"c\"."""
+    return " | ".join(f'"{w}"' for w in words)
+
+
+def batch_schema(count: int, lens=None) -> dict:
     """The exact shape a batch must come back in.
 
     Backends that can constrain generation use this; the others ignore it and
     fall back to the tolerant parser. It is what stops a local model answering a
     batch of twenty-five with a single object.
     """
+    from .lens.presets import default_lens  # noqa: PLC0415
+
+    lens = lens or default_lens()
     return {
         "type": "array",
         "minItems": count,
@@ -41,9 +44,9 @@ def batch_schema(count: int) -> dict:
                 "id": {"type": "string"},
                 "fit": {"type": "integer", "minimum": 0, "maximum": 3},
                 "novelty": {"type": "integer", "minimum": 0, "maximum": 3},
-                "kind": {"type": "string", "enum": sorted(VALID_KINDS)},
-                "region": {"type": "string", "enum": sorted(VALID_REGIONS)},
-                "domain": {"type": "string", "enum": sorted(VALID_DOMAINS)},
+                "kind": {"type": "string", "enum": sorted(lens.kinds.words())},
+                "region": {"type": "string", "enum": sorted(lens.regions)},
+                "domain": {"type": "string", "enum": sorted(lens.domains)},
                 "mechanism": {"type": ["string", "null"]},
                 "reason": {"type": "string"},
             },
@@ -78,7 +81,10 @@ def _clamp(value, low: int, high: int, default: int) -> int:
         return default
 
 
-def _coerce(raw: dict, item: Item) -> Classified:
+def _coerce(raw: dict, item: Item, lens=None) -> Classified:
+    from .lens.presets import default_lens  # noqa: PLC0415
+
+    lens = lens or default_lens()
     kind = str(raw.get("kind", "neither")).strip().lower()
     region = str(raw.get("region", "global")).strip().lower()
     domain = str(raw.get("domain", "other")).strip().lower()
@@ -92,39 +98,46 @@ def _coerce(raw: dict, item: Item) -> Classified:
     return Classified(
         item=item,
         fit=_clamp(raw.get("fit"), 0, 3, 0),
-        kind=kind if kind in VALID_KINDS else "neither",
+        kind=lens.kinds.slot_for(kind),
         novelty=_clamp(raw.get("novelty"), 0, 3, 0),
-        region=region if region in VALID_REGIONS else "global",
-        domain=domain if domain in VALID_DOMAINS else "other",
+        region=region if region in lens.regions else lens.regions[-1],
+        domain=domain if domain in lens.domains else lens.domains[-1],
         mechanism=mechanism,
         reason=str(raw.get("reason", ""))[:200],
     )
 
 
-def _unjudged(item: Item, why: str) -> Classified:
+def _unjudged(item: Item, why: str, lens=None) -> Classified:
+    from .lens.presets import default_lens  # noqa: PLC0415
+
+    lens = lens or default_lens()
     return Classified(
         item=item, fit=0, kind="neither", novelty=0,
-        region="global", domain="other", mechanism=None,
+        region=lens.regions[-1], domain=lens.domains[-1], mechanism=None,
         reason=f"classification failed: {why}",
     )
 
 
 def classify_batch(batch: list[Item], cfg: Config, client: Client) -> list[Classified]:
+    lens = cfg.lens
     prompt = cfg.prompt("classify.md").format(
-        rubric=cfg.prompt("rubric.md"),
+        rubric=cfg.lens_text,
         count=len(batch),
         items=_render_items(batch),
+        kinds=enum_line(lens.kinds.words()),
+        regions=enum_line(lens.regions),
+        domains=enum_line(lens.domains),
     )
     try:
         payload = client.complete_json(
             stage="classify",
             prompt=prompt,
             max_tokens=400 * len(batch) + 1000,
-            schema=batch_schema(len(batch)),
+            schema=batch_schema(len(batch), lens),
         )
     except LLMError as exc:
         log.error("batch of %d failed: %s", len(batch), exc)
-        return [_unjudged(it, str(exc)[:120]) for it in batch]
+        return [_unjudged(it, str(exc)[:120], lens) for it in batch]
 
     if not isinstance(payload, list):
         payload = [payload]
@@ -144,7 +157,7 @@ def classify_batch(batch: list[Item], cfg: Config, client: Client) -> list[Class
         row = payload[pos] if positional else by_id.get(item.id)
         if not isinstance(row, dict):
             row = None
-        out.append(_coerce(row, item) if row else _unjudged(item, "missing from response"))
+        out.append(_coerce(row, item, lens) if row else _unjudged(item, "missing from response", lens))
     return out
 
 

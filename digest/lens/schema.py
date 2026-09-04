@@ -75,6 +75,22 @@ class Kinds:
     adjacent_gloss: str
     neither_gloss: str = "off-lens entirely"
 
+    def words(self) -> tuple[str, str, str]:
+        """What the model is shown, in the order the prompt lists them."""
+        return (self.core, self.adjacent, "neither")
+
+    def slot_for(self, word: str) -> str:
+        """The model answers in the lens's vocabulary; the code stores a slot."""
+        word = (word or "").strip().lower()
+        if word in (self.core.lower(), "core"):
+            return "core"
+        if word in (self.adjacent.lower(), "adjacent"):
+            return "adjacent"
+        return "neither"
+
+    def display(self, slot: str) -> str:
+        return {"core": self.core, "adjacent": self.adjacent}.get(slot, "neither")
+
 
 @dataclass(frozen=True)
 class LensSpec:

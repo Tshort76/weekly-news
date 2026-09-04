@@ -21,11 +21,11 @@ Each object:
 {{
   "id": "<the id given for that item, copied exactly>",
   "fit": 0,
-  "kind": "architecture" | "contest" | "neither",
+  "kind": {kinds},
   "novelty": 0,
-  "region": "east_asia" | "south_asia" | "europe" | "uk" | "us" | "mena" | "africa" | "latam" | "global",
+  "region": {regions},
   "mechanism": "<=12 words naming the causal mechanism, or null",
-  "domain": "finance" | "trade" | "industry" | "state" | "tech" | "energy" | "demography" | "security" | "other",
+  "domain": {domains},
   "reason": "<=20 words"
 }}
 

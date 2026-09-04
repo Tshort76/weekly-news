@@ -16,8 +16,8 @@ def test_fit_below_two_is_dropped():
 
 def test_fit_one_survives_only_at_novelty_three():
     cfg = _cfg()
-    assert select([make_classified(fit=1, novelty=3, kind="architecture")], cfg)[0]
-    assert not select([make_classified(fit=1, novelty=2, kind="architecture")], cfg)[0]
+    assert select([make_classified(fit=1, novelty=3, kind="core")], cfg)[0]
+    assert not select([make_classified(fit=1, novelty=2, kind="core")], cfg)[0]
 
 
 def test_saga_rule_drops_a_repeat_mechanism_at_low_novelty():
@@ -43,33 +43,33 @@ def test_balance_rule_caps_contest_items():
     cfg = _cfg(contest_share=0.20)
     kept, dropped = select(_week(), cfg)
     kinds = [c.kind for c in kept]
-    assert kinds.count("contest") <= 0.20 * len(kinds)
+    assert kinds.count("adjacent") <= 0.20 * len(kinds)
     assert any("balance rule" in d.reason for d in dropped)
 
 
 def test_balance_rule_iterates_as_the_denominator_shrinks():
-    # Four architecture, four contest. A one-pass 20% cap would leave 4/8 -> drop
+    # Four core, four adjacent. A one-pass 20% cap would leave 4/8 -> drop
     # until 1.6 -> two dropped, still 2/6 = 33%. The rule has to keep going.
-    items = [make_classified(fit=3, kind="architecture", item={"url": f"https://e.com/a{n}"}) for n in range(4)]
+    items = [make_classified(fit=3, kind="core", item={"url": f"https://e.com/a{n}"}) for n in range(4)]
     items += [
-        make_classified(fit=2, kind="contest", novelty=2, item={"url": f"https://e.com/c{n}"})
+        make_classified(fit=2, kind="adjacent", novelty=2, item={"url": f"https://e.com/c{n}"})
         for n in range(4)
     ]
     kept, _ = select(items, _cfg(contest_share=0.20))
     kinds = [c.kind for c in kept]
-    assert kinds.count("contest") <= 0.20 * len(kinds)
+    assert kinds.count("adjacent") <= 0.20 * len(kinds)
 
 
 def test_balance_rule_drops_the_lowest_fit_contest_first():
-    high = make_classified(fit=3, kind="contest", item={"url": "https://e.com/high"})
-    low = make_classified(fit=2, kind="contest", novelty=2, item={"url": "https://e.com/low"})
-    # Ten items at a 15% cap allows one contest item: the higher-fit one stays.
+    high = make_classified(fit=3, kind="adjacent", item={"url": "https://e.com/high"})
+    low = make_classified(fit=2, kind="adjacent", novelty=2, item={"url": "https://e.com/low"})
+    # Ten items at a 15% cap allows one adjacent item: the higher-fit one stays.
     arch = [
-        make_classified(fit=3, kind="architecture", item={"url": f"https://e.com/a{n}"})
+        make_classified(fit=3, kind="core", item={"url": f"https://e.com/a{n}"})
         for n in range(8)
     ]
     kept, _ = select([high, low, *arch], _cfg(contest_share=0.15))
-    contest_kept = [c for c in kept if c.kind == "contest"]
+    contest_kept = [c for c in kept if c.kind == "adjacent"]
     assert [c.item.url for c in contest_kept] == ["https://e.com/high"]
 
 

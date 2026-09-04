@@ -11,6 +11,7 @@ import re
 import ssl
 import urllib.error
 import urllib.request
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 import certifi
@@ -18,7 +19,7 @@ import feedparser
 
 from .config import Config
 from .models import Item, Source
-from .normalize import item_id, canonical_url
+from .normalize import canonical_url, item_id, strip_html
 
 log = logging.getLogger("digest.ingest")
 
@@ -145,6 +146,103 @@ def fetch_source(source: Source, cutoff: datetime) -> list[Item]:
             source.name, len(parsed.entries), undated,
         )
     return items
+
+
+@dataclass
+class FeedReport:
+    """What one fetch of a candidate feed found.
+
+    The checks are the ones the pipeline already makes, moved to the moment a
+    feed is added rather than left as a warning in a log nobody reads. Nikkei's
+    RSS is why: it parses cleanly, carries no dates, and therefore contributed
+    exactly nothing week after week.
+    """
+
+    url: str
+    name: str = ""
+    ok: bool = False
+    entries: int = 0
+    dated: int = 0
+    recent: int = 0
+    promotional: int = 0
+    median_blurb: int = 0
+    headlines: list[str] = field(default_factory=list)
+    error: str = ""
+    checked_on: str = ""
+
+    @property
+    def usable(self) -> bool:
+        return self.ok and self.dated > 0
+
+    def describe(self) -> str:
+        if not self.ok:
+            return f"Could not read that feed: {self.error}"
+        lines = [f"{self.name or self.url}: {self.entries} entries."]
+        if self.dated == 0:
+            lines.append(
+                "  None of them carry a date, so every item would fall out at the "
+                "freshness cutoff and this feed would contribute nothing. That is "
+                "the feed's own fault and there is nothing to configure."
+            )
+        else:
+            lines.append(f"  {self.dated} carry a date; {self.recent} are from the last week.")
+        if self.median_blurb and self.dated:
+            if self.median_blurb < 100:
+                lines.append(
+                    f"  Blurbs run about {self.median_blurb} characters — headline "
+                    "only. Every item from here will be looked up before it is written."
+                )
+            elif self.median_blurb < 500:
+                lines.append(
+                    f"  Blurbs run about {self.median_blurb} characters, so most items "
+                    "will be looked up before they are written."
+                )
+            else:
+                lines.append(
+                    f"  Blurbs run about {self.median_blurb} characters — enough to "
+                    "write from, and often the reporter's own words."
+                )
+        if self.promotional:
+            lines.append(f"  {self.promotional} newsletter or podcast trailers would be skipped.")
+        for headline in self.headlines:
+            lines.append(f"    · {headline}")
+        return "\n".join(lines)
+
+
+def probe(url: str, now: datetime | None = None, days: int = 8) -> FeedReport:
+    """Fetch a candidate feed once and say what it would contribute."""
+    now = now or datetime.now(timezone.utc)
+    report = FeedReport(url=url, checked_on=now.date().isoformat())
+    try:
+        raw = fetch_bytes(url)
+    except Exception as exc:
+        report.error = f"{type(exc).__name__}: {exc}"
+        return report
+    parsed = feedparser.parse(raw)
+    report.ok = True
+    report.name = (parsed.feed.get("title") or "").strip() if parsed.feed else ""
+    report.entries = len(parsed.entries)
+    cutoff = now - timedelta(days=days)
+    lengths = []
+    for entry in parsed.entries:
+        published = _published(entry)
+        if published is None:
+            continue
+        report.dated += 1
+        if published >= cutoff:
+            report.recent += 1
+        title = entry.get("title", "").strip()
+        blurb = _blurb(entry)
+        if is_promotional(title, blurb):
+            report.promotional += 1
+            continue
+        lengths.append(len(strip_html(blurb)))
+        if len(report.headlines) < 5:
+            report.headlines.append(title)
+    if lengths:
+        lengths.sort()
+        report.median_blurb = lengths[len(lengths) // 2]
+    return report
 
 
 def ingest(cfg: Config, now: datetime | None = None) -> list[Item]:

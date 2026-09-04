@@ -22,9 +22,11 @@ from .normalize import strip_furniture
 
 log = logging.getLogger("digest.synthesize")
 
+# Written in the first lens's vocabulary once ("no structural change was
+# reported"), which reads as a non-sequitur to anyone whose lens is about
+# something else. Says the same thing without naming a subject.
 QUIET_WEEK = (
-    "Nothing this week met the bar. No structural change was reported that "
-    "the lens would count, so there is no briefing."
+    "Nothing this week met the bar the lens sets, so there is no briefing."
 )
 MECHANISM_ECHO_THRESHOLD = 88
 
@@ -99,6 +101,17 @@ composed:
 """
 
 
+def edition_title(cfg: Config) -> str:
+    """What the briefing calls itself, spoken and in the heading.
+
+    The lens statement is a sentence fragment — "the architecture of rule, not
+    the contest for it" — which reads correctly after "The weekly digest on".
+    A lens with no name falls back to the plain title.
+    """
+    name = (cfg.lens.name or "").strip().rstrip(".")
+    return f"The weekly digest on {name}" if name else "The weekly digest"
+
+
 def _writer_notes(cfg: Config) -> str:
     """The weak-model rules, and only when a weak model is writing.
 
@@ -107,7 +120,9 @@ def _writer_notes(cfg: Config) -> str:
     Rules that fix a local model's habits therefore go in behind a slot rather
     than into the prompt every backend sees.
     """
-    return WRITER_NOTES if cfg.models.provider_for("synthesize") == "ollama" else ""
+    from .discover import writes_like_a_small_model  # noqa: PLC0415
+
+    return WRITER_NOTES if writes_like_a_small_model(cfg) else ""
 
 
 def _prior_note(cluster: Cluster, prior_entries: list[dict]) -> str:
@@ -473,7 +488,7 @@ def write_entry(
     rendered = _render_cluster(cluster)
     prior = _prior_note(cluster, prior_entries)
     prompt = cfg.prompt("synthesize_entry.md").format(
-        rubric=cfg.prompt("rubric.md"),
+        rubric=cfg.lens_text,
         cluster=rendered,
         prior_coverage=prior,
         writer_notes=_writer_notes(cfg),
@@ -552,7 +567,7 @@ def _fallback_frame(entries: list[Entry]) -> tuple[str, list[str], list[Entry]]:
     ordered = sorted(entries, key=lambda e: (-e.fit, e.cluster_id))
     opening = (
         f"This week's briefing runs to {len(ordered)} items. "
-        "They are ordered by how much structure each one moves."
+        "They are ordered by how well each one meets the lens."
     )
     closing = [q for e in ordered for q in e.questions][:3]
     return opening, closing, ordered
@@ -585,7 +600,7 @@ def write_frame(
         else "No cluster qualifies as a theme of the week. Set `theme` to null."
     )
     prompt = cfg.prompt("synthesize_frame.md").format(
-        rubric=cfg.prompt("rubric.md"), entries=rendered, theme_note=theme_note
+        rubric=cfg.lens_text, entries=rendered, theme_note=theme_note
     )
     try:
         payload = client.complete_json(
@@ -633,7 +648,7 @@ def synthesize(
     if not clusters:
         return Edition(
             week=week, generated_at=now, opening=QUIET_WEEK, entries=[],
-            closing_questions=[], quiet=True,
+            closing_questions=[], quiet=True, title=edition_title(cfg),
         )
 
     theme = theme_candidate(clusters)
@@ -651,6 +666,7 @@ def synthesize(
         return Edition(
             week=week, generated_at=now, opening=QUIET_WEEK, entries=[],
             closing_questions=[], quiet=True, partial=degraded,
+            title=edition_title(cfg),
         )
 
     entries = govern_length(
@@ -670,4 +686,5 @@ def synthesize(
         closing_questions=closing,
         theme=theme_name,
         partial=degraded or frame_degraded,
+        title=edition_title(cfg),
     )

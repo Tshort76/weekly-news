@@ -83,7 +83,7 @@ class Classified:
 
     item: Item
     fit: int
-    kind: str  # architecture | contest | neither
+    kind: str  # core | adjacent | neither — fixed slots; the lens names them
     novelty: int
     region: str
     domain: str
@@ -211,6 +211,10 @@ class Edition:
     theme: str | None = None
     partial: bool = False
     quiet: bool = False
+    # What this briefing calls itself, out loud and in the heading. A default
+    # rather than a required field so every existing caller and stored edition
+    # keeps working.
+    title: str = "The weekly digest"
 
     @property
     def word_count(self) -> int:
@@ -220,6 +224,7 @@ class Edition:
     def to_dict(self) -> dict:
         return {
             "week": self.week,
+            "title": self.title,
             "generated_at": self.generated_at.isoformat(),
             "opening": self.opening,
             "entries": [e.to_dict() for e in self.entries],
@@ -240,6 +245,7 @@ class Edition:
             theme=d.get("theme"),
             partial=d.get("partial", False),
             quiet=d.get("quiet", False),
+            title=d.get("title", "The weekly digest"),
         )
 
 

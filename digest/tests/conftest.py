@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import socket
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,6 +12,37 @@ from digest.models import Classified, Item
 from digest.normalize import item_id
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    """Any test that opens a socket fails, here, with a message that says why.
+
+    The suite is fast because every network edge is a function a test can
+    replace. That was a convention, and a convention is one distracted afternoon
+    away from a test that quietly dials out and takes eight seconds — which is
+    exactly what happened when the grounding stage was added. This makes it a
+    property instead, and it holds on a machine with no network at all.
+    """
+
+    def refuse(*args, **kwargs):
+        raise AssertionError(
+            "this test tried to open a network connection. Stub the edge it uses "
+            "— fetch_bytes, urlopen, the Client, or cfg.run.ground — rather than "
+            "letting the suite depend on someone else's uptime."
+        )
+
+    monkeypatch.setattr(socket, "create_connection", refuse)
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+
+
+@pytest.fixture
+def digest_home(tmp_path, monkeypatch):
+    """An install of one's own: config and data under tmp_path."""
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("DIGEST_HOME", str(home))
+    return home
 
 
 def load_fixture(name: str):
@@ -49,7 +81,7 @@ def make_classified(**kwargs) -> Classified:
     item_kwargs = kwargs.pop("item", {})
     base = {
         "fit": 3,
-        "kind": "architecture",
+        "kind": "core",
         "novelty": 3,
         "region": "global",
         "domain": "finance",
