@@ -6,6 +6,8 @@ from __future__ import annotations
 import json
 import logging
 
+from rapidfuzz import fuzz
+
 from .config import Config
 from .llm import Client, LLMError
 from .models import Classified, Cluster
@@ -13,6 +15,11 @@ from .models import Classified, Cluster
 log = logging.getLogger("digest.cluster")
 
 THEME_MIN_ITEMS = 3
+
+# Two headlines about the same event still say many of the same words. Measured
+# over a week's selected items: unrelated pairs peaked at 57 and sat at a median
+# of 38, while genuine same-event pairs ran 70 and up. 60 clears the noise.
+SAME_EVENT_THRESHOLD = 60
 
 
 def cluster_schema() -> dict:
@@ -39,6 +46,28 @@ def singletons(selected: list[Classified]) -> list[Cluster]:
         Cluster(cluster_id=f"c{n}", title=c.item.title, items=[c], shared_mechanism=c.mechanism)
         for n, c in enumerate(selected, 1)
     ]
+
+
+def _same_event_groups(members: list[Classified]) -> list[list[Classified]]:
+    """Split members into runs that are visibly about the same event.
+
+    Used only when the model grouped items without naming a mechanism. Two
+    reports of one event share names and numbers, so their titles overlap;
+    a topic folder's members have nothing in common but the folder.
+    """
+    groups: list[list[Classified]] = []
+    for member in members:
+        for group in groups:
+            if any(
+                fuzz.token_set_ratio(member.item.title.lower(), other.item.title.lower())
+                >= SAME_EVENT_THRESHOLD
+                for other in group
+            ):
+                group.append(member)
+                break
+        else:
+            groups.append([member])
+    return groups
 
 
 def _render(selected: list[Classified]) -> str:
@@ -86,12 +115,39 @@ def cluster(selected: list[Classified], cfg: Config, client: Client) -> tuple[li
             continue
         used.update(m.id for m in members)
         mechanism = group.get("shared_mechanism")
+        mechanism = mechanism.strip() if isinstance(mechanism, str) and mechanism.strip() else None
+        title = str(group.get("title") or members[0].item.title)[:120]
+
+        # A group of several items with no mechanism named is the failure this
+        # guards against: asked to group by a shared mechanism, gemma3 returned
+        # topic folders — "US Policy & Finance" holding Ethiopia's drone war
+        # next to Silicon Valley philanthropy, mechanism null on every one. The
+        # prompt allows a null mechanism only for items covering one event, and
+        # that is a thing we can check ourselves.
+        if len(members) > 1 and not mechanism:
+            for part in _same_event_groups(members):
+                if len(part) == len(members):
+                    break  # genuinely one event after all
+                log.info(
+                    "splitting %r: %d items, no shared mechanism named", title, len(members)
+                )
+                clusters.append(
+                    Cluster(
+                        cluster_id=f"c{len(clusters) + 1}",
+                        title=part[0].item.title[:120],
+                        items=part,
+                        shared_mechanism=part[0].mechanism if len(part) > 1 else None,
+                    )
+                )
+            else:
+                continue
+
         clusters.append(
             Cluster(
                 cluster_id=str(group.get("cluster_id") or f"c{n}"),
-                title=str(group.get("title") or members[0].item.title)[:120],
+                title=title,
                 items=members,
-                shared_mechanism=mechanism.strip() if isinstance(mechanism, str) and mechanism.strip() else None,
+                shared_mechanism=mechanism,
             )
         )
 
