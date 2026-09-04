@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% set active = "settings" %}
+{% block body %}
+<h1>Settings</h1>
+{% if saved %}<p class="banner ok">Saved.</p>{% endif %}
+{% if not found.running %}<p class="banner warn">{{ found.reason }}</p>{% endif %}
+
+<form method="post" action="/settings">
+  <h2>Models</h2>
+  <label>Provider
+    <select name="provider">
+      {% for option in ("ollama", "anthropic", "gemini") %}
+      <option value="{{ option }}" {{ "selected" if cfg.models.provider == option }}>{{ option }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Reading the headlines <input class="input" name="classify" value="{{ cfg.models.classify }}"></label>
+  <label>Writing <input class="input" name="synthesize" value="{{ cfg.models.synthesize }}"></label>
+
+  {% if found.running %}
+  <p class="sub">Pulled here: {{ found.names() | join(", ") }}</p>
+  {% endif %}
+  <details><summary>What has actually been measured</summary>
+    <table>
+      {% for model in known %}
+      <tr><td class="mono">{{ model.name }}</td><td>{{ model.note }}</td></tr>
+      {% endfor %}
+    </table>
+  </details>
+
+  <h2>Output</h2>
+  <label>Length, in minutes of listening <input class="input" name="minutes" type="number" value="{{ (cfg.run.max_words / 145) | round | int }}"></label>
+  <label>Folder <input class="input" name="folder" value="{{ cfg.run.output_dir }}"></label>
+  <label><input type="checkbox" name="audio" value="1" {{ "checked" if cfg.tts.enabled }}> also make an MP3</label>
+  <label><input type="checkbox" name="pdf" value="1"> also make a PDF</label>
+
+  <div class="actions"><button class="primary">Save</button></div>
+</form>
+
+<h2>Not on this page, on purpose</h2>
+<p class="sub">Temperature, batch size, thinking, pacing and context size each have a measured right value and live under <span class="mono">[advanced]</span> in config.toml. The editorial lens is <span class="mono">lens.md</span> beside it — that is the file worth reading.</p>
+{% endblock %}

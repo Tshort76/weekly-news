@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% set active = "home" %}
+{% block body %}
+<h1>Set up your weekly digest</h1>
+
+{% if legacy %}
+<div class="banner ok">
+  <p>Found an existing setup at <span class="mono">{{ legacy }}</span>. Importing brings your feeds, your lens and your record of what you have already seen.</p>
+  <form method="post" action="/setup/import"><button class="primary">Import it</button></form>
+</div>
+{% endif %}
+
+<form method="post" action="/setup">
+  <h2>What should this briefing be about?</h2>
+  {% for name, title in lenses %}
+  <label class="opt"><input type="radio" name="lens" value="{{ name }}" {{ "checked" if loop.first }}>
+    <b>{{ title }}</b></label>
+  {% endfor %}
+
+  <h2>Which model does the reading and writing?</h2>
+  {% if found.running %}
+    <p class="sub">Ollama is running with {{ found.models | length }} model(s) pulled{% if memory %}, on a machine with about {{ memory | round | int }} GB of memory{% endif %}.</p>
+  {% else %}
+    <p class="banner warn">{{ found.reason }}</p>
+  {% endif %}
+  <label>Reading the headlines <input class="input" name="classify" value="{{ classify.model }}"></label>
+  <p class="sub">{{ classify.why }}</p>
+  <label>Writing <input class="input" name="synthesize" value="{{ synthesize.model }}"></label>
+  <p class="sub">{{ synthesize.why }}</p>
+  <input type="hidden" name="provider" value="{{ classify.provider }}">
+
+  <h2>Output</h2>
+  <label>Length, in minutes of listening <input class="input" type="number" name="minutes" value="58"></label>
+  <label>Folder <input class="input" name="folder" value="~/digests"></label>
+
+  <div class="actions"><button class="primary">Save and finish</button></div>
+</form>
+{% endblock %}

@@ -38,6 +38,14 @@ def iso_week(when: datetime | None = None) -> str:
     return f"{year}-W{week:02d}"
 
 
+class Cancelled(RuntimeError):
+    """Someone pressed stop. Not an error — the caller decides what to say."""
+
+
+def _noop(*args, **kwargs) -> None:
+    pass
+
+
 @dataclass
 class RunResult:
     week: str
@@ -62,19 +70,41 @@ def run(
     no_drive: bool = False,
     client: Client | None = None,
     classify_only: bool = False,
+    progress=None,
+    cancel=None,
 ) -> RunResult:
+    """Run a week.
+
+    `progress(stage, detail)` is called at every stage boundary, and `cancel` is
+    a threading.Event checked at the same points. Both default to doing nothing,
+    so the CLI and every existing caller are unchanged — the UI is the only
+    thing that passes them, and a stage never has to know which it is serving.
+    """
     week = week or iso_week()
     client = client or Client(cfg)
+    progress = progress or _noop
 
+    def checkpoint(stage: str, **detail) -> None:
+        progress(stage, detail)
+        if cancel is not None and cancel.is_set():
+            # Between stages only. Stopping mid-classification would leave a
+            # partial batch that looks like a finished one.
+            raise Cancelled(f"stopped after {stage}")
+
+    checkpoint("start", week=week)
     items = ingest_stage.ingest(cfg)
     log.info("fetched %d items", len(items))
     items = normalize_all(items)
+    checkpoint("fetch", fetched=len(items), feeds=len(cfg.sources))
 
     kept, dupes = dedupe(items, state.seen_ids())
     log.info("%d items after dedupe (%d dropped)", len(kept), len(dupes))
 
+    checkpoint("dedupe", kept=len(kept), dropped=len(dupes))
+
     classified = classify_stage.classify(kept, cfg, client)
     state.save_classified(classified, week)
+    checkpoint("classify", judged=len(classified))
 
     dropped = [
         Dropped(id=i.id, title=i.title, stage="dedupe", reason=reason)
@@ -98,12 +128,14 @@ def run(
     )
     dropped.extend(select_dropped)
     log.info("%d items selected", len(selected))
+    checkpoint("select", selected=len(selected), dropped=len(select_dropped))
 
     # Only the selected items, and only the thin ones among those. Re-saved so
     # the evidence is part of the week's record: an audit or a comparison run
     # rebuilds from these rows and has to see the same text the writer saw.
     selected = ground_stage.ground(selected, cfg)
     state.save_classified(selected, week)
+    checkpoint("ground", grounded=sum(1 for r in selected if r.evidence))
 
     # Before clustering, not after: whether a reporter's own words reach the
     # page should not depend on how well a model grouped the week.
@@ -112,15 +144,20 @@ def run(
         "%d stories go in as their reporter wrote them, %d go to the model",
         len(carried), len(to_cluster),
     )
+    checkpoint("partition", carried=len(carried), to_write=len(to_cluster))
     clusters, degraded = cluster_stage.cluster(to_cluster, cfg, client)
     clusters = synth_stage.carried_clusters(carried) + clusters
     edition = synth_stage.synthesize(
         clusters, cfg, client, week,
         prior_entries=state.prior_entries(week),
         degraded=degraded,
+        progress=progress,
+        cancel=cancel,
     )
+    checkpoint("write", entries=len(edition.entries), words=edition.word_count)
 
     files = emit_stage.emit(edition, cfg, want_html=want_html, want_pdf=want_pdf)
+    checkpoint("emit", files={k: str(v) for k, v in files.items()})
 
     if want_audio and not edition.quiet:
         from .audio import speak  # noqa: PLC0415

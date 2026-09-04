@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% set active = "about" %}
+{% block body %}
+<h1>About</h1>
+<p>A once-a-week briefing, filtered and written to an editorial lens you control. It reads only publicly served RSS feeds — headlines and blurbs, and where a feed offers it, the article the outlet chose to publish. It never bypasses a paywall.</p>
+<p>Where a reporter has already written the story, their words are published under their name and no model is asked to rewrite them. The model writes only what nobody else has.</p>
+<h2>Where things live</h2>
+<table>
+  <tr><td class="mono">{{ config_dir }}</td><td>lens.md, config.toml, feeds.toml</td></tr>
+  <tr><td class="mono">{{ data_dir }}</td><td>what you have already seen, past editions, logs</td></tr>
+</table>
+{% endblock %}

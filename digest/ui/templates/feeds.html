@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% set active = "feeds" %}
+{% block body %}
+<h1>Feeds <span class="chip">{{ feeds | length }}</span></h1>
+<p class="sub">Paste an address and check it before saving. The check is one real fetch through the same code the weekly run uses.</p>
+
+<form method="post" action="/feeds/check" class="actions">
+  <input class="input" name="url" value="{{ url or '' }}" placeholder="https://example.com/rss" required>
+  <button>Check</button>
+</form>
+
+{% if report %}
+<div class="banner {{ 'ok' if report.usable else 'warn' }}">
+  <pre>{{ report.describe() }}</pre>
+  {% if report.usable %}
+  <form method="post" action="/feeds/add" class="actions">
+    <input type="hidden" name="url" value="{{ report.url }}">
+    <input class="input" name="name" value="{{ report.name }}">
+    <button class="primary">Add this feed</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+<table>
+  <tr><th>Feed</th><th>Checked</th><th></th></tr>
+  {% for feed in feeds %}
+  <tr class="{{ '' if feed.enabled else 'off' }}">
+    <td><b>{{ feed.name }}</b><div class="mono">{{ feed.url }}</div></td>
+    <td>{{ feed.verified or "—" }}</td>
+    <td class="row-actions">
+      <form method="post" action="/feeds/toggle"><input type="hidden" name="url" value="{{ feed.url }}">
+        <button class="quiet">{{ "pause" if feed.enabled else "resume" }}</button></form>
+      <form method="post" action="/feeds/remove"><input type="hidden" name="url" value="{{ feed.url }}">
+        <button class="quiet">remove</button></form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="sub">A feed with many entries and none kept is off-lens rather than broken. Pausing keeps it in the file so you can see why.</p>
+{% endblock %}

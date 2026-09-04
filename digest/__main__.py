@@ -47,6 +47,10 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--audio", action="store_true")
     run.add_argument("--no-drive", action="store_true")
     run.add_argument(
+        "--scheduled", action="store_true",
+        help="running from a timer: quieter output, and record the run",
+    )
+    run.add_argument(
         "--dry-run",
         action="store_true",
         help="write files and classifications but leave the state store untouched",
@@ -69,6 +73,10 @@ def build_parser() -> argparse.ArgumentParser:
     speak.add_argument("--week")
 
     sub.add_parser("doctor", help="check credentials, feeds and local models")
+
+    open_cmd = sub.add_parser("open", help="open the app in your browser")
+    open_cmd.add_argument("--port", type=int, default=8765)
+    open_cmd.add_argument("--no-browser", action="store_true")
 
     sub.add_parser("init", help="set up the app, answering a few questions")
     imp = sub.add_parser("import", help="bring an existing digest.toml into the app")
@@ -153,7 +161,7 @@ def doctor(cfg) -> int:
     return 1 if problems else 0
 
 
-NEEDS_NO_CONFIG = {"init", "import", "where"}
+NEEDS_NO_CONFIG = {"init", "import", "where", "open"}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -179,6 +187,7 @@ def main(argv: list[str] | None = None) -> int:
 
     with State(cfg.db_path) as state:
         if args.command in {"run", "classify-only"}:
+            started = state.start_run(week) if getattr(args, "scheduled", False) else None
             result = pipeline.run(
                 cfg,
                 state,
@@ -190,6 +199,13 @@ def main(argv: list[str] | None = None) -> int:
                 no_drive=getattr(args, "no_drive", False),
                 classify_only=args.command == "classify-only",
             )
+            if started:
+                state.finish_run(
+                    week, started, "ok",
+                    fetched=result.fetched, selected=result.selected,
+                    entries=len(result.edition.entries),
+                    words=result.edition.word_count,
+                )
             if args.command == "classify-only":
                 print(
                     f"\nWeek {week}: classified {result.kept_after_dedupe} items "
@@ -243,6 +259,11 @@ def _setup_command(args) -> int:
         print(f"data    {paths.data_dir()}")
         print(f"lens    {paths.lens_file()}")
         return 0
+
+    if args.command == "open":
+        from .ui.app import serve  # noqa: PLC0415
+
+        return serve(port=args.port, open_browser=not args.no_browser)
 
     if args.command == "init":
         from .init import main as init_main  # noqa: PLC0415

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set active = "home" %}
+{% block body %}
+<h1>Week {{ week }}</h1>
+{% if not edition %}
+  <p class="banner">No edition stored for this week yet.</p>
+{% else %}
+<div class="split">
+  <article class="edition">
+    <p class="opening">{{ edition.opening }}</p>
+    {% for entry in edition.entries %}
+      <h3>{{ entry.headline }}</h3>
+      {% if entry.provenance == "source" %}<p class="own">In {{ entry.attribution }}'s own words.</p>{% endif %}
+      <p>{{ entry.body }}</p>
+      {% if entry.hook %}<p class="hook">{{ entry.hook }}</p>{% endif %}
+    {% endfor %}
+  </article>
+  <aside class="audit">
+    <h2>What happened to everything else</h2>
+    <p class="sub">{{ dropped | length }} items were dropped by the filter. Nothing here is editable — the way to change what gets in is to change the lens.</p>
+    {% for item in dropped %}
+      <div class="item"><b>{{ item.title }}</b><div class="why">{{ item.reason }}</div></div>
+    {% endfor %}
+  </aside>
+</div>
+{% endif %}
+{% endblock %}

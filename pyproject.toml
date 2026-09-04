@@ -25,7 +25,16 @@ ollama = []
 audio = ["edge-tts>=6.1"]
 drive = ["google-api-python-client>=2.140", "google-auth-oauthlib>=1.2"]
 pdf = ["weasyprint>=62"]
-dev = ["pytest>=8.0", "google-genai>=2.20", "anthropic>=0.40"]
+# The browser is the renderer and the pages are server-rendered HTML, so this is
+# a web server and a template engine and nothing else. No front-end build, no
+# vendored JavaScript library — what the pages need is about sixty lines and is
+# in digest/ui/static/app.js where it can be read.
+ui = ["fastapi>=0.110", "uvicorn>=0.29", "jinja2>=3.1", "python-multipart>=0.0.9"]
+dev = [
+    "pytest>=8.0", "google-genai>=2.20", "anthropic>=0.40",
+    "fastapi>=0.110", "uvicorn>=0.29", "jinja2>=3.1", "httpx>=0.27",
+    "python-multipart>=0.0.9",
+]
 
 [project.scripts]
 digest = "digest.__main__:main"
@@ -38,7 +47,8 @@ build-backend = "setuptools.build_meta"
 include = ["digest*"]
 
 [tool.setuptools.package-data]
-digest = ["prompts/*.md", "lenses/*.toml", "lenses/*.md"]
+digest = ["prompts/*.md", "lenses/*.toml", "lenses/*.md",
+          "ui/templates/*.html", "ui/static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["digest/tests"]

@@ -641,6 +641,8 @@ def synthesize(
     week: str,
     prior_entries: list[dict] | None = None,
     degraded: bool = False,
+    progress=None,
+    cancel=None,
 ) -> Edition:
     prior_entries = prior_entries or []
     now = datetime.now(timezone.utc)
@@ -656,6 +658,12 @@ def synthesize(
     entries: list[Entry] = []
     for n, c in enumerate(clusters, 1):
         log.info("entry %d/%d: %s", n, len(clusters), c.title)
+        if progress is not None:
+            progress("entry", {"n": n, "of": len(clusters), "title": c.title})
+        if cancel is not None and cancel.is_set():
+            from .pipeline import Cancelled  # noqa: PLC0415
+
+            raise Cancelled(f"stopped after entry {n} of {len(clusters)}")
         entry = write_entry(c, cfg, client, prior_entries)
         if entry is None:
             degraded = True

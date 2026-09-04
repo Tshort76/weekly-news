@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% set active = "home" %}
+{% block body %}
+<h1>Week {{ week }}</h1>
+
+{% if job and job.status == "running" %}
+  <p class="sub">Running since {{ job.started[11:16] }} UTC. You can close this tab; the run carries on.</p>
+  <ol id="progress" class="progress" data-last="0">
+  {% for event in job.since(0) %}<li data-seq="{{ event.seq }}">{{ event.stage }} — {{ event.detail }}</li>{% endfor %}
+  </ol>
+  <form method="post" action="/stop"><button class="quiet">Stop after this entry</button></form>
+{% else %}
+  {% if job and job.status == "failed" %}
+    <p class="banner stop">The last run failed. <span class="mono">{{ job.error.splitlines()[-1] if job.error else "" }}</span></p>
+  {% elif job and job.status == "cancelled" %}
+    <p class="banner">The last run was stopped. Nothing was marked as seen.</p>
+  {% endif %}
+  <form method="post" action="/run" class="actions">
+    <button class="primary">Run this week</button>
+    <label><input type="checkbox" name="dry" value="1"> a dry run — write the files, remember nothing</label>
+  </form>
+{% endif %}
+
+{% if latest %}
+<div class="stat">
+  <div><b>{{ latest.entries | length }}</b><small>items</small></div>
+  <div><b>{{ latest.word_count }}</b><small>words</small></div>
+  <div><b>{{ (latest.word_count / 145) | round | int }}</b><small>minutes aloud</small></div>
+  <div><b>{{ latest.entries | selectattr("provenance", "equalto", "source") | list | length }}</b><small>in the reporter's words</small></div>
+</div>
+<p><a class="btn" href="/review/{{ week }}">Read and audit this week</a></p>
+{% endif %}
+
+<h2>Earlier weeks</h2>
+{% if runs %}
+<table>
+  <tr><th>Week</th><th>Ran</th><th>Status</th><th>Items</th><th></th></tr>
+  {% for run in runs %}
+  <tr>
+    <td>{{ run.week }}</td><td>{{ run.started[:10] }}</td>
+    <td class="{{ 'ok' if run.status == 'ok' else 'warn' }}">{{ run.status }}</td>
+    <td>{{ run.entries or "—" }}</td>
+    <td><a href="/review/{{ run.week }}">review</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="sub">Nothing yet. The first run takes about twenty minutes on local models.</p>
+{% endif %}
+{% endblock %}

@@ -30,7 +30,20 @@ Two ways in, depending on whether you want to run this or work on it.
 ### As an app
 
 ```bash
-uv tool install "weekly-news[ollama]"     # or [anthropic] / [gemini]
+uv tool install "weekly-news[ollama,ui]"  # or [anthropic] / [gemini]
+digest open                               # setup and everything else, in a browser
+```
+
+`digest open` serves the app on `127.0.0.1:8765` and opens it. Nothing listens
+anywhere a second machine could reach it: one person, one machine, no accounts.
+It is where you do setup, watch a run, read a week beside its audit, and manage
+feeds. A run takes about twenty minutes and survives the tab being closed —
+progress is buffered by the job, not by the page.
+
+Prefer the terminal? Everything works without the browser:
+
+```bash
+uv tool install "weekly-news[ollama]"
 digest init                               # press Enter through it if you like
 digest run --dry-run
 ```
@@ -75,6 +88,7 @@ still found and still read, with no import step.
 | `digest feeds list \| add \| check` | Feeds. `check` fetches once and reports what a feed would contribute. |
 | `digest key set <provider>` | Put an API key in the system credential store. |
 | `digest doctor` | Check keys, backends, feeds and paths without spending anything. |
+| `digest open` | The web app, on 127.0.0.1. Needs the `ui` extra. |
 | `digest where` | Print the config and data directories. |
 
 ### Where the API key goes
