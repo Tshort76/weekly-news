@@ -1,6 +1,6 @@
 from digest.models import Item
 from digest.normalize import (
-    canonical_url, item_id, normalize, normalize_all, strip_html, truncate,
+    BLURB_LIMIT, canonical_url, item_id, normalize, normalize_all, strip_html, truncate,
 )
 
 from .conftest import load_fixture, make_item
@@ -48,7 +48,19 @@ def test_normalize_all_drops_untitled_items():
     assert all(i.title for i in out)
 
 
-def test_normalize_all_truncates_long_blurbs():
+def test_normalize_all_caps_a_runaway_blurb():
+    """The cap exists to stop a feed that dumps a whole page into one field,
+    not to ration what the writer gets. It sat at 400 and was cutting real
+    article text off mid-paragraph."""
     items = [Item.from_dict(d) for d in load_fixture("raw_items.json")]
     blurbs = [i.blurb for i in normalize_all(items)]
-    assert max(len(b) for b in blurbs) <= 401
+    assert max(len(b) for b in blurbs) <= BLURB_LIMIT + 1
+
+
+def test_a_feed_that_gives_a_full_article_keeps_it():
+    """Ars Technica's summary is 78 characters and its content field on the
+    same entry is 1010. Keeping the shorter one is how a writer ends up
+    describing a story it was barely told."""
+    long_body = "The court ordered a change to the rules. " * 20
+    item = Item.from_dict({**load_fixture("raw_items.json")[0], "blurb": long_body})
+    assert len(normalize(item).blurb) > 400

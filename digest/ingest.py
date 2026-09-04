@@ -52,12 +52,18 @@ def _published(entry) -> datetime | None:
 
 
 def _blurb(entry) -> str:
-    for key in ("summary", "description", "subtitle"):
-        value = entry.get(key)
-        if value:
-            return value
-    content = entry.get("content") or []
-    return content[0].get("value", "") if content else ""
+    """The most text the feed is willing to give us about this story.
+
+    Taking the first field that happened to be filled meant taking `summary`
+    whenever it existed, and `summary` is the teaser. Ars Technica's was 78
+    characters while the `content` field on the same entry held 1010 — a
+    thousand characters of the actual article, already downloaded, thrown away
+    in favour of the caption. The writer then had to describe a story it had
+    barely been told, which is where invented detail comes from.
+    """
+    candidates = [entry.get(key) or "" for key in ("summary", "description", "subtitle")]
+    candidates += [c.get("value", "") or "" for c in (entry.get("content") or [])]
+    return max(candidates, key=len, default="")
 
 
 # A newsletter or podcast trailer, which a news feed carries alongside the news.

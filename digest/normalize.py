@@ -9,7 +9,10 @@ from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 from .models import Item
 
-BLURB_LIMIT = 400
+# Enough to carry a feed's full article text where it gives one. The old 400
+# cut Ars Technica and Semafor bodies off mid-paragraph, and a writer handed
+# half a story finishes it from memory.
+BLURB_LIMIT = 2000
 
 # utm_*, plus the tracking params the wire services and newsletters attach.
 _TRACKING_PREFIXES = ("utm_",)
