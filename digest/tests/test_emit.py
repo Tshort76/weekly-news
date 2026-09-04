@@ -110,3 +110,16 @@ def test_emit_writes_html_on_request(cfg):
     assert '[data-theme="dark"]' in html
     assert "<script" not in html
     assert "http://" not in html.split("<main>")[0]  # nothing loaded from outside
+
+
+def test_a_lens_name_with_a_comma_does_not_stumble_before_the_week():
+    """Spoken aloud, "…not the contest for it, week 2026-W36" is two commas."""
+    edition = _edition()
+    edition.title = "The weekly digest on the architecture of rule, not the contest for it"
+    assert "for it — week" in render_txt(edition)
+
+
+def test_a_plain_title_keeps_its_comma():
+    edition = _edition()
+    edition.title = "The weekly digest"
+    assert "The weekly digest, week" in render_txt(edition)

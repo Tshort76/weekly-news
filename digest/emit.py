@@ -115,7 +115,11 @@ def render_txt(edition: Edition) -> str:
         lines.append("[PARTIAL] This edition is incomplete. Some items could not be written.")
         lines.append("")
 
-    lines.append(f"{edition.title}, week {edition.week}.")
+    # A lens name often contains a comma ("the architecture of rule, not the
+    # contest for it"), and a second one before the week reads as a stumble
+    # out loud. A dash separates the two clauses cleanly either way.
+    separator = " — " if "," in edition.title else ", "
+    lines.append(f"{edition.title}{separator}week {edition.week}.")
     lines.append("")
     if edition.opening:
         lines.append(edition.opening)
