@@ -640,7 +640,7 @@ def synthesize(
 
     entries: list[Entry] = []
     for n, c in enumerate(clusters, 1):
-        log.info("writing entry %d/%d: %s", n, len(clusters), c.title)
+        log.info("entry %d/%d: %s", n, len(clusters), c.title)
         entry = write_entry(c, cfg, client, prior_entries)
         if entry is None:
             degraded = True
