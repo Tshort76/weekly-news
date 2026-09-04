@@ -1,0 +1,74 @@
+# The original lens, decomposed into the form's fields.
+#
+# This preset exists to answer one question: can a rubric assembled from a form
+# be applied as well as one a person wrote? It holds the same content as
+# digest/prompts/rubric.md, split into the boxes the form will show. The
+# measurement is in docs/design/phase-0-lens-compiler.md.
+#
+# The wording is the owner's and is not to be improved. A preset is a lens
+# somebody wrote and checked, never a template with the topic swapped in.
+
+name = "the architecture of rule, not the contest for it"
+
+about = "a change in HOW a system is organized: its rules, constraints, capacities, incentives, or boundaries"
+not_about = "who is winning: elections, feuds, negotiations as sport, leadership races"
+
+mechanism_examples = [
+  "export discipline via credit allocation",
+  "deposit flight from uninsured banks",
+  "acreage-reduction subsidy never unwound",
+]
+
+regions = ["east_asia", "south_asia", "europe", "uk", "us", "mena", "africa", "latam", "global"]
+domains = ["finance", "trade", "industry", "state", "tech", "energy", "demography", "security", "other"]
+
+[fit.3]
+lead = "A structural fact changed or was revealed."
+examples = [
+  { text = "a central bank adopts a new operating framework" },
+  { text = "a country revokes or creates a property regime" },
+  { text = "a cartel forms or breaks" },
+  { text = "a supply chain reroutes for durable reasons" },
+  { text = "a state gains or loses a capacity", note = "fiscal, military, administrative" },
+  { text = "a technology shifts the cost of coordination or control" },
+  { text = "a demographic threshold crossed" },
+  { text = "a market's plumbing changes", note = "clearing, settlement, reserve currency share, capital controls" },
+]
+
+[fit.2]
+lead = "Meaningful movement inside an existing structure with clear mechanism:"
+examples = [
+  { text = "a tariff regime extended" },
+  { text = "a large firm restructured" },
+  { text = "a regulatory rule with second-order effects" },
+  { text = "an industrial policy with real money attached" },
+  { text = "a court decision that changes what institutions can do" },
+]
+
+[fit.1]
+lead = "Interesting but mostly contest:"
+examples = [
+  { text = "an election result" },
+  { text = "a leadership change" },
+  { text = "a diplomatic spat" },
+  { text = "a strike" },
+]
+unless = "the item explains a structural consequence"
+
+[fit.0]
+never = [
+  "personalities", "polls", "scandals", "tactical maneuvering", "culture-war",
+  "sport", "celebrity", "human-interest", "opinion pieces without a mechanism",
+]
+
+[kinds]
+core = "architecture"
+core_gloss = "the item is about how things are organized (rules, systems, capacity)"
+adjacent = "contest"
+adjacent_gloss = "the item is about who is winning (elections, feuds, negotiations as sport, leadership races)"
+neither_gloss = "off-lens entirely"
+
+[bias]
+high_interest = ["East Asia", "Britain", "Europe"]
+extra = "A US item scores exactly as any other."
+

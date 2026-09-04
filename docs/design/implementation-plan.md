@@ -43,6 +43,11 @@ before any packaging work.
 **Shipped means:** a recorded eval showing the compiled rubric matches the original,
 and the decision to proceed with the form as designed.
 
+**Done.** Result and its consequences: `phase-0-lens-compiler.md`. Two changes
+follow for later phases: a preset ships the measured `lens.md` and compiles only
+after the user edits the form, and the labelled set needs enlarging before it gates
+any further change.
+
 **Risk it retires:** that a form can produce a rubric a model applies as well as a
 person's prose.
 
@@ -104,8 +109,9 @@ for their topic by picking a preset and pasting feed URLs.
 - `test_discover.py` — canned `/api/tags` and `/api/show` payloads through the
   injected fetch; a thinking-capable model gets `think=false`; a refused connection
   distinguishes "not running" from "not installed" via an injected `which`.
-- `test_lens.py` — the compiled first preset equals the shipped `rubric.md` bytes;
-  the hash check flags a hand edit.
+- `test_lens.py` — the compiled first preset equals the shipped `rubric.md` once
+  whitespace is normalised (byte equality is impossible and was never the right
+  target — see `phase-0-lens-compiler.md`); the hash check flags a hand edit.
 - `test_classify.py` — extended: the schema enums follow the lens; an unknown region
   in a response clamps to the lens's default.
 - `test_state.py` — extended: a fresh database is version 1; a version-1 database

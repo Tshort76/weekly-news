@@ -66,6 +66,8 @@ def main() -> int:
     parser.add_argument("--no-think", action="store_true",
                         help="disable a reasoning model's think block (Ollama)")
     parser.add_argument("--config", default=str(ROOT / "digest.toml"))
+    parser.add_argument("--prompts-dir",
+                        help="score a different rubric.md — a compiled lens, say")
     parser.add_argument("--show", action="store_true", help="print every item, not just the misses")
     args = parser.parse_args()
 
@@ -77,6 +79,8 @@ def main() -> int:
     if args.batch_size:
         cfg.models.classify_batch_size = args.batch_size
     cfg.models.min_interval_seconds = 0.0
+    if args.prompts_dir:
+        cfg.prompts_dir = Path(args.prompts_dir)
     if args.no_think:
         cfg.models.ollama_think = False
 
