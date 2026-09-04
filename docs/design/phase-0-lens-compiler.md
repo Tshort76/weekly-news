@@ -108,3 +108,49 @@ compile_lens(LensSpec.from_toml('digest/lenses/architecture-of-rule.toml')))"
 python scripts/eval_rubric.py --provider ollama --model qwen3:30b
 python scripts/eval_rubric.py --provider ollama --model qwen3:30b --prompts-dir /tmp/compiled-prompts
 ```
+
+---
+
+# Postscript: calibrating a second lens (2026-09-04)
+
+`what-became-possible` was taken from written-but-unchecked to calibrated, which
+was also the first real exercise of the check-the-lens loop. Two things came out
+of it, one expected and one not.
+
+**The lens works as written.** Thirty headlines drawn from its own five feeds,
+labelled by the lens's author against its stated criteria: **26 of 30 agreement,
+reproduced exactly on two consecutive runs.** Every one of the four headlines
+labelled "definitely want" was scored fit 3. One false positive — a trade
+publication's product-category explainer scored fit 2 — and three "maybe" items
+dropped, all of them genuinely borderline (a spacecraft arriving before it has
+measured anything; two reports of the same observed model behaviour).
+
+**Every attempt to improve it made it worse.** This is the unexpected part, and
+it is the phase-0 sensitivity finding showing up in a place where it costs
+something.
+
+| Change | Agreement | Let in wrongly | Dropped wrongly |
+| --- | --- | --- | --- |
+| As written (twice) | **26/30** | 1 | 3 |
+| Two permissive fit-2 examples added | 25/30 | 1 | 4 |
+| **One** never-list entry added | 21/30 | 0 | 9 |
+| Both together | 22/30 | 0 | 8 |
+
+The third row is the one to look at. A single line — "product-category
+explainers from trade publications" — added to a never-list that already had
+seven entries removed the false positive it was aimed at and took six real items
+down with it. It did not act as a targeted rule about trade publications. It
+acted as a **global severity dial.**
+
+Two consequences worth carrying:
+
+- **The "add as an example" button in calibration is more dangerous than it
+  looks.** It is presented as teaching the lens one thing, and it can move the
+  whole scale. The screen should show the effect on the rest of the labelled set
+  after an addition, not just accept it — otherwise a user fixes one annoyance
+  and quietly loses six stories a week they will never know about. Filed as a
+  follow-up rather than fixed here, because it changes what the screen is.
+- **Ship the version that was measured, even when a defect is visible in it.**
+  The instinct to fix the one false positive was right and the fix was worse than
+  the flaw. The preset ships as scored, with its one known false positive
+  recorded here and in the labels file beside it.

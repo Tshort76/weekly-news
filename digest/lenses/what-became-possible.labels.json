@@ -1,0 +1,194 @@
+{
+  "_note": "Hand-labelled by the author of this lens, against the lens's own stated criteria — not by its users, whose taste is what the check-the-lens screen is for. Drawn from the preset's own feeds on 2026-09-04.",
+  "model": "qwen3:30b",
+  "measured": {
+    "agreement": 26,
+    "of": 30,
+    "let_in_wrongly": 1,
+    "dropped_wrongly": 3,
+    "wanted_and_dropped": 0,
+    "note": "reproduced exactly on two consecutive runs"
+  },
+  "labels": [
+    {
+      "title": "After 8 years, Europe's BepiColombo mission is on final approach to Mercury",
+      "source": "Ars Technica",
+      "choice": "maybe",
+      "why": "arrival enables measurement, but nothing is measured yet"
+    },
+    {
+      "title": "Protecting Dynamic Industrial Robot Cable Carriers",
+      "source": "IEEE Spectrum",
+      "choice": "skip",
+      "why": "trade content about a product category"
+    },
+    {
+      "title": "Should you avoid blue light before bed?",
+      "source": "Economist — Science and Technology",
+      "choice": "skip",
+      "why": "service journalism, no result"
+    },
+    {
+      "title": "Live from ICM 2026: What Is Math For in the Age of AI?",
+      "source": "Quanta Magazine",
+      "choice": "skip",
+      "why": "conference dispatch"
+    },
+    {
+      "title": "Briefing Chat: How 1,000 pairs of buried underpants helped measure soil health",
+      "source": "Nature",
+      "choice": "maybe",
+      "why": "a cheap assay for soil health is a method"
+    },
+    {
+      "title": "OpenAI agents discussed ways to escape their sandbox on public wiki",
+      "source": "Ars Technica",
+      "choice": "maybe",
+      "why": "an observed behaviour, reported as a finding"
+    },
+    {
+      "title": "Applying Different Forms of Mentorship",
+      "source": "IEEE Spectrum",
+      "choice": "skip",
+      "why": "careers content"
+    },
+    {
+      "title": "A horde of AI agents conspired against their creators",
+      "source": "Economist — Science and Technology",
+      "choice": "maybe",
+      "why": "same finding as the sandbox story, magazine framing"
+    },
+    {
+      "title": "In an Age of AI, a Physicist Seeks What Endures",
+      "source": "Quanta Magazine",
+      "choice": "skip",
+      "why": "a profile"
+    },
+    {
+      "title": "Super-precise optical clocks in four nations tick in harmony",
+      "source": "Nature",
+      "choice": "want",
+      "why": "clock comparison across four nations; precision that redefines a unit"
+    },
+    {
+      "title": "Measles killed 6-week-old baby, coroner confirms after RFK Jr. disputed deaths",
+      "source": "Ars Technica",
+      "choice": "skip",
+      "why": "public health politics, no capability"
+    },
+    {
+      "title": "NASA’s Cargo-Moving Robotic Arm Named 300th IEEE Milestone",
+      "source": "IEEE Spectrum",
+      "choice": "skip",
+      "why": "a commemoration"
+    },
+    {
+      "title": "NASA’s latest mission to map the cosmos takes off",
+      "source": "Economist — Science and Technology",
+      "choice": "skip",
+      "why": "a launch, which the lens calls announcement"
+    },
+    {
+      "title": "Genome Duplication Is a Radical Evolutionary Gamble",
+      "source": "Quanta Magazine",
+      "choice": "maybe",
+      "why": "an evolutionary result, not a new capability"
+    },
+    {
+      "title": "Body parts used for ancient Egyptian artworks traced to surprising source",
+      "source": "Nature",
+      "choice": "maybe",
+      "why": "provenance tracing applied to a new class of object"
+    },
+    {
+      "title": "Trump admin fights ABC lawsuit as watchdogs worry Disney will settle with FCC",
+      "source": "Ars Technica",
+      "choice": "skip",
+      "why": "off-lens entirely"
+    },
+    {
+      "title": "AI Efficiency Could Cost Us the Next Generation of Experts",
+      "source": "IEEE Spectrum",
+      "choice": "skip",
+      "why": "opinion"
+    },
+    {
+      "title": "Humble exoskeletons work better than combat supersuits",
+      "source": "Economist — Science and Technology",
+      "choice": "maybe",
+      "why": "a measured comparison of what the wearer can do"
+    },
+    {
+      "title": "‘Stunning’ Percolation Proof Solves Decades-Old Puzzle About Phase Transitions",
+      "source": "Quanta Magazine",
+      "choice": "want",
+      "why": "a proof that settles a standing question"
+    },
+    {
+      "title": "Tropical cyclones could be predicted with an extra day’s warning, thanks to an AI model",
+      "source": "Nature",
+      "choice": "want",
+      "why": "an extra day of cyclone warning is the capability itself"
+    },
+    {
+      "title": "Medieval manuscripts are \"biological time capsules\" for deadly sheeppox virus",
+      "source": "Ars Technica",
+      "choice": "want",
+      "why": "a new source of data that unblocks other people's work"
+    },
+    {
+      "title": "IEEE President’s Note: Technology for Social Good",
+      "source": "IEEE Spectrum",
+      "choice": "skip",
+      "why": "house content"
+    },
+    {
+      "title": "A suspicious signal in a dark-matter detector has physicists excited",
+      "source": "Economist — Science and Technology",
+      "choice": "skip",
+      "why": "an unconfirmed signal is exactly the result that does not hold"
+    },
+    {
+      "title": "Does Computer Science Need Computers?",
+      "source": "Quanta Magazine",
+      "choice": "skip",
+      "why": "an essay"
+    },
+    {
+      "title": "Ada Yonath obituary: Crystallographer who overcame ‘impossible’ challenge of mapping the ribosome",
+      "source": "Nature",
+      "choice": "skip",
+      "why": "an obituary"
+    },
+    {
+      "title": "“Trust, not features, is the real deficit”: VMware tries to appease SMBs",
+      "source": "Ars Technica",
+      "choice": "skip",
+      "why": "vendor business"
+    },
+    {
+      "title": "This Teen Helped Native American Students Earn Ham Radio Licenses",
+      "source": "IEEE Spectrum",
+      "choice": "skip",
+      "why": "human interest"
+    },
+    {
+      "title": "How to combine exercise with video games",
+      "source": "Economist — Science and Technology",
+      "choice": "skip",
+      "why": "service journalism"
+    },
+    {
+      "title": "Revealed: inside the US military's plan to tap huge sums from the NIH",
+      "source": "Nature",
+      "choice": "skip",
+      "why": "funding politics"
+    },
+    {
+      "title": "Once popular for attacking AI, ASCII smuggling is embraced by spammers",
+      "source": "Ars Technica",
+      "choice": "maybe",
+      "why": "a technique in active use, reported as such"
+    }
+  ]
+}

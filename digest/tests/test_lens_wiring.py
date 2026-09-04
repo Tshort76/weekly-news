@@ -163,3 +163,36 @@ def test_only_a_preset_with_a_measured_rubric_is_called_calibrated():
     assert presets.calibrated("architecture-of-rule") is True
     uncalibrated = [n for n in presets.available() if not presets.calibrated(n)]
     assert uncalibrated  # the honest state today, and the app says so
+
+
+@pytest.mark.parametrize(
+    "name", [n for n in presets.available() if presets.calibrated(n)]
+)
+def test_a_calibrated_preset_says_the_same_thing_as_its_spec(name):
+    """Catches a spec edited after the measurement, leaving a stale scored file."""
+    measured = presets.markdown(name)
+    assert " ".join(compile_lens(presets.load(name)).split()) == " ".join(measured.split())
+
+
+def test_every_calibrated_preset_can_show_the_labels_it_was_scored_against():
+    """A score nobody can reproduce is a claim, not a measurement.
+
+    The original's labelled set predates presets and lives in the test fixtures,
+    where `eval_rubric.py` and the README both still point at it; a preset added
+    since ships its labels beside its spec.
+    """
+    import json
+
+    from digest.calibrate import shipped_labels
+
+    for name in presets.available():
+        if not presets.calibrated(name):
+            continue
+        sidecar = presets.DIRECTORY / f"{name}.labels.json"
+        if sidecar.exists():
+            payload = json.loads(sidecar.read_text())
+            assert payload["labels"]
+            assert payload["measured"]["of"] == len(payload["labels"])
+        else:
+            assert name == presets.DEFAULT
+            assert shipped_labels()[1]
