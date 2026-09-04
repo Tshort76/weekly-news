@@ -22,7 +22,7 @@ anthropic = ["anthropic>=0.40"]
 # Ollama speaks plain HTTP and needs no client library. The extra exists so the
 # install line reads the same whichever provider you picked.
 ollama = []
-audio = ["edge-tts>=6.1"]
+audio = ["edge-tts>=6.1"]  # no ffmpeg: chunks are joined frame by frame
 drive = ["google-api-python-client>=2.140", "google-auth-oauthlib>=1.2"]
 pdf = ["weasyprint>=62"]
 # The browser is the renderer and the pages are server-rendered HTML, so this is

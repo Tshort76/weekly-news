@@ -76,15 +76,53 @@ def _synth_piper(chunks: list[str], cfg: Config, tmp: Path) -> list[Path]:
     return paths
 
 
-def _concat(parts: list[Path], out_path: Path) -> None:
-    from pydub import AudioSegment  # noqa: PLC0415
+def _strip_id3(data: bytes) -> bytes:
+    """Drop a leading ID3v2 tag so the joined file has exactly one, at the front.
 
-    combined = AudioSegment.empty()
-    silence = AudioSegment.silent(duration=400)
-    for n, part in enumerate(parts):
-        segment = AudioSegment.from_file(part)
-        combined += segment if n == 0 else silence + segment
-    combined.export(out_path, format="mp3")
+    Players tolerate a tag mid-stream, but some show the second one's metadata
+    for the whole file, which puts chunk three's title on the finished briefing.
+    """
+    if not data.startswith(b"ID3") or len(data) < 10:
+        return data
+    # Syncsafe: seven bits per byte, the top bit always zero.
+    size = 0
+    for byte in data[6:10]:
+        size = (size << 7) | (byte & 0x7F)
+    return data[10 + size:]
+
+
+def _concat(parts: list[Path], out_path: Path) -> None:
+    """Join the chunks by appending their frames. No ffmpeg, no pydub.
+
+    Every chunk comes from the same synthesiser at the same sample rate and
+    bitrate, which is the case where this is safe and the only case that
+    happens here. It replaces a pydub dependency that needed ffmpeg, which a
+    non-technical user does not have and should not be asked to install for an
+    optional MP3.
+
+    The 400ms of silence that used to sit between chunks is gone with it. The
+    pause now comes from the text: chunks split at paragraph boundaries, and a
+    paragraph break is a pause the voice already makes.
+    """
+    if parts and parts[0].suffix.lower() == ".wav":
+        return _concat_wav(parts, out_path)
+    with out_path.open("wb") as out:
+        for n, part in enumerate(parts):
+            data = part.read_bytes()
+            out.write(data if n == 0 else _strip_id3(data))
+
+
+def _concat_wav(parts: list[Path], out_path: Path) -> None:
+    """Piper writes WAV, which cannot simply be appended — it has a header."""
+    import wave  # noqa: PLC0415
+
+    with wave.open(str(parts[0]), "rb") as first:
+        params = first.getparams()
+    with wave.open(str(out_path), "wb") as out:
+        out.setparams(params)
+        for part in parts:
+            with wave.open(str(part), "rb") as chunk:
+                out.writeframes(chunk.readframes(chunk.getnframes()))
 
 
 def speak(txt_path: Path, out_path: Path, cfg: Config) -> Path:

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% set active = "schedule" %}
+{% block body %}
+<h1>Schedule</h1>
+<p class="sub">Currently <b>{{ "on" if status.installed else "off" }}</b> — {{ status.detail }}. This machine uses <span class="mono">{{ backend }}</span>.</p>
+
+<form method="post" action="/schedule">
+  <label>Day
+    <select name="day">
+      {% for day in days %}<option value="{{ day }}" {{ "selected" if cfg.run.weekday == day }}>{{ day }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Hour <input class="input" type="number" name="hour" min="0" max="23" value="7"></label>
+  <div class="actions">
+    <button class="primary">Schedule it</button>
+    <button class="quiet" name="off" value="1">Turn it off</button>
+  </div>
+</form>
+
+<p class="sub">The scheduled run writes the week's files while nothing is open. It carries no API key — the key is read from the system credential store when the run starts — and it sets PATH explicitly, because a scheduled job starts with a bare environment and would otherwise fail to find the browser used for PDFs.</p>
+{% endblock %}

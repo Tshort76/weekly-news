@@ -30,6 +30,17 @@ Two ways in, depending on whether you want to run this or work on it.
 ### As an app
 
 ```bash
+# macOS and Linux
+curl -LsSf https://raw.githubusercontent.com/Tshort76/weekly-news/main/install.sh | sh
+
+# Windows
+irm https://raw.githubusercontent.com/Tshort76/weekly-news/main/install.ps1 | iex
+```
+
+That installs `uv` if it is missing, notices whether you have Ollama, installs
+the tool and opens the app. Or do it yourself:
+
+```bash
 uv tool install "weekly-news[ollama,ui]"  # or [anthropic] / [gemini]
 digest open                               # setup and everything else, in a browser
 ```
@@ -89,6 +100,7 @@ still found and still read, with no import step.
 | `digest key set <provider>` | Put an API key in the system credential store. |
 | `digest doctor` | Check keys, backends, feeds and paths without spending anything. |
 | `digest open` | The web app, on 127.0.0.1. Needs the `ui` extra. |
+| `digest schedule on\|off\|status` | Run it every week by itself. Uses launchd, a systemd timer or Task Scheduler. |
 | `digest where` | Print the config and data directories. |
 
 ### Where the API key goes
@@ -165,9 +177,21 @@ python -m digest speak --week 2026-W36            # audio from an existing .txt
 python -m digest doctor                          # keys, providers and backends
 ```
 
-Weekly on a Mac: edit the two paths and the key in
-`scripts/io.digest.weekly.plist`, copy it to `~/Library/LaunchAgents/`, and
-`launchctl load` it. On Linux use cron; on Windows, Task Scheduler.
+To run it every week without remembering to:
+
+```bash
+digest schedule on --day friday --hour 7
+digest schedule show     # print the file it would write, without installing it
+digest schedule status
+```
+
+It writes the operating system's own scheduler file — a launch agent on macOS, a
+systemd user timer (or a crontab line) on Linux, a scheduled task on Windows —
+and hands it to the operating system's own command. Two things it always does:
+it puts no API key in the file, because a scheduler file is a file that gets
+copied around; and it sets `PATH` explicitly, because a scheduled job starts
+with a bare environment and would otherwise fail to find the browser used for
+PDFs, quietly, while the rest of the run succeeds.
 
 ## What a run does
 
@@ -175,7 +199,7 @@ Weekly on a Mac: edit the two paths and the key in
 ingest → normalize → dedupe → classify → select → cluster → synthesize → emit → deliver
 ```
 
-Feeds come from `digest.toml`. Classification is a model judging title and blurb
+Feeds come from `feeds.toml` (or `digest.toml` in a checkout). Classification is a model judging title and blurb
 against the rubric — never an article body, and never a keyword list. Selection applies
 the fit threshold, the saga rule and the contest cap. Clustering and writing are two
 further passes, so no single call has to hold the whole edition.

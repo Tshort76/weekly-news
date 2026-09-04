@@ -26,6 +26,12 @@ from . import config as config_module
 from . import emit as emit_stage
 from . import pipeline
 from .logging_setup import setup as setup_logging
+
+
+def schedule_days() -> tuple[str, ...]:
+    from .schedule import WEEKDAYS  # noqa: PLC0415
+
+    return WEEKDAYS
 from .state import State
 
 
@@ -82,6 +88,12 @@ def build_parser() -> argparse.ArgumentParser:
     imp = sub.add_parser("import", help="bring an existing digest.toml into the app")
     imp.add_argument("--from", dest="source", help="path to the digest.toml")
     sub.add_parser("where", help="print the config and data directories")
+
+    sched = sub.add_parser("schedule", help="run the digest every week, automatically")
+    sched.add_argument("action", choices=("on", "off", "status", "show"), nargs="?",
+                       default="status")
+    sched.add_argument("--day", default="", choices=("", *schedule_days()))
+    sched.add_argument("--hour", type=int, default=None)
 
     key = sub.add_parser("key", help="store or forget an API key")
     key.add_argument("action", choices=("set", "show", "forget"))
@@ -178,6 +190,9 @@ def main(argv: list[str] | None = None) -> int:
     except config_module.ConfigError as exc:
         print(exc, file=sys.stderr)
         return 1
+
+    if args.command == "schedule":
+        return _schedule_command(args, cfg)
 
     if args.command in {"key", "lens", "feeds"}:
         return _admin_command(args, cfg)
@@ -281,6 +296,40 @@ def _setup_command(args) -> int:
     print(f"  feeds    {report['feeds']}")
     if report["database_copied"]:
         print("  copied the record of what you have already seen")
+    return 0
+
+
+def _schedule_command(args, cfg) -> int:
+    from . import schedule as scheduler  # noqa: PLC0415
+
+    backend = scheduler.backend()
+    day = args.day or cfg.run.weekday
+    hour = args.hour if args.hour is not None else 7
+
+    if args.action == "show":
+        if isinstance(backend, scheduler.Launchd):
+            print(backend.render(day, hour))
+        elif isinstance(backend, scheduler.Systemd):
+            service, timer = backend.render(day, hour)
+            print(service + "\n" + timer)
+        else:
+            print(" ".join(getattr(backend, "arguments", lambda *a: scheduler.command())(day, hour)))
+        return 0
+
+    if args.action == "on":
+        where = backend.install(day, hour)
+        print(f"scheduled for {day} at {hour:02d}:00 via {backend.name}")
+        print(f"  {where}")
+        return 0
+
+    if args.action == "off":
+        print("removed" if backend.remove() else "nothing was scheduled")
+        return 0
+
+    status = backend.status()
+    print(f"{backend.name}: {'on' if status.installed else 'off'} — {status.detail}")
+    if status.when:
+        print(f"  {status.when}")
     return 0
 
 

@@ -203,6 +203,48 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
         write(paths.config_file(), dumps(raw))
         return RedirectResponse("/settings?saved=1", status_code=303)
 
+    @app.get("/schedule", response_class=HTMLResponse)
+    def schedule_page(request: Request):
+        from .. import schedule as scheduler  # noqa: PLC0415
+
+        backend = scheduler.backend()
+        return page(request, "schedule.html", backend=backend.name,
+                    status=backend.status(), days=scheduler.WEEKDAYS)
+
+    @app.post("/schedule")
+    def set_schedule(day: str = Form("friday"), hour: int = Form(7), off: str = Form("")):
+        from .. import schedule as scheduler  # noqa: PLC0415
+
+        backend = scheduler.backend()
+        if off:
+            backend.remove()
+        else:
+            backend.install(day, hour)
+        # The config keeps the same answer, so the Settings page and the actual
+        # scheduler cannot drift apart.
+        raw = tomllib.loads(paths.config_file().read_text(encoding="utf-8"))
+        raw.setdefault("schedule", {}).update(
+            {"enabled": not off, "day": day, "hour": hour}
+        )
+        validate_config(raw)
+        write(paths.config_file(), dumps(raw))
+        return RedirectResponse("/schedule", status_code=303)
+
+    @app.post("/open-folder")
+    def open_folder():
+        """The default delivery: show the files where they already are."""
+        import subprocess  # noqa: PLC0415
+        import sys  # noqa: PLC0415
+
+        folder = str(load().run.output_dir)
+        opener = ("open" if sys.platform == "darwin"
+                  else "explorer" if sys.platform.startswith("win") else "xdg-open")
+        try:
+            subprocess.Popen([opener, folder])
+        except OSError:
+            pass
+        return RedirectResponse("/", status_code=303)
+
     # ----------------------------------------------------------------- setup
 
     @app.get("/setup", response_class=HTMLResponse)
