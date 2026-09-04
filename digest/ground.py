@@ -30,6 +30,15 @@ from .models import Classified, Evidence
 
 log = logging.getLogger("digest.ground")
 
+
+class SearchBlocked(RuntimeError):
+    """The engine served a refusal page rather than results.
+
+    Worth its own type because it is not the same as finding nothing. A run
+    that grounds nothing because it was turned away needs a different answer
+    from the reader than one where the searches genuinely came up empty.
+    """
+
 _DROP_TAGS = re.compile(r"(?is)<(script|style|nav|header|footer|aside|form)[^>]*>.*?</\1>")
 _PARA = re.compile(r"(?is)<p[^>]*>(.*?)</p>")
 _TAG = re.compile(r"<[^>]+>")
@@ -64,6 +73,14 @@ def duckduckgo(query: str, limit: int = 4, timeout: int = 15) -> list[Evidence]:
     """
     url = "https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(query)
     page = fetch_bytes(url, timeout=timeout).decode("utf-8", "ignore")
+    if "anomaly" in page.lower() and "result__snippet" not in page:
+        raise SearchBlocked(
+            "DuckDuckGo served its anomaly page instead of results. This is an "
+            "address-level block, not a per-request limit: once it starts, a "
+            "single query an hour later is refused too, so waiting longer "
+            "between queries does not clear it. Set search_backend = \"brave\" "
+            "with a key, or \"none\" to stop asking."
+        )
     snippets = [_clean(s) for s in _SNIPPET.findall(page)]
     return [Evidence(kind="search", text=s) for s in snippets if len(s) > 60][:limit]
 
@@ -105,34 +122,23 @@ def search(query: str, cfg: Config | None = None, **kwargs) -> list[Evidence]:
     return backend(query, **kwargs)
 
 
-def _gather(row: Classified, cfg: Config, searched_already: bool = False) -> list[Evidence]:
-    if len(row.item.blurb) >= cfg.run.ground_min_chars:
-        return []
-
-    found: list[Evidence] = []
+def _own_article(row: Classified) -> list[Evidence]:
+    """The story's own page, when it is not behind a wall."""
     try:
         text = article_text(row.item.url)
-        if len(text) >= cfg.run.ground_min_chars:
-            return [Evidence(kind="article", text=text[:6000],
-                             url=row.item.url, source=row.item.source)]
-    except Exception as exc:  # a paywall, a timeout, a consent wall — all the same here
+    except Exception as exc:  # a paywall, a timeout, a consent wall — all one thing here
         log.debug("no article text for %s (%s)", row.item.url, type(exc).__name__)
-
-    try:
-        # Spaced rather than burst: a rapid run of queries is what earns the
-        # cooldown. Nothing waits before the first one, so a single lookup is
-        # as fast as it ever was.
-        if searched_already:
-            time.sleep(SEARCH_PACE_SECONDS)
-        found = search(row.item.title, cfg)
-    except Exception as exc:
-        log.warning("search failed for %r (%s)", row.item.title[:60], exc)
-    return found
+        return []
+    if len(text) < 500:
+        return []
+    return [Evidence(kind="article", text=text[:6000],
+                     url=row.item.url, source=row.item.source)]
 
 
-# A burst is what earns the cooldown, so the searches are spaced. Article
-# fetches are not: they go to a different host each time.
-SEARCH_PACE_SECONDS = 2.0
+# Spaced rather than burst. This is a weekly job, so a generous gap costs
+# nothing worth counting: forty queries at fifteen seconds is ten minutes of a
+# run that already takes longer than that.
+SEARCH_PACE_SECONDS = 15.0
 
 
 def ground(rows: list[Classified], cfg: Config) -> list[Classified]:
@@ -146,19 +152,43 @@ def ground(rows: list[Classified], cfg: Config) -> list[Classified]:
         len(thin), len(rows),
     )
     articles = searches = empty = 0
+    blocked = False
+
     for row in thin:
-        row.evidence = _gather(row, cfg, searched_already=bool(searches))
-        if not row.evidence:
+        found = _own_article(row)
+
+        if not found and not blocked:
+            try:
+                if searches:
+                    time.sleep(SEARCH_PACE_SECONDS)
+                found = search(row.item.title, cfg)
+            except SearchBlocked as exc:
+                # Address-level, so every later query would be refused too.
+                # Asking forty more times spends ten minutes learning the same
+                # thing; the run carries on with what the articles gave it.
+                log.warning("%s", exc)
+                blocked = True
+            except Exception as exc:
+                log.warning("search failed for %r (%s)", row.item.title[:60], exc)
+
+        row.evidence = found
+        if not found:
             empty += 1
-        elif row.evidence[0].kind == "article":
+        elif found[0].kind == "article":
             articles += 1
         else:
             searches += 1
+
     log.info(
         "grounded: %d from the article itself, %d from other outlets, %d still thin",
         articles, searches, empty,
     )
-    if thin and not articles and not searches:
+    if blocked:
+        log.warning(
+            "%d items stayed thin because searching was refused — they are still "
+            "written, from their headline and blurb alone", empty,
+        )
+    elif thin and not articles and not searches:
         log.warning(
             "every grounding attempt came back empty — the search markup may have "
             "changed, or the network is refusing us"

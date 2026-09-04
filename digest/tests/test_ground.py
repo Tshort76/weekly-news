@@ -128,3 +128,35 @@ def test_brave_reads_the_descriptions_out_of_the_payload(monkeypatch):
     found = g.brave("anything")
     assert len(found) == 1
     assert found[0].source == "Example News" and "unlawfully" in found[0].text
+
+
+def test_the_refusal_page_is_not_read_as_an_empty_result():
+    """Being turned away and finding nothing need different answers from the
+    reader, so they are different outcomes here."""
+    monkey = b'<html><body>the anomaly detector says no</body></html>'
+    import digest.ground as gg
+
+    orig = gg.fetch_bytes
+    gg.fetch_bytes = lambda *a, **k: monkey
+    try:
+        with pytest.raises(g.SearchBlocked, match="anomaly page"):
+            gg.duckduckgo("anything")
+    finally:
+        gg.fetch_bytes = orig
+
+
+def test_one_refusal_stops_the_rest_of_the_searches(monkeypatch):
+    """The block is address-level, so every later query would be refused too.
+    Asking forty more times wastes ten minutes to learn the same thing."""
+    calls = []
+
+    def refuse(query, cfg=None, **kwargs):
+        calls.append(query)
+        raise g.SearchBlocked("DuckDuckGo served its anomaly page instead of results")
+
+    monkeypatch.setattr(g, "article_text", lambda *a, **k: "nope")
+    monkeypatch.setattr(g, "search", refuse)
+    rows = _thin() * 5
+    g.ground(rows, Config())
+    assert len(calls) == 1
+    assert all(r.evidence == [] for r in rows)
