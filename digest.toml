@@ -33,28 +33,33 @@ search_backend = "duckduckgo"
 output_dir = "~/digests"
 
 [models]
-# Verified against the installed google-genai SDK, September 2026.
-# Each stage picks its own provider. The filtering runs locally through Ollama
-# because it is bulk work over 286 headlines a week and costs nothing there; the
-# writing stays hosted, because that is where quality shows.
-provider = "gemini"                    # gemini | anthropic | ollama
+# Both stages run locally, and that is a change from how this started. The
+# writing was hosted on the argument that quality shows there. Two things
+# undermined it. The free tier stopped being able to finish a run — a full week
+# is about sixty calls and the budget now runs out within a couple of them — and
+# most of the gap that justified paying was closed by fixing this end: an
+# explicit prompt for the local model, a temperature that is actually set, a
+# check that refuses invented institutions, and carrying a reporter's own words
+# wherever one exists rather than rewriting them.
+#
+# Set provider = "gemini" and synthesize = "gemini-3.8-flash" to put the writing
+# back on a hosted model; nothing else needs to change, and a paid key makes it
+# work properly.
+provider = "ollama"                    # gemini | anthropic | ollama
 classify_provider = "ollama"
 classify = "qwen3:30b"
-synthesize = "gemini-3.8-flash"
+synthesize = "gemma3:27b"
 # 25 measured better than 5 or 10 against the labelled set — not on exact scores,
 # which smaller batches win, but on which items end up selected. Judging items
 # alongside two dozen peers calibrates a model that otherwise rates everything it
 # sees in isolation as important. Costs the same either way; it is token-bound.
 classify_batch_size = 25
 
-# Both stages default to Flash because that is what the free tier serves most
-# generously. If your AI Studio limits allow it, lift the writing (not the
-# filtering) to a Pro model: synthesize = "gemini-2.5-pro".
-#
-# This API takes no temperature. `seed` is the reproducibility lever, and
-# `thinking_level` (minimal | low | medium | high) trades depth for tokens —
-# free-tier per-minute token caps count thinking tokens too, so `high` is a
-# quick way to start seeing 429s.
+# The settings below apply to whichever hosted model is configured; they do
+# nothing while both stages are local. Gemini's API takes no temperature —
+# `seed` is the reproducibility lever, and `thinking_level` (minimal | low |
+# medium | high) trades depth for tokens, with free-tier token caps counting
+# thinking tokens too.
 seed = 7
 classify_temperature = 0.0             # ignored by Gemini, used by Ollama and Claude
 classify_thinking = "low"

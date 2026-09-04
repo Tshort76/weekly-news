@@ -132,27 +132,41 @@ If a first real run ever fails with an unexpected request-shape error, the same 
 still carries the older `client.models.generate_content` surface alongside
 `client.interactions.create`, which is what [`digest/llm.py`](digest/llm.py) uses today.
 
-## Running the classifier locally
+## Running it locally, which is the default
 
-Classification is the high-volume stage — 12 of a week's ~74 model calls, and the
-one that reads every headline. It can run on a local model through
-[Ollama](https://ollama.com) instead of a hosted API, which costs nothing, sends
-nothing off the machine, and needs no key.
-
-Each stage picks its own provider, so the sensible arrangement is a local model
-doing the filtering and a hosted one doing the writing — the filtering is bulk work
-where being roughly right is enough, and the writing is where quality shows:
+Both stages run on local models through [Ollama](https://ollama.com). No key, no
+spend, nothing leaves the machine:
 
 ```toml
 [models]
-provider = "gemini"                 # the default for any stage that has no override
-classify_provider = "ollama"        # 286 headlines judged locally, free
-classify = "qwen3:30b"
-synthesize = "gemini-3.8-flash"     # ~58 calls, where the prose quality matters
+provider = "ollama"
+classify_provider = "ollama"
+classify = "qwen3:30b"              # 286 headlines judged against the rubric
+synthesize = "gemma3:27b"           # the writing
 ```
 
-That is what `digest.toml` ships with. Set `provider = "ollama"` for both stages to
-run entirely offline — that path is tested and works, with the caveats below.
+This started the other way round — filtering local, writing hosted, on the argument
+that quality shows in the writing. Two things changed that. Google's free tier stopped
+being able to finish a run: a week is about sixty calls and the budget now runs out
+inside a couple of them, which produces a `[PARTIAL]` edition rather than a cheap one.
+And most of the quality gap turned out to be fixable at this end rather than by paying
+for a better model:
+
+- The prompt says out loud what a weaker model gets wrong. Rules a hosted model already
+  follows sit behind a `{writer_notes}` slot that only fills for a local one, so
+  correcting one model's habits cannot cost the other anything.
+- Sampling temperature is set. Unset, gemma3 runs at its Modelfile default of 1.0, and
+  that alone accounted for a measurable slice of the difference.
+- An entry naming an institution, law or treaty its own sources never mention is
+  written again, and dropped if it does it twice. That was the one failure a reader
+  could not catch, because the invented sentences are the fluent ones.
+- Where a reporter already wrote the story, their words are published instead of a
+  rewrite — so on a normal week the model writes about half the edition, and the half
+  it does not write cannot be got wrong.
+
+Set `provider = "gemini"` with `synthesize = "gemini-3.8-flash"` to put the writing
+back on a hosted model. Nothing else needs to change, and with a paid key it works
+properly.
 
 ### Fully local: what it costs you
 
@@ -244,10 +258,14 @@ them.
 
 ## Rate limits
 
+None of this applies while both stages are local, which is the default. It matters
+the moment you point a stage at a hosted model.
+
 Google no longer publishes the free-tier numbers; they are per-account, and the only
 authoritative source is your own dashboard at <https://ai.dev/rate-limit>. Check it
 before your first real run, because the shape of the limit decides whether this works
-on the free tier at all.
+on the free tier at all. Measured in September 2026 it did not: the budget ran out
+within a call or two of starting, which is what moved the writing back off it.
 
 There are two different limits and they need different handling.
 
