@@ -61,7 +61,9 @@ def strip_furniture(text: str) -> str:
     out = _PHOTO_CREDIT.sub("", out).strip()
     if out and out[-1] not in ".!?\"'":
         head, sep, _ = out.rpartition(".")
-        if sep and len(head) > 80:
+        # Only when a real sentence survives the trim; otherwise keep what we
+        # have rather than returning almost nothing.
+        if sep and len(head) > 40:
             out = head + "."
     return out.strip()
 
