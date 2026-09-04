@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Digest UI Mockup</title>
+<style>
+/* House palette. Identical in both modes — paste this first, then the mode
+   block. The dark palette is written TWICE on purpose: the artifact viewer
+   stamps data-theme on :root, a plain browser only reports
+   prefers-color-scheme. Guard the media block with :not([data-theme="light"])
+   so an explicit light choice wins over a dark OS. */
+:root {
+  --bg: #fbfaf7; --fg: #22282e; --muted: #5d6670; --faint: #8b939b;
+  --rule: #dcdfd9; --card: #ffffff; --code-bg: #eef0ea;
+  --accent: #0e6e63; --accent-soft: #e3efec;
+  --ok: #2f6b4f;
+  --warn: #9a6a1c; --warn-soft: #f6ecd9;
+  --stop: #9c3a3a; --stop-soft: #f6e6e4;
+  --shell: #0a6b60; --shell-soft: #bbfaf1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171c21; --fg: #d9dee2; --muted: #97a1aa; --faint: #7c858e;
+    --rule: #323a41; --card: #1e242a; --code-bg: #232a30;
+    --accent: #4cbcab; --accent-soft: #1e2f2c;
+    --ok: #7fc6a0;
+    --warn: #d5a04a; --warn-soft: #2e2718;
+    --stop: #e08b84; --stop-soft: #33201e;
+    --shell: #63dcc9; --shell-soft: #10403a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171c21; --fg: #d9dee2; --muted: #97a1aa; --faint: #7c858e;
+  --rule: #323a41; --card: #1e242a; --code-bg: #232a30;
+  --accent: #4cbcab; --accent-soft: #1e2f2c;
+  --ok: #7fc6a0;
+  --warn: #d5a04a; --warn-soft: #2e2718;
+  --stop: #e08b84; --stop-soft: #33201e;
+  --shell: #63dcc9; --shell-soft: #10403a;
+}
+/* Mode A — standalone HTML page. Paste palette.css above this. */
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  font-size: 16px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 47rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+
+h1, h2, h3, h4 {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  line-height: 1.25; text-wrap: balance;
+}
+h1 { font-size: 2.1rem; margin: .5rem 0 .3rem; }
+h2 { font-size: 1.5rem; margin: 3.25rem 0 .75rem; padding-top: 1.25rem;
+     border-top: 2px solid var(--fg); }
+h3 { font-size: 1.14rem; margin: 2rem 0 .6rem; }
+h4 { font-size: .98rem; margin: 1.4rem 0 .4rem; }
+p { margin: 0 0 1rem; }
+ul, ol { margin: 0 0 1rem; padding-left: 1.3rem; }
+li { margin-bottom: .35rem; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; }
+img { max-width: 100%; height: auto; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+
+code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            font-size: .86em; }
+code { background: var(--code-bg); padding: .1em .35em; border-radius: 3px; }
+pre { background: var(--code-bg); padding: .9rem 1.1rem; border-radius: 4px;
+      overflow-x: auto; line-height: 1.5; margin: 0 0 1rem; }
+pre code { background: none; padding: 0; }
+
+/* Masthead ---------------------------------------------------------------- */
+.eyebrow { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+           color: var(--accent); font-weight: 600; margin: 0 0 .5rem; }
+.byline { color: var(--muted); font-size: .9rem; margin-bottom: 1.75rem; }
+.kicker { font-size: .72rem; letter-spacing: .13em; text-transform: uppercase;
+          color: var(--faint); font-weight: 600; margin: 0; }
+.lede { font-size: 1.05rem; }
+
+/* Sticky table of contents ------------------------------------------------ */
+.bar { position: sticky; top: 0; z-index: 5;
+       background: color-mix(in srgb, var(--bg) 88%, transparent);
+       -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+       border-bottom: 1px solid var(--rule); padding: .4rem 1.25rem;
+       display: flex; gap: .9rem; align-items: baseline; flex-wrap: wrap;
+       font-size: .72rem; line-height: 1.9; color: var(--muted); }
+.bar nav { display: flex; gap: .9rem; flex-wrap: wrap; }
+.bar a { color: var(--muted); text-decoration: none; text-transform: uppercase;
+         font-weight: 600; letter-spacing: .1em; white-space: nowrap;
+         border-bottom: 1px solid transparent; padding-bottom: 1px; }
+.bar a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.bar a[aria-current="true"] { color: var(--accent);
+                              border-bottom-color: var(--accent); }
+.bar .spacer { flex: 1; }
+.bar button { font: inherit; letter-spacing: .1em; text-transform: uppercase;
+              font-weight: 600; color: var(--muted); background: none;
+              border: 1px solid var(--rule); border-radius: 3px;
+              padding: .05rem .5rem; cursor: pointer; }
+.bar button:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Collapsible sections ---------------------------------------------------- */
+details.sec { margin: 0; }
+details.sec > summary { list-style: none; cursor: pointer; display: block;
+                        margin: 3.25rem 0 .75rem; padding-top: 1.25rem;
+                        border-top: 2px solid var(--fg);
+                        scroll-margin-top: 3.5rem; }
+details.sec > summary::-webkit-details-marker { display: none; }
+details.sec > summary .kicker { display: block; margin-bottom: .15rem; }
+/* The marker is ABSOLUTELY POSITIONED to the TITLE's top-right corner, never
+   floated. A float rides the LAST line box of whatever the label contains, so a
+   summary holding more than a line — a kicker, a wrapped title, a stat strip —
+   drops the marker onto a line of its own, which looks broken. Anchoring it to
+   the h2 rather than the summary keeps it on the title even when a kicker sits
+   above, and unlike a grid it leaves the label's inline flow alone (a `.count`
+   chip stays beside the title instead of stacking under it). `padding-right`
+   reserves the gutter so a long title never runs under it.
+   Use the literal `+` and MINUS SIGN (U+2212): in a stylesheet emitted from
+   another language the CSS backslash escape gets eaten by that language's own
+   escaping and fails silently — in Python `\2212` is the octal escape `\221`
+   followed by `2`, so the open marker renders as the character `2`. */
+details.sec > summary h2 { margin: 0; padding: 0 1.75rem 0 0; border: 0;
+                           position: relative; scroll-margin-top: 3.5rem; }
+details.sec > summary h2::after { content: "+"; position: absolute;
+                                  right: 0; top: 0; line-height: inherit;
+                                  color: var(--faint); font-weight: 400; }
+details.sec[open] > summary h2::after { content: "−"; }
+details.sec > summary:hover h2,
+details.sec > summary:hover h2::after { color: var(--accent); }
+details.sec .count { font-family: "Avenir Next", system-ui, sans-serif;
+                     font-size: .68rem; letter-spacing: .09em;
+                     text-transform: uppercase; font-weight: 600;
+                     color: var(--faint); margin-left: .55rem;
+                     vertical-align: .18em; }
+.sec-body > :first-child { margin-top: 0; }
+.sec-body > h3:first-child { margin-top: .5rem; }
+
+/* Callouts ---------------------------------------------------------------- */
+.note { background: var(--accent-soft); border-left: 3px solid var(--accent);
+        padding: .9rem 1.15rem; margin: 1.25rem 0; }
+.note p:last-child { margin: 0; }
+.note.caution { background: var(--warn-soft); border-left-color: var(--warn); }
+.note.danger { background: var(--stop-soft); border-left-color: var(--stop); }
+.note .lbl { font-weight: 700; }
+
+/* Tables — wide content scrolls inside its own box, never the page --------- */
+.tablewrap { overflow-x: auto; margin: 1.25rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem;
+        background: var(--card); min-width: 30rem;
+        font-variant-numeric: tabular-nums; }
+th, td { border: 1px solid var(--rule); padding: .55rem .7rem;
+         text-align: left; vertical-align: top; }
+th { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
+     color: var(--muted); font-weight: 600; }
+tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 45%,
+                 transparent); }
+td a[href^="#"] { text-decoration: none;
+                  border-bottom: 1px dotted currentColor; }
+
+/* Summary -> detail ------------------------------------------------------- */
+h3[id], tr[id], div[id] { scroll-margin-top: 4.5rem; }
+.hit { background: var(--accent-soft); }
+.entry { border: 1px solid var(--rule); background: var(--card);
+         padding: .9rem 1.1rem; margin-top: 1.25rem; }
+.entry h3 { margin: 0 0 .4rem; font-size: 1.08rem; }
+.entry table { background: none; }
+.backlink { font-size: .7rem; color: var(--muted); text-decoration: none;
+            letter-spacing: .06em; text-transform: uppercase;
+            font-weight: 600; }
+.backlink:hover { color: var(--accent); }
+
+/* Status words and inline chips ------------------------------------------- */
+.stamp { display: inline-block; font-size: .68rem; letter-spacing: .09em;
+         text-transform: uppercase; font-weight: 700; padding: .1rem .45rem;
+         border-radius: 2px; background: var(--accent-soft);
+         color: var(--accent); vertical-align: .1em; }
+.stamp.todo { background: var(--warn-soft); color: var(--warn); }
+.stamp.stop { background: var(--stop-soft); color: var(--stop); }
+.verdict-ok { color: var(--ok); font-weight: 600; }
+.verdict-blocked { color: var(--stop); font-weight: 600; }
+.verdict-idle { color: var(--muted); }
+
+/* Numbered steps — use only when the order is a real dependency ------------ */
+ol.steps { list-style: none; padding: 0; margin: 1.5rem 0 0;
+           counter-reset: step; display: flex; flex-direction: column;
+           gap: 1.6rem; }
+ol.steps > li { counter-increment: step; margin: 0; padding-left: 3.1rem;
+                position: relative; }
+ol.steps > li::before {
+  content: counter(step); position: absolute; left: 0; top: .05rem;
+  width: 2.1rem; height: 2.1rem; border: 1.5px solid var(--accent);
+  color: var(--accent); border-radius: 50%;
+  font-family: ui-monospace, Menlo, monospace; font-size: .9rem;
+  font-weight: 700; display: flex; align-items: center;
+  justify-content: center; }
+ol.steps > li > h3 { margin: 0 0 .35rem; font-size: 1.06rem; }
+ol.steps > li > p:last-child { margin-bottom: 0; }
+
+/* Term/definition reference block ----------------------------------------- */
+.cheat { border: 1.5px solid var(--fg); background: var(--card);
+         padding: 1.15rem 1.25rem; margin: 1.5rem 0; }
+.cheat > .hd { font-size: .68rem; letter-spacing: .11em; font-weight: 700;
+               text-transform: uppercase; color: var(--faint);
+               margin-bottom: .8rem; }
+.cheat dl { display: grid; grid-template-columns: 12.5rem 1fr;
+            gap: .45rem 1rem; margin: 0; font-size: .9rem; }
+.cheat dt { font-family: ui-monospace, Menlo, monospace; font-size: .8rem;
+            color: var(--accent); font-weight: 700; padding-top: .12rem; }
+.cheat dd { margin: 0; }
+@media (max-width: 34rem) {
+  .cheat dl { grid-template-columns: 1fr; gap: .1rem; }
+  .cheat dd { margin-bottom: .5rem; }
+}
+
+/* Card list — for a set the reader scans whole and dips into ---------------- */
+/* Each row carries its own detail and expands in place, so the reader never
+   leaves the list. Prefer this over summary->detail when the row IS the
+   content; see SKILL.md for the choice between the two. */
+/* It reads as a TABLE, not as a stack of boxes: one bordered container, rows
+   divided by hairlines, no gap. The separate-boxes version cost a border and
+   a gap per row, so twelve cards filled a screen with chrome and the eye had
+   no single edge to scan down. The grid's middle track holds .run, so the
+   signatures still line up as a scannable column. */
+/* The marker is a pseudo-element: a page cannot forget to emit it. */
+.cards { display: grid; gap: 0; margin: 1.25rem 0;
+         border: 1px solid var(--rule); background: var(--card); }
+details.card { scroll-margin-top: 4.5rem; }
+.cards > details.card + details.card,
+.cards > .cards-head + details.card { border-top: 1px solid var(--rule); }
+/* A second or later .cards-head divides one list into labelled segments —
+   still one table, so the eye keeps a single left edge instead of meeting
+   three separate bordered blocks. */
+.cards > details.card + .cards-head { border-top: 1px solid var(--rule); }
+/* Optional column header, styled like a thead. Emit an empty first cell so the
+   labels sit over the columns the summary grid actually uses. */
+.cards-head { display: grid;
+              grid-template-columns: auto minmax(9rem, max-content) 1fr;
+              align-items: center; gap: .35rem .8rem;
+              padding: .35rem .9rem; background: var(--code-bg);
+              font-family: ui-monospace, "SF Mono", Menlo, monospace;
+              font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
+              color: var(--muted); }
+.cards-head i { font-style: normal; width: 9px; }
+/* A different job from the plain .cards-head above, which labels the columns:
+   .grp names a RUN of rows. It carries a name and nothing else — a group whose
+   name needs explaining wants a better name — so it drops the third column,
+   goes bold, and sits on the recessed ground so a header never reads as a row.
+   Kept on narrow screens, where column labels are dropped: losing it would lose
+   the grouping itself. */
+.cards-head.grp { grid-template-columns: auto 1fr;
+                  padding: .6rem .9rem .5rem; background: var(--code-bg);
+                  border-left: 3px solid var(--accent); color: var(--accent);
+                  font-size: .74rem; letter-spacing: .1em; font-weight: 700; }
+/* A subordinate group inside one. Same shape, lower rank — never a different
+   device, which is what makes two tiers read as two tiers. */
+.cards-head.grp.sub { border-left-color: var(--rule); color: var(--muted);
+                      font-size: .7rem; padding-left: 1.9rem; }
+details.card > summary { list-style: none; cursor: pointer; display: grid;
+                         grid-template-columns: auto minmax(9rem, max-content) 1fr;
+                         align-items: center; gap: .35rem .8rem;
+                         padding: .42rem .9rem; transition: background .12s; }
+details.card > summary:hover { background: var(--code-bg); }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::before { content: ""; order: 0; align-self: center;
+                                 width: 9px; height: 9px;
+                                 border-right: 2px solid var(--faint);
+                                 border-bottom: 2px solid var(--faint);
+                                 transform: rotate(-45deg);
+                                 transition: transform .18s ease, border-color .15s; }
+details.card[open] > summary::before { transform: rotate(45deg);
+                                       border-color: var(--accent); }
+details.card > summary:hover::before { border-color: var(--accent); }
+details.card[open] > summary { border-bottom: 1px solid var(--rule);
+                               background: var(--code-bg); }
+details.card .run { order: 1; justify-self: start;
+                    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+                    font-size: .78rem; color: var(--accent);
+                    background: var(--accent-soft); border-radius: 7px;
+                    padding: .2rem .5rem; white-space: nowrap; }
+details.card .want { order: 2; }
+/* A card list may carry two kinds of thing: what the reader invokes, and what
+   something else invokes on their behalf. Mark the second kind `class="card auto"`
+   and its signature turns amber, so the distinction is visible while collapsed
+   without spending a column on it. Colour is never the only carrier — say which
+   is which in a one-line legend above the list. */
+details.card.auto .run { color: var(--warn); background: var(--warn-soft); }
+details.card.auto[open] > summary::before,
+details.card.auto > summary:hover::before { border-color: var(--warn); }
+/* A third signature colour for a row that is a shell command rather than a
+   skill or an agent. Deliberately close to the accent: the '$ ' prefix is what
+   says shell, and the tint only has to separate the run from its neighbours. */
+details.card.sh .run { color: var(--shell); background: var(--shell-soft); }
+details.card.sh[open] > summary::before,
+details.card.sh > summary:hover::before { border-color: var(--shell); }
+
+
+details.card .want b { font-weight: 700; }
+details.card .want > span { color: var(--muted); }
+@media (max-width: 34rem) {
+  .cards-head { display: none; }
+  .cards-head.grp { display: grid; grid-template-columns: auto 1fr; }
+  details.card > summary { grid-template-columns: auto 1fr; row-gap: .4rem; }
+  details.card .want { order: 1; }
+  details.card .run { order: 2; grid-column: 2; }
+}
+.card-body { padding: .8rem .9rem .9rem; }
+.card-body > :first-child { margin-top: 0; }
+.card-body > :last-child { margin-bottom: 0; }
+
+/* Row set — a collapsible table ------------------------------------------- */
+/* One bordered box, rows divided by hairlines, each summary one line. Peers
+   the reader scans as a list rather than a menu of invocations; see SKILL.md
+   for the choice between this, the card list and summary->detail. */
+/* The marker is +/- absolutely positioned at the right edge, matching .sec:
+   a float would drop onto its own line the moment a row wraps. */
+.rowset { border: 1px solid var(--rule); background: var(--card);
+          margin: 1.25rem 0; }
+.rowset > details.row + details.row { border-top: 1px solid var(--rule); }
+details.row { scroll-margin-top: 4.5rem; }
+details.row > summary { list-style: none; cursor: pointer; position: relative;
+                        padding: .62rem 2.5rem .62rem .9rem; font-size: .93rem;
+                        font-weight: 600; transition: color .15s; }
+details.row > summary::-webkit-details-marker { display: none; }
+details.row > summary::after { content: "+"; position: absolute; right: .9rem;
+                               top: .55rem; line-height: 1; font-weight: 400;
+                               font-family: ui-monospace, "SF Mono", Menlo, monospace;
+                               font-size: 1.1rem; color: var(--faint); }
+details.row[open] > summary::after { content: "−"; color: var(--accent); }
+details.row > summary:hover,
+details.row > summary:hover::after { color: var(--accent); }
+details.row[open] > summary { border-bottom: 1px dotted var(--rule); }
+.row-body { padding: .8rem .9rem .85rem; font-weight: 400; }
+.row-body > :first-child { margin-top: 0; }
+.row-body > :last-child { margin-bottom: 0; }
+
+/* Supporting detail — everything a future reader needs but a scanner does not.
+   Works as a <span> or a <p>; sits at the foot of a .card-body or .entry. */
+.tip { display: block; margin-top: .75rem; padding-top: .65rem;
+       border-top: 1px dotted var(--rule); font-size: .85rem;
+       color: var(--muted); }
+.tip > :last-child { margin-bottom: 0; }
+
+@media print {
+  .bar { display: none; }
+  details.sec > summary h2::after { content: none; }
+  details.card { break-inside: avoid; }
+  details.card > summary::before { display: none; }
+  details.row { break-inside: avoid; }
+  details.row > summary::after { content: none; }
+}
+
+/* ---- Mockup-only: the app window frames -------------------------------- */
+main { max-width: 62rem; }
+.screen { border: 1px solid var(--rule); background: var(--card); margin: 1.25rem 0 2rem;
+          border-radius: 6px; overflow: hidden; font-size: .9rem; }
+.screen .chrome { display: flex; align-items: center; gap: .6rem; padding: .45rem .9rem;
+                  background: var(--code-bg); border-bottom: 1px solid var(--rule);
+                  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .72rem;
+                  color: var(--muted); }
+.screen .chrome i { width: 9px; height: 9px; border-radius: 50%; background: var(--rule);
+                    display: inline-block; }
+.screen .chrome .url { margin-left: .5rem; }
+.app { display: grid; grid-template-columns: 11rem 1fr; min-height: 22rem; }
+.side { border-right: 1px solid var(--rule); padding: .9rem 0; background: var(--bg); }
+.side .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 1.05rem;
+               padding: 0 1rem .8rem; }
+.side .brand small { display: block; font-family: "Avenir Next", system-ui, sans-serif;
+                     font-size: .68rem; color: var(--faint); letter-spacing: .08em;
+                     text-transform: uppercase; }
+.side a { display: block; padding: .38rem 1rem; color: var(--muted); text-decoration: none; }
+.side a.on { color: var(--accent); background: var(--accent-soft); font-weight: 600;
+             border-right: 2px solid var(--accent); }
+.pane { padding: 1.1rem 1.4rem 1.4rem; }
+.pane h2 { border: 0; margin: 0 0 .25rem; padding: 0; font-size: 1.3rem; }
+.pane h3 { margin: 1.3rem 0 .5rem; font-size: 1rem; }
+.pane p { margin: 0 0 .7rem; }
+.sub { color: var(--muted); font-size: .85rem; margin-bottom: 1rem; }
+.steps-bar { display: flex; gap: .3rem; font-size: .7rem; letter-spacing: .08em;
+             text-transform: uppercase; color: var(--faint); margin-bottom: 1.2rem; flex-wrap: wrap; }
+.steps-bar span { padding: .15rem .55rem; border: 1px solid var(--rule); border-radius: 12px; }
+.steps-bar span.done { color: var(--ok); border-color: var(--ok); }
+.steps-bar span.now { color: var(--accent); border-color: var(--accent); font-weight: 700; }
+.btn { display: inline-block; font: inherit; font-size: .84rem; font-weight: 600;
+       padding: .4rem .9rem; border-radius: 4px; border: 1px solid var(--accent);
+       color: var(--accent); background: none; cursor: pointer; text-decoration: none; }
+.btn.primary { background: var(--accent); color: var(--card); }
+.btn.quiet { border-color: var(--rule); color: var(--muted); }
+.btn.small { font-size: .74rem; padding: .2rem .6rem; }
+.actions { display: flex; gap: .6rem; margin-top: 1.2rem; align-items: center; flex-wrap: wrap; }
+.actions .hint { color: var(--faint); font-size: .8rem; }
+.field { margin: 0 0 .9rem; }
+.field label { display: block; font-size: .78rem; font-weight: 600; color: var(--muted);
+               margin-bottom: .25rem; }
+.field .help { font-size: .78rem; color: var(--faint); margin-top: .25rem; }
+.input { display: block; width: 100%; font: inherit; font-size: .88rem; padding: .45rem .6rem;
+         border: 1px solid var(--rule); border-radius: 4px; background: var(--bg); color: var(--fg); }
+textarea.input { min-height: 3.6rem; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+.choice { display: grid; gap: .5rem; margin: .5rem 0 1rem; }
+.opt { display: grid; grid-template-columns: auto 1fr auto; gap: .7rem; align-items: start;
+       border: 1px solid var(--rule); border-radius: 5px; padding: .65rem .8rem; background: var(--bg); }
+.opt.pick { border-color: var(--accent); background: var(--accent-soft); }
+.opt.dim { opacity: .6; }
+.opt .radio { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--faint);
+              margin-top: .25rem; }
+.opt.pick .radio { border-color: var(--accent); background: var(--accent);
+                   box-shadow: inset 0 0 0 2.5px var(--accent-soft); }
+.opt b { display: block; }
+.opt small { color: var(--muted); display: block; font-size: .8rem; }
+.opt .meta { font-family: ui-monospace, Menlo, monospace; font-size: .72rem; color: var(--faint);
+             white-space: nowrap; text-align: right; }
+.tag { display: inline-block; font-size: .66rem; letter-spacing: .07em; text-transform: uppercase;
+       font-weight: 700; padding: .08rem .4rem; border-radius: 2px; background: var(--accent-soft);
+       color: var(--accent); vertical-align: .1em; margin-left: .3rem; }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+.tag.stop { background: var(--stop-soft); color: var(--stop); }
+.tag.ok { background: var(--accent-soft); color: var(--ok); }
+.tag.grey { background: var(--code-bg); color: var(--muted); }
+.mini { font-size: .8rem; }
+.mini th, .mini td { padding: .38rem .55rem; }
+table.mini { min-width: 0; }
+.prog { margin: .9rem 0 1.2rem; }
+.prog .stage { display: grid; grid-template-columns: 8rem 1fr auto; gap: .8rem; align-items: center;
+               padding: .3rem 0; font-size: .85rem; }
+.prog .stage .lbl { color: var(--muted); }
+.prog .track { height: 7px; background: var(--code-bg); border-radius: 4px; overflow: hidden; }
+.prog .fill { height: 100%; background: var(--accent); }
+.prog .n { font-family: ui-monospace, Menlo, monospace; font-size: .74rem; color: var(--muted);
+           white-space: nowrap; }
+.prog .stage.done .lbl { color: var(--ok); }
+.prog .stage.todo { opacity: .5; }
+.stat { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; margin: .8rem 0 1.2rem; }
+.stat div { border: 1px solid var(--rule); border-radius: 5px; padding: .55rem .7rem; background: var(--bg); }
+.stat b { display: block; font-size: 1.35rem; font-family: "Iowan Old Style", Palatino, Georgia, serif; }
+.stat small { color: var(--muted); font-size: .74rem; }
+.edition { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+           font-size: .95rem; line-height: 1.6; }
+.edition h4 { font-size: 1.05rem; margin: 1.1rem 0 .3rem; }
+.edition .own { font-family: "Avenir Next", system-ui, sans-serif; font-size: .72rem; color: var(--muted);
+                letter-spacing: .06em; text-transform: uppercase; }
+.edition .hook { color: var(--accent); font-style: italic; }
+.edition .src { font-family: "Avenir Next", system-ui, sans-serif; font-size: .74rem; color: var(--faint); }
+.split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.3rem; }
+.audit { font-size: .8rem; }
+.audit .item { padding: .45rem 0; border-top: 1px solid var(--rule); }
+.audit .item:first-child { border-top: 0; }
+.audit .why { color: var(--muted); }
+.audit .fit { font-family: ui-monospace, Menlo, monospace; font-size: .7rem; color: var(--faint); }
+.label-row { display: grid; grid-template-columns: 1fr auto; gap: .8rem; align-items: center;
+             padding: .55rem 0; border-top: 1px solid var(--rule); }
+.label-row:first-child { border-top: 0; }
+.label-row small { display: block; color: var(--muted); font-size: .78rem; }
+.label-row .btns { display: flex; gap: .3rem; }
+.label-row .btns .btn.on { background: var(--accent); color: var(--card); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.box { border: 1px solid var(--rule); border-radius: 5px; padding: .7rem .9rem; background: var(--bg); }
+.box h4 { margin: 0 0 .4rem; font-size: .82rem; letter-spacing: .06em; text-transform: uppercase;
+          color: var(--muted); font-family: "Avenir Next", system-ui, sans-serif; }
+.box .item { padding: .35rem 0; border-top: 1px dotted var(--rule); font-size: .82rem; }
+.box .item:first-of-type { border-top: 0; }
+.box .why { color: var(--muted); font-size: .76rem; }
+.banner { background: var(--warn-soft); border-left: 3px solid var(--warn); padding: .55rem .8rem;
+          font-size: .82rem; margin: 0 0 1rem; }
+.banner.ok { background: var(--accent-soft); border-left-color: var(--accent); }
+.banner.stop { background: var(--stop-soft); border-left-color: var(--stop); }
+.kv { display: grid; grid-template-columns: 9rem 1fr; gap: .3rem .8rem; font-size: .85rem; margin: .6rem 0 1rem; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.ex { display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem; margin-bottom: .4rem; align-items: center; }
+.ex .x { color: var(--faint); font-size: .8rem; }
+.flow-note { font-size: .85rem; color: var(--muted); margin: 0 0 .4rem; }
+@media (max-width: 40rem) {
+  .app { grid-template-columns: 1fr; }
+  .side { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .split, .two, .row2, .stat { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <nav aria-label="On this page">
+    <a href="#about">About</a>
+    <a href="#setup">First run</a>
+    <a href="#home">This week</a>
+    <a href="#run">Running</a>
+    <a href="#review">Review</a>
+    <a href="#lens">Lens</a>
+    <a href="#feeds">Feeds</a>
+    <a href="#not">Not in the UI</a>
+  </nav>
+  <span class="spacer"></span>
+  <button type="button" data-all="open">Expand all</button>
+  <button type="button" data-all="close">Collapse all</button>
+</div>
+
+<main>
+  <p class="eyebrow">Weekly Digest · open-source design · UI mockup</p>
+  <h1>Weekly Digest interface</h1>
+  <p class="byline">What the local web app looks like on first run, on a normal Friday, and when reviewing a week · 4 September 2026</p>
+
+  <p class="lede">The app runs at <code>http://127.0.0.1:8765</code> in the user's own browser.
+  Every screen below is drawn with real content from the repository's fixtures and a
+  real September week, so the proportions are honest: how many items a run touches,
+  how long the audit list is, what a carried entry looks like next to a written one.</p>
+
+  <div class="note"><p><span class="lbl">Two rules the screens are built around.</span>
+  The user never sees a temperature, a seed, a batch size or the word "rubric" — the
+  UI says "lens", "filter" and "write". And there is no button to override the filter:
+  the way to change what gets in is to teach the lens on the calibration screen, so
+  the audit for any past week still reproduces.</p></div>
+
+  <details class="sec" open>
+    <summary><span class="kicker">Part I · Orientation</span><h2 id="about">How to read this mockup</h2></summary>
+    <div class="sec-body">
+      <p>Each section is one screen or one flow, drawn as a browser window with the app's
+      left-hand navigation. Sidebar links are the six screens the design names: This week,
+      Review, Lens, Feeds, Settings, About. Setup is a wizard that appears only until it is
+      finished, then is reachable from Settings.</p>
+      <p>The style is the same palette <code>digest/emit.py</code> already uses for the emitted
+      edition, so the app and the briefing it produces look like one thing. Nothing loads
+      from the network; fonts are system stacks.</p>
+    </div>
+  </details>
+
+  <details class="sec" open>
+    <summary><span class="kicker">Part II · First run</span><h2 id="setup">Setup wizard<span class="count">5 steps</span></h2></summary>
+    <div class="sec-body">
+      <p class="flow-note">Step 1 of 5 — the app has already looked for Ollama before the page loads.</p>
+
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/setup/models</span></div>
+        <div class="app">
+          <div class="side">
+            <div class="brand">Weekly Digest<small>setting up</small></div>
+            <a class="on">Setup</a><a>About</a>
+          </div>
+          <div class="pane">
+            <div class="steps-bar"><span class="now">1 Models</span><span>2 Lens</span><span>3 Feeds</span><span>4 Check</span><span>5 Done</span></div>
+            <h2>Which model will do the reading?</h2>
+            <p class="sub">Ollama is running on this machine with three models pulled. This Mac has 48 GB of memory, which is enough for the largest of them.</p>
+
+            <h3>Filtering the headlines</h3>
+            <div class="choice">
+              <div class="opt pick"><span class="radio"></span>
+                <div><b>qwen3:30b <span class="tag ok">recommended</span></b>
+                  <small>Measured on 25 labelled headlines: kept everything that belonged, let in 3 extras. About 13 minutes for a full week. Thinking will be switched off automatically — this model gives empty answers with it on.</small></div>
+                <span class="meta">pulled · 18.6 GB</span></div>
+              <div class="opt"><span class="radio"></span>
+                <div><b>gemma3:27b</b><small>Not yet measured as a filter. You can compare it on step 4.</small></div>
+                <span class="meta">pulled · 17.4 GB</span></div>
+              <div class="opt dim"><span class="radio"></span>
+                <div><b>qwen3:8b <span class="tag grey">untested</span></b><small>Smaller and faster; not measured against the lens. Pull it and compare on step 4.</small></div>
+                <span class="meta">not pulled · 5.2 GB</span></div>
+            </div>
+
+            <h3>Writing the briefing</h3>
+            <div class="choice">
+              <div class="opt pick"><span class="radio"></span>
+                <div><b>gemma3:27b <span class="tag ok">recommended</span></b><small>The shipped default writer. About half of each week is published in the reporter's own words and needs no model at all.</small></div>
+                <span class="meta">pulled</span></div>
+              <div class="opt"><span class="radio"></span>
+                <div><b>A hosted model instead</b><small>Claude, about 60 cents a week measured, or Gemini with a paid key. You'll be asked for a key; it is stored in the macOS Keychain.</small></div>
+                <span class="meta"></span></div>
+            </div>
+
+            <div class="actions"><a class="btn primary">Use these</a><a class="btn quiet">Compare models on my headlines (step 4)</a></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="flow-note">The same step when nothing local was found. The wording is decided by two checks: is the daemon answering, and is the binary installed.</p>
+
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/setup/models</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>setting up</small></div><a class="on">Setup</a><a>About</a></div>
+          <div class="pane">
+            <div class="steps-bar"><span class="now">1 Models</span><span>2 Lens</span><span>3 Feeds</span><span>4 Check</span><span>5 Done</span></div>
+            <h2>No local model found</h2>
+            <div class="banner">Ollama is not installed on this machine, and this laptop has 16 GB of memory. The measured local models need more than that, so a hosted model is the practical choice here.</div>
+            <div class="choice">
+              <div class="opt pick"><span class="radio"></span>
+                <div><b>Claude (Anthropic) <span class="tag ok">recommended</span></b><small>claude-haiku-4-5 filters, claude-sonnet-5 writes. Measured at about $0.60 a week. Needs an API key from console.anthropic.com.</small></div><span class="meta">paid</span></div>
+              <div class="opt"><span class="radio"></span>
+                <div><b>Gemini (Google)</b><small>gemini-3.8-flash for both. In September 2026 the free tier could not finish a week — the run budget ran out after a couple of calls. A paid key works.</small></div><span class="meta">free tier unreliable</span></div>
+              <div class="opt"><span class="radio"></span>
+                <div><b>Install Ollama and come back</b><small>Free, private, slower. Opens ollama.com. A smaller model such as qwen3:8b would fit this machine but has not been measured against the lens.</small></div><span class="meta"></span></div>
+            </div>
+            <div class="field"><label>Anthropic API key</label><input class="input" type="password" value="sk-ant-••••••••••••••••••••••••••••7Qx2"><div class="help">Stored in your operating system's credential store, never in a file. Only the last four characters are ever shown again.</div></div>
+            <div class="actions"><a class="btn primary">Check the key and continue</a></div>
+          </div>
+        </div>
+      </div>
+      <p class="flow-note">Step 2 — pick a lens. A preset is a whole rubric written by a person, with feeds that carry its kind of story.</p>
+
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/setup/lens</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>setting up</small></div><a class="on">Setup</a><a>About</a></div>
+          <div class="pane">
+            <div class="steps-bar"><span class="done">1 Models</span><span class="now">2 Lens</span><span>3 Feeds</span><span>4 Check</span><span>5 Done</span></div>
+            <h2>What should this briefing be about?</h2>
+            <p class="sub">A lens is the written test every headline is judged against. Start from one of these; you can adjust it or write your own afterwards.</p>
+            <div class="choice">
+              <div class="opt pick"><span class="radio"></span>
+                <div><b>The architecture of rule, not the contest for it</b>
+                  <small>How money, power, institutions and systems get reorganised — new rules, new constraints, new capacities — rather than who is winning the fight over them. World affairs; 19 feeds including thirteen Economist sections.</small></div>
+                <span class="meta">original</span></div>
+              <div class="opt"><span class="radio"></span>
+                <div><b>Science and technology: what became possible</b><small>Results and capabilities, not funding rounds or product launches. 9 feeds.</small></div><span class="meta"></span></div>
+              <div class="opt"><span class="radio"></span>
+                <div><b>Money and markets: plumbing, not prices</b><small>Clearing, settlement, regulation, capital controls, who can lend to whom. 7 feeds.</small></div><span class="meta"></span></div>
+              <div class="opt"><span class="radio"></span>
+                <div><b>A country through its institutions</b><small>One place, followed by what its courts, banks, ministries and firms are now able or unable to do. Asks you for the place.</small></div><span class="meta">asks a question</span></div>
+              <div class="opt"><span class="radio"></span>
+                <div><b>Climate and energy: capacity, not targets</b><small>What was built, connected, closed or repriced. 8 feeds.</small></div><span class="meta"></span></div>
+              <div class="opt"><span class="radio"></span>
+                <div><b>Start from a blank form</b><small>Six questions, mostly asking for example headlines. Takes about ten minutes.</small></div><span class="meta"></span></div>
+            </div>
+            <div class="actions"><a class="btn primary">Use this lens</a><a class="btn quiet">Use it and adjust the wording</a><span class="hint">You can always change it later under Lens.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="flow-note">Step 3 — feeds. The preset's feeds are listed already; the user is adding one. The check is one fetch through the same code the weekly run uses.</p>
+
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/setup/feeds</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>setting up</small></div><a class="on">Setup</a><a>About</a></div>
+          <div class="pane">
+            <div class="steps-bar"><span class="done">1 Models</span><span class="done">2 Lens</span><span class="now">3 Feeds</span><span>4 Check</span><span>5 Done</span></div>
+            <h2>Where should the headlines come from?</h2>
+            <p class="sub">19 feeds came with the lens. Add your own by pasting an address; the app checks it before saving.</p>
+            <div class="field"><label>Feed address</label>
+              <div class="ex"><input class="input" value="https://www.ft.com/world?format=rss"><a class="btn">Check</a><span></span></div></div>
+            <div class="banner ok"><b>FT — World</b> parses: 74 entries in the last 8 days, all dated. Blurbs run about 140 characters, so most of its stories will be looked up before they are written. Would skip 6 newsletter trailers (FirstFT).<br>
+              <span class="mini">Latest: <em>Brussels rolls a steel safeguard past its sunset</em> · <em>Indonesia holds nickel export earnings onshore</em> · <em>Bank of Japan rewrites its operating framework</em></span></div>
+            <div class="actions" style="margin-top:0"><a class="btn primary small">Add FT — World</a></div>
+
+            <h3>Feeds so far</h3>
+            <div class="tablewrap"><table class="mini">
+              <thead><tr><th>Feed</th><th>Checked</th><th>Entries / week</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>Economist — The World This Week</td><td>today</td><td>7</td><td><a class="btn quiet small">Remove</a></td></tr>
+                <tr><td>Economist — Leaders</td><td>today</td><td>5</td><td><a class="btn quiet small">Remove</a></td></tr>
+                <tr><td>Economist — Finance and Economics</td><td>today</td><td>11</td><td><a class="btn quiet small">Remove</a></td></tr>
+                <tr><td>Economist — Asia</td><td>today</td><td>8</td><td><a class="btn quiet small">Remove</a></td></tr>
+                <tr><td>… 12 more Economist sections, Ars Technica, IEEE Spectrum, SCMP × 2, Semafor</td><td></td><td></td><td></td></tr>
+                <tr><td>Nikkei Asia <span class="tag warn">no dates</span></td><td>today</td><td>0</td><td><a class="btn quiet small">Remove</a></td></tr>
+              </tbody></table></div>
+            <p class="mini" style="color:var(--muted)">Nikkei's feed carries no dates, so every entry falls out at the freshness cutoff and it would contribute nothing. Kept in the list so you can see why, not used.</p>
+            <div class="actions"><a class="btn primary">Continue</a></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="flow-note">Step 4 — check the lens against you. Optional; skipping goes straight to Done. This is <code>scripts/eval_rubric.py</code> turned into a screen, with the user's own headlines instead of the shipped 25.</p>
+
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/setup/check</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>setting up</small></div><a class="on">Setup</a><a>About</a></div>
+          <div class="pane">
+            <div class="steps-bar"><span class="done">1 Models</span><span class="done">2 Lens</span><span class="done">3 Feeds</span><span class="now">4 Check</span><span>5 Done</span></div>
+            <h2>Would you want to read these?</h2>
+            <p class="sub">25 headlines from your feeds this week. Say what you'd want; then the lens is run over the same 25 and you see where it disagrees with you. These are your calls — change any you like.</p>
+            <div>
+              <div class="label-row"><div>Saudi revamps derivatives to attract foreign cash<small>Kingdom's stock market looks to futures to bring in international investors and boost liquidity as trading volumes slump. — Semafor</small></div>
+                <div class="btns"><a class="btn small on">Want it</a><a class="btn small">Maybe</a><a class="btn small">Skip</a></div></div>
+              <div class="label-row"><div>Graham wins South Carolina Senate primary, vindicating Trump<small>The incumbent rode President Donald Trump's endorsement to a narrow victory after a quick special election. — Semafor</small></div>
+                <div class="btns"><a class="btn small">Want it</a><a class="btn small">Maybe</a><a class="btn small on">Skip</a></div></div>
+              <div class="label-row"><div>'This is crazy. This is insane': Bill Gates has changed his mind about AI and jobs<small>The Microsoft founder says human-only jobs and token taxes will be required. — Semafor</small></div>
+                <div class="btns"><a class="btn small">Want it</a><a class="btn small">Maybe</a><a class="btn small on">Skip</a></div></div>
+              <div class="label-row"><div>Court decision boosts Democrats' spending power<small>A ruling changes what a party committee may spend in coordination with candidates. — Semafor</small></div>
+                <div class="btns"><a class="btn small">Want it</a><a class="btn small on">Maybe</a><a class="btn small">Skip</a></div></div>
+              <div class="label-row"><div>Four in 10 Americans believe UFOs have visited Earth<small>A poll. — Semafor</small></div>
+                <div class="btns"><a class="btn small">Want it</a><a class="btn small">Maybe</a><a class="btn small">Skip</a></div></div>
+            </div>
+            <p class="mini" style="color:var(--faint);margin-top:.5rem">4 of 25 labelled · 21 to go</p>
+            <div class="actions"><a class="btn primary">Run the lens over these</a><a class="btn quiet">Skip this step</a></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="flow-note">The result. Two lists, each row carrying the model's own twenty-word reason. "Add as an example" writes the headline into the matching lens field — that is how the rubric gets concrete examples nobody had to invent.</p>
+
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/setup/check/result</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>setting up</small></div><a class="on">Setup</a><a>About</a></div>
+          <div class="pane">
+            <div class="steps-bar"><span class="done">1 Models</span><span class="done">2 Lens</span><span class="done">3 Feeds</span><span class="now">4 Check</span><span>5 Done</span></div>
+            <h2>The lens agrees with you on 22 of 25</h2>
+            <p class="sub">qwen3:30b, 43 seconds. You wanted 11; the lens would keep 13. What matters is the two lists below, not the score.</p>
+            <div class="two">
+              <div class="box"><h4>You wanted these — the lens would drop them (0)</h4><div class="item" style="color:var(--muted)">Nothing. Every headline you wanted gets through.</div></div>
+              <div class="box"><h4>The lens would keep these — you skipped them (3)</h4>
+                <div class="item">Lawyers see imminent decision on deportation flights<div class="why">Lens said: fit 2 — ruling would change deportation capacity</div><a class="btn quiet small">Add as an example of "usually skip"</a></div>
+                <div class="item">Kevin Warsh tries being a normal central banker<div class="why">Lens said: fit 2 — operating stance shift at the Fed</div><a class="btn quiet small">Add as an example of "usually skip"</a></div>
+                <div class="item">Nepal flash floods<div class="why">Lens said: fit 2 — state capacity test after disaster</div><a class="btn quiet small">Add as an example of "usually skip"</a></div></div>
+            </div>
+            <div class="actions"><a class="btn">Re-check with the changes</a><a class="btn quiet">Compare gemma3:27b as the filter</a><a class="btn primary">Good enough — finish</a><span class="hint">Extra items you skim past cost little; a missing one you never know about.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="flow-note">Step 5 — done. Setup writes config as it goes, so closing the tab at any step loses nothing.</p>
+
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/setup/done</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>ready</small></div><a class="on">Setup</a><a>About</a></div>
+          <div class="pane">
+            <div class="steps-bar"><span class="done">1 Models</span><span class="done">2 Lens</span><span class="done">3 Feeds</span><span class="done">4 Check</span><span class="now">5 Done</span></div>
+            <h2>Ready to run</h2>
+            <dl class="kv">
+              <dt>Lens</dt><dd>The architecture of rule, not the contest for it</dd>
+              <dt>Feeds</dt><dd>20, all checked today</dd>
+              <dt>Filter</dt><dd>qwen3:30b, local</dd>
+              <dt>Writer</dt><dd>gemma3:27b, local</dd>
+              <dt>Length</dt><dd>About an hour of listening (up to 60 items)</dd>
+              <dt>Outputs</dt><dd>Text, web page · <a>add PDF or audio</a></dd>
+              <dt>Saved to</dt><dd>~/Digests</dd>
+              <dt>Schedule</dt><dd>Not set · <a>run every Friday at 7:00</a></dd>
+            </dl>
+            <div class="actions"><a class="btn primary">Run this week now</a><a class="btn quiet">Go to This week</a><span class="hint">A first run takes about twenty minutes on these models.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+  <details class="sec" open>
+    <summary><span class="kicker">Part III · Day to day</span><h2 id="home">This week — the home screen</h2></summary>
+    <div class="sec-body">
+      <p class="flow-note">A normal Friday after the scheduled run. The four numbers are the <code>RunResult</code> fields that exist today.</p>
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>architecture of rule</small></div>
+            <a class="on">This week</a><a>Review</a><a>Lens</a><a>Feeds</a><a>Settings</a><a>About</a></div>
+          <div class="pane">
+            <h2>Week 36, 2026</h2>
+            <p class="sub">Ran this morning at 7:02, finished 7:24. Next scheduled run: Friday 11 September, 7:00.</p>
+            <div class="stat">
+              <div><b>286</b><small>headlines fetched</small></div>
+              <div><b>241</b><small>new since last week</small></div>
+              <div><b>60</b><small>selected by the lens</small></div>
+              <div><b>44</b><small>entries · 31 in reporters' own words</small></div>
+            </div>
+            <p><b>Theme of the week:</b> states redirecting credit and export earnings. <span class="mini" style="color:var(--muted)">7,910 words, about 55 minutes aloud.</span></p>
+            <div class="actions" style="margin-top:.4rem"><a class="btn primary">Read this week</a><a class="btn">Open folder</a><a class="btn">Make audio</a><a class="btn quiet">Run again</a></div>
+            <h3>Earlier weeks</h3>
+            <div class="tablewrap"><table class="mini"><thead><tr><th>Week</th><th>Ran</th><th>Entries</th><th>Words</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>2026-W35</td><td>28 Aug</td><td>41</td><td>7,340</td><td><a>read</a> · <a>audit</a></td></tr>
+                <tr><td>2026-W34</td><td>21 Aug</td><td>38 <span class="tag warn">partial</span></td><td>6,120</td><td><a>read</a> · <a>audit</a></td></tr>
+                <tr><td>2026-W33</td><td>14 Aug</td><td>47</td><td>8,210</td><td><a>read</a> · <a>audit</a></td></tr>
+              </tbody></table></div>
+            <p class="mini" style="color:var(--muted)">Week 34 is marked partial: two entries could not be written after the writer named an institution its sources never mentioned, twice. The audit says which.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" open>
+    <summary><span class="kicker">Part III · Day to day</span><h2 id="run">Running a week</h2></summary>
+    <div class="sec-body">
+      <p class="flow-note">The same screen during a run. Progress comes from the pipeline's new stage callback; the per-entry count is the <code>log.info("entry %d/%d")</code> line that already exists. The tab can be closed and reopened.</p>
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>architecture of rule</small></div>
+            <a class="on">This week</a><a>Review</a><a>Lens</a><a>Feeds</a><a>Settings</a><a>About</a></div>
+          <div class="pane">
+            <h2>Running week 36 <span class="tag">14 min</span></h2>
+            <p class="sub">Started 7:02. Local models, nothing leaves this machine except feed fetches and a few searches for thin stories.</p>
+            <div class="prog">
+              <div class="stage done"><span class="lbl">Fetch feeds</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="n">286 from 19 feeds · 1 feed failed, skipped</span></div>
+              <div class="stage done"><span class="lbl">Drop repeats</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="n">241 new</span></div>
+              <div class="stage done"><span class="lbl">Filter</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="n">10 batches · 113 above the bar</span></div>
+              <div class="stage done"><span class="lbl">Select</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="n">60 kept, 53 dropped</span></div>
+              <div class="stage done"><span class="lbl">Look up thin ones</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="n">38 of 60 · 22 articles, 14 searches, 2 still thin</span></div>
+              <div class="stage"><span class="lbl">Write</span><div class="track"><div class="fill" style="width:62%"></div></div><span class="n">31 carried as written · entry 8 of 13</span></div>
+              <div class="stage todo"><span class="lbl">Frame and order</span><div class="track"></div><span class="n"></span></div>
+              <div class="stage todo"><span class="lbl">Save files</span><div class="track"></div><span class="n"></span></div>
+            </div>
+            <div class="banner">Semafor's feed did not answer within 20 seconds and was skipped. The run carries on with the other 18; it will be tried again next week.</div>
+            <div class="actions"><a class="btn quiet">Stop after this entry</a><span class="hint">Stopping keeps the classifications so the audit still works; nothing is marked as seen.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" open>
+    <summary><span class="kicker">Part III · Day to day</span><h2 id="review">Reviewing a week</h2></summary>
+    <div class="sec-body">
+      <p class="flow-note">The edition on the left is <code>emit.render_html</code> as it is today. The right panel is the <code>audit</code> command as a list: every fetched item, and for the dropped ones the reason string <code>selection.py</code> already writes. Nothing here is editable.</p>
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/review/2026-W36</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>architecture of rule</small></div>
+            <a>This week</a><a class="on">Review</a><a>Lens</a><a>Feeds</a><a>Settings</a><a>About</a></div>
+          <div class="pane">
+            <div class="actions" style="margin:0 0 .9rem"><a class="btn small">Week 36 ▾</a><a class="btn small">Save as PDF</a><a class="btn small">Make audio</a><a class="btn small">Upload to Drive</a><a class="btn quiet small">Open folder</a></div>
+            <div class="split">
+              <div class="edition">
+                <p>The weekly digest, week 36. Three of this week's items share one mechanism: a state deciding where money may go. Japan's central bank, Indonesia's export earnings and Brussels' steel safeguard each change a rule rather than a price. The rest stand alone.</p>
+                <p><em>First, East Asia.</em></p>
+                <h4>The Bank of Japan rewrites its operating framework</h4>
+                <p>Japan's central bank has replaced the yield target it held for nine years with a corridor on the overnight rate, and will let the ten-year bond find its own level. Banks that had parked reserves at the central bank now earn less for doing so, so the money has somewhere else to go. The change sits inside a broader retreat from the tools adopted after the 2008 crisis.</p>
+                <p class="hook">The new corridor pays banks less to sit still, which is the point.</p>
+                <p class="src">Economist — Finance and Economics · FT — World</p>
+                <h4>Indonesia holds nickel export earnings onshore</h4>
+                <p class="own">In Semafor's own words.</p>
+                <p>Indonesia will require exporters of nickel and other processed minerals to keep their foreign-currency earnings in domestic banks for a full year, up from three months, the finance ministry said on Tuesday. The rule applies to shipments from October and covers roughly twelve billion dollars a year in receipts. Officials said the aim was to deepen the domestic dollar market and reduce the rupiah's dependence on portfolio inflows. Miners had lobbied for a shorter period.</p>
+                <p class="src">Semafor</p>
+                <p><em>Next, Europe.</em></p>
+                <h4>Brussels rolls a steel safeguard past its sunset</h4>
+                <p>The European Union has extended tariff quotas on steel imports that were due to expire under World Trade Organisation rules, by reclassifying them as a response to a new surge rather than a continuation of the old one. …</p>
+              </div>
+              <div class="audit">
+                <p style="margin:0 0 .4rem"><b>What happened to 286 headlines</b><br><span style="color:var(--muted)">44 written · 16 cut for length · 53 below the bar or capped · 45 repeats · 128 off-lens</span></p>
+                <div class="item"><span class="tag ok">carried</span> Indonesia holds nickel export earnings onshore<div class="fit">fit 3 · architecture · novelty 3 · Semafor's own text, 118 words</div></div>
+                <div class="item"><span class="tag ok">written</span> The Bank of Japan rewrites its operating framework<div class="fit">fit 3 · architecture · 2 stories merged</div></div>
+                <div class="item"><span class="tag warn">dropped</span> Graham wins South Carolina Senate primary<div class="why">below threshold (fit=1, novelty=2)</div></div>
+                <div class="item"><span class="tag warn">dropped</span> Vance supporters dismiss 2028 speculation<div class="why">balance rule: contest items capped at 20% of the set</div></div>
+                <div class="item"><span class="tag warn">dropped</span> China's grid absorbs another record month of solar<div class="why">saga: mechanism 'policy-driven renewable capacity build' already covered, novelty=1</div></div>
+                <div class="item"><span class="tag warn">dropped</span> Kevin Warsh tries being a normal central banker<div class="why">length governor: fit 2, the edition was over an hour</div></div>
+                <div class="item"><span class="tag stop">could not write</span> Chip export rules tighten again<div class="why">the writer named the Bureau of Industry and Security, which none of its sources mention, twice</div></div>
+                <div class="item"><span class="tag grey">repeat</span> Solar overtakes coal as China's biggest source of power capacity<div class="why">already seen in a prior edition</div></div>
+                <p class="mini" style="margin-top:.6rem"><a>Show all 286</a> · <a>Something missing? Teach the lens</a></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+  <details class="sec">
+    <summary><span class="kicker">Part IV · Authoring</span><h2 id="lens">Lens — the form and the file</h2></summary>
+    <div class="sec-body">
+      <p class="flow-note">One field per section of the rubric, in the rubric's own fixed shape. The parts that are the same for every lens — the 0 to 3 scale, novelty, mechanism — are not asked. Examples are asked for at every level, because examples are what the classifier uses.</p>
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/lens</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>architecture of rule</small></div>
+            <a>This week</a><a>Review</a><a class="on">Lens</a><a>Feeds</a><a>Settings</a><a>About</a></div>
+          <div class="pane">
+            <h2>The lens</h2>
+            <p class="sub">Started from the preset <b>The architecture of rule</b>. Last checked against your headlines on 4 September: agreed on 22 of 25. <a>Check again</a> · <a>Open lens.md in an editor</a></p>
+            <div class="banner">lens.md was edited by hand on 3 September (two lines changed in the FIT 3 examples). Saving this form will replace that wording. <a>Show the difference</a></div>
+            <div class="field"><label>Name</label><input class="input" value="The architecture of rule, not the contest for it"></div>
+            <div class="row2">
+              <div class="field"><label>What this briefing is about</label><textarea class="input">A change in how a system is organised: its rules, constraints, capacities, incentives or boundaries.</textarea></div>
+              <div class="field"><label>What it is not about</label><textarea class="input">Who is winning: elections, feuds, negotiations as sport, leadership races.</textarea></div>
+            </div>
+            <div class="field"><label>Headlines you would definitely want, and why each counts</label>
+              <div class="ex"><input class="input" value="Central bank adopts a new operating framework"><input class="input" value="the plumbing changed, not the rate"><span class="x">×</span></div>
+              <div class="ex"><input class="input" value="A country revokes or creates a property regime"><input class="input" value="a structural fact changed"><span class="x">×</span></div>
+              <div class="ex"><input class="input" value="Saudi revamps derivatives to attract foreign cash"><input class="input" value="market plumbing: a new instrument class to admit foreign capital"><span class="x">×</span></div>
+              <div class="ex"><input class="input" placeholder="another headline"><input class="input" placeholder="why"><span class="x"></span></div>
+              <div class="help">Three added from your calibration answers. <a>Suggest more from this week's feeds</a> — the model proposes, you keep or delete.</div></div>
+            <div class="field"><label>Headlines you would probably want</label>
+              <div class="ex"><input class="input" value="A tariff regime extended"><input class="input" value="meaningful movement inside an existing structure"><span class="x">×</span></div>
+              <div class="ex"><input class="input" value="A court decision that changes what institutions can do"><input class="input" value="second-order effects"><span class="x">×</span></div></div>
+            <div class="field"><label>Near your topic, but you'd usually skip — unless…</label>
+              <div class="ex"><input class="input" value="An election result, a leadership change, a strike"><input class="input" value="…unless it explains a structural consequence"><span class="x">×</span></div></div>
+            <div class="field"><label>Never</label><div class="help" style="margin:0 0 .3rem">Ticked: personalities · polls · scandals · culture war · sport · celebrity · human interest · opinion without a mechanism</div><input class="input" placeholder="anything else"></div>
+            <div class="row2">
+              <div class="field"><label>Regions of interest</label><div class="help" style="margin:0">East Asia, Britain, Europe ticked as high interest. The lens says: do not inflate the score for them.</div></div>
+              <div class="field"><label>Topics</label><div class="help" style="margin:0">finance, trade, industry, state, tech, energy, demography, security, other — <a>rename or add</a></div></div>
+            </div>
+            <div class="actions"><a class="btn primary">Save and rebuild lens.md</a><a class="btn">Save and check against my headlines</a><a class="btn quiet">Discard changes</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary><span class="kicker">Part IV · Authoring</span><h2 id="feeds">Feeds</h2></summary>
+    <div class="sec-body">
+      <p class="flow-note">After a few weeks the list carries what each feed actually contributed. A feed that fails three runs running is flagged, never silently dropped.</p>
+      <div class="screen">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">127.0.0.1:8765/feeds</span></div>
+        <div class="app">
+          <div class="side"><div class="brand">Weekly Digest<small>architecture of rule</small></div>
+            <a>This week</a><a>Review</a><a>Lens</a><a class="on">Feeds</a><a>Settings</a><a>About</a></div>
+          <div class="pane">
+            <h2>Feeds <span class="tag grey">20</span></h2>
+            <div class="ex" style="margin-bottom:1rem"><input class="input" placeholder="Paste a feed address"><a class="btn">Check</a><span></span></div>
+            <div class="tablewrap"><table class="mini"><thead><tr><th>Feed</th><th>Last run</th><th>Fetched</th><th>Made the cut</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>Economist — Finance and Economics</td><td>ok</td><td>11</td><td>6</td><td><a>pause</a></td></tr>
+                <tr><td>Economist — The World This Week</td><td>ok</td><td>7</td><td>4</td><td><a>pause</a></td></tr>
+                <tr><td>FT — World</td><td>ok</td><td>74</td><td>9</td><td><a>pause</a></td></tr>
+                <tr><td>SCMP — This Week in Asia (Economics)</td><td>ok</td><td>19</td><td>5</td><td><a>pause</a></td></tr>
+                <tr><td>Ars Technica</td><td>ok</td><td>41</td><td>3</td><td><a>pause</a></td></tr>
+                <tr><td>Semafor <span class="tag warn">failed 3 weeks</span></td><td>timed out</td><td>0</td><td>—</td><td><a>check now</a> · <a>remove</a></td></tr>
+                <tr><td>Nikkei Asia <span class="tag grey">paused</span></td><td>—</td><td>—</td><td>—</td><td><a>resume</a> · <a>remove</a></td></tr>
+                <tr><td style="color:var(--muted)">… 13 more</td><td></td><td></td><td></td><td></td></tr>
+              </tbody></table></div>
+            <p class="mini" style="color:var(--muted)">"Made the cut" is how many of a feed's stories the lens kept last week. A feed with many fetched and none kept is off-lens rather than broken; both are fine to keep.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary><span class="kicker">Part V · Boundaries</span><h2 id="not">What the UI deliberately does not do</h2></summary>
+    <div class="sec-body">
+      <div class="rowset">
+        <details class="row"><summary>There is no button to keep or drop a single item.</summary><div class="row-body"><p>The stored classifications plus the pure <code>select</code> function are what let <code>audit</code> reproduce any past week. An override would be a second source of truth. The review panel's "Something missing? Teach the lens" link goes to calibration, which turns the miss into a labelled example.</p></div></details>
+        <details class="row"><summary>The edition's text cannot be edited in the app.</summary><div class="row-body"><p>The app produces a briefing; it is not a document editor. The .txt and .md files are on disk for anyone who wants to change words before sending them on.</p></div></details>
+        <details class="row"><summary>Temperature, seed, batch size, thinking, context size and pacing are not on any screen.</summary><div class="row-body"><p>Each has a measured right value recorded in <code>digest.toml</code>'s comments. They live under <code>[advanced]</code> in <code>config.toml</code> for anyone who wants them. Thinking is detected from Ollama's capability list rather than set.</p></div></details>
+        <details class="row"><summary>The four machinery prompts are not shown.</summary><div class="row-body"><p><code>classify.md</code>, <code>cluster.md</code> and the two <code>synthesize_*.md</code> files stay in the package. Only the lens is the user's.</p></div></details>
+        <details class="row"><summary>It listens on 127.0.0.1 only, with no accounts and no remote mode.</summary><div class="row-body"><p>One person, one machine. The scheduled job shares the same core and needs no browser open.</p></div></details>
+        <details class="row"><summary>Google Drive is under Settings → Advanced, not in setup.</summary><div class="row-body"><p>The OAuth path requires creating a Google Cloud project. The default delivery is the output folder, which every user already has.</p></div></details>
+      </div>
+    </div>
+  </details>
+</main>
+
+<script>
+// House page behaviour. Works in both modes; paste inside a <script> tag.
+// Three jobs: make anchors into collapsed sections work, drive the
+// expand/collapse-all buttons, and mark the section the reader is in.
+(function () {
+  function sections() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll("details.sec"));
+  }
+
+  // An <a href="#x"> whose target sits inside a closed <details> scrolls
+  // nowhere: the target has no layout box. Open every <details> ancestor
+  // first, then scroll.
+  function jump() {
+    if (!location.hash || location.hash === "#") { return; }
+    var target;
+    // A hash containing "/" or "." is an invalid selector and throws,
+    // which would kill every later handler on the page. See _slug().
+    try { target = document.querySelector(location.hash); } catch (e) { return; }
+    if (!target) { return; }
+    for (var el = target; el; el = el.parentElement) {
+      if (el.tagName === "DETAILS") { el.open = true; }
+    }
+    var previous = document.querySelector(".hit");
+    if (previous) { previous.classList.remove("hit"); }
+    (target.closest("tr") || target).classList.add("hit");
+    target.scrollIntoView({block: "start"});
+  }
+  window.addEventListener("hashchange", jump);
+  document.addEventListener("DOMContentLoaded", jump);
+
+  // Buttons: <button data-all="open">expand all</button>
+  //          <button data-all="close">collapse all</button>
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest("[data-all]");
+    if (!button) { return; }
+    var open = button.getAttribute("data-all") === "open";
+    sections().forEach(function (section) { section.open = open; });
+  });
+
+  // Scrollspy: highlights the nav link for the section in view.
+  var links = {};
+  sections().forEach(function (section) {
+    var id = section.id
+      || (section.querySelector("[id]") && section.querySelector("[id]").id);
+    if (!id) { return; }
+    var link = document.querySelector('.bar a[href="#' + id + '"]');
+    if (link) { links[id] = {link: link, top: section}; }
+  });
+  function mark() {
+    var best = null, bestTop = -Infinity;
+    Object.keys(links).forEach(function (id) {
+      var top = links[id].top.getBoundingClientRect().top - 80;
+      if (top <= 0 && top > bestTop) { bestTop = top; best = id; }
+    });
+    Object.keys(links).forEach(function (id) {
+      if (id === best) { links[id].link.setAttribute("aria-current", "true"); }
+      else { links[id].link.removeAttribute("aria-current"); }
+    });
+  }
+  addEventListener("scroll", mark, {passive: true});
+  mark();
+})();
+</script>
+</body>
+</html>
