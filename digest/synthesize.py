@@ -14,10 +14,10 @@ from datetime import datetime, timezone
 
 from rapidfuzz import fuzz
 
-from .cluster import theme_candidate
+from .cluster import SAME_EVENT_THRESHOLD, theme_candidate
 from .config import Config
 from .llm import Client, LLMError
-from .models import Cluster, Edition, Entry
+from .models import Classified, Cluster, Edition, Entry
 from .normalize import strip_furniture
 
 log = logging.getLogger("digest.synthesize")
@@ -339,26 +339,76 @@ def _spoken_text(payload: dict) -> str:
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
 
-def _human_text(cluster: Cluster) -> tuple[str, str] | None:
-    """The article a person already wrote, if we have enough of one.
-
-    Only a single-story cluster qualifies. When several stories share a
-    mechanism the point of the entry is the synthesis across them, and no one
-    outlet wrote that — splicing two articles together would be neither their
-    words nor an honest summary.
+def _written_up(row: Classified) -> tuple[str, str] | None:
+    """The article a person already wrote about this story, if we have one.
 
     Search snippets never count. They are other outlets glossing the event, not
     the story itself, and presenting them as the source would be a lie about
     where the words came from.
     """
+    article = max(
+        (e.text for e in row.evidence if e.kind == "article"), key=len, default=""
+    )
+    text = max([row.item.blurb, article], key=len)
+    return (text, row.item.source) if text else None
+
+
+def _long_enough(row: Classified, cfg: Config) -> bool:
+    found = _written_up(row)
+    return bool(found and len(found[0]) >= cfg.run.source_min_chars)
+
+
+def partition_carried(
+    selected: list[Classified], cfg: Config
+) -> tuple[list[Classified], list[Classified]]:
+    """Split the week into what we publish as written and what we hand the model.
+
+    The order of these two steps decides how often a reporter's own words reach
+    the page. Deciding after clustering meant a story a person had written in
+    full got rewritten whenever the grouping happened to absorb it — nine of
+    twelve one week, and which nine depended on how well a model grouped.
+
+    So the carry decision comes first, with one exception. When two outlets
+    covered the same event, combining them is the one thing the model does that
+    no single article can, and publishing both verbatim would print the same
+    news twice. Those go to clustering; everything else a person wrote goes
+    straight to the page.
+    """
+    carried: list[Classified] = []
+    for row in selected:
+        if not _long_enough(row, cfg):
+            continue
+        covered_elsewhere = any(
+            other.id != row.id
+            and fuzz.token_set_ratio(row.item.title.lower(), other.item.title.lower())
+            >= SAME_EVENT_THRESHOLD
+            for other in selected
+        )
+        if not covered_elsewhere:
+            carried.append(row)
+    ids = {c.id for c in carried}
+    return carried, [c for c in selected if c.id not in ids]
+
+
+def carried_clusters(rows: list[Classified]) -> list[Cluster]:
+    """One cluster per carried story, with ids that cannot collide with the
+    model's own."""
+    return [
+        Cluster(cluster_id=f"s{n}", title=r.item.title, items=[r], shared_mechanism=r.mechanism)
+        for n, r in enumerate(rows, 1)
+    ]
+
+
+def _human_text(cluster: Cluster) -> tuple[str, str] | None:
+    """A cluster of one story that a person already wrote up.
+
+    Several stories sharing a mechanism never qualify: the point of that entry
+    is the synthesis across them, which no one outlet wrote, and splicing two
+    articles together would be neither their words nor an honest summary.
+    """
     if len(cluster.items) != 1:
         return None
-    item = cluster.items[0]
-    article = max(
-        (e.text for e in item.evidence if e.kind == "article"), key=len, default=""
-    )
-    text = max([item.item.blurb, article], key=len)
-    return (text, item.item.source) if text else None
+    return _written_up(cluster.items[0])
 
 
 def _excerpt(text: str, max_words: int) -> str:

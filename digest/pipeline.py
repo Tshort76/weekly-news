@@ -105,7 +105,15 @@ def run(
     selected = ground_stage.ground(selected, cfg)
     state.save_classified(selected, week)
 
-    clusters, degraded = cluster_stage.cluster(selected, cfg, client)
+    # Before clustering, not after: whether a reporter's own words reach the
+    # page should not depend on how well a model grouped the week.
+    carried, to_cluster = synth_stage.partition_carried(selected, cfg)
+    log.info(
+        "%d stories go in as their reporter wrote them, %d go to the model",
+        len(carried), len(to_cluster),
+    )
+    clusters, degraded = cluster_stage.cluster(to_cluster, cfg, client)
+    clusters = synth_stage.carried_clusters(carried) + clusters
     edition = synth_stage.synthesize(
         clusters, cfg, client, week,
         prior_entries=state.prior_entries(week),

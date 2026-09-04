@@ -352,3 +352,47 @@ def test_the_reader_is_told_whose_words_they_are():
     assert "Economist — Business's own words" in render_md(edition)
     assert "In Economist — Business's own words." in render_txt(edition)
     assert "carried in the reporter's own words" in render_md(edition)
+
+
+def test_a_lone_report_is_carried_without_waiting_for_clustering():
+    """Deciding after grouping meant a story a person wrote in full got
+    rewritten whenever the grouping happened to absorb it."""
+    from digest.synthesize import partition_carried
+
+    rows = [_reported().items[0]]
+    carried, rest = partition_carried(rows, Config())
+    assert len(carried) == 1 and rest == []
+
+
+def test_two_outlets_on_one_event_go_to_the_model_instead():
+    """Combining several accounts of one event is the one thing the model does
+    that no single article can, and printing both verbatim prints it twice."""
+    from digest.models import Evidence
+    from digest.synthesize import partition_carried
+
+    def report(title):
+        row = make_classified(item={"title": title, "url": f"https://e.com/{title[:9]}"})
+        row.evidence = [Evidence(kind="article", text="The deal closed today. " * 45)]
+        return row
+
+    rows = [
+        report("Nvidia to buy Hugging Face for nearly $13 billion"),
+        report("Nvidia buys Hugging Face, the GitHub of AI, for $13 billion"),
+    ]
+    carried, rest = partition_carried(rows, Config())
+    assert carried == [] and len(rest) == 2
+
+
+def test_a_thin_story_is_never_carried():
+    from digest.synthesize import partition_carried
+
+    rows = [make_classified(item={"blurb": "Short."})]
+    carried, rest = partition_carried(rows, Config())
+    assert carried == [] and len(rest) == 1
+
+
+def test_carried_clusters_cannot_collide_with_the_models_ids():
+    from digest.synthesize import carried_clusters
+
+    ids = [c.cluster_id for c in carried_clusters(_reported().items)]
+    assert ids == ["s1"] and not any(i.startswith("c") for i in ids)

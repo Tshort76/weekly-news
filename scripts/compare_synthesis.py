@@ -73,7 +73,9 @@ def main() -> None:
         # The Gemini acceptance run's clustering call failed and fell back to
         # singletons — reproduce that exactly so the entries line up 1:1
         # between the two editions and the comparison isolates synthesis.
-        clusters = cluster_stage.singletons(selected)
+        carried, to_cluster = synth_stage.partition_carried(selected, cfg)
+        print(f"carried verbatim: {len(carried)}; to the model: {len(to_cluster)}")
+        clusters = synth_stage.carried_clusters(carried) + cluster_stage.singletons(to_cluster)
         print(f"clusters: {len(clusters)} (singleton fallback, matching the Gemini run)")
         if args.limit:
             clusters = clusters[: args.limit]
