@@ -84,3 +84,51 @@ def test_a_parenthetical_fails(tmp_path):
     result = run(tmp_path, CLEAN.replace("what it steers", "what it steers (the reserves)"))
     assert result.returncode == 1
     assert "parentheticals" in result.stdout
+
+
+def test_a_reporters_wording_is_reported_but_does_not_fail_the_check(tmp_path):
+    """Verbatim is the choice, so a semicolon in someone else's paragraph is
+    their house style, not a defect in the briefing. Reporting it as one trains
+    the reader to skip the whole list."""
+    import subprocess
+    import sys
+
+    from digest.emit import DIVIDER
+
+    path = tmp_path / "d.txt"
+    path.write_text(
+        "The Weekly Digest.\n\n"
+        "CDC still counts two measles deaths\n\n"
+        "In Ars Technica's own words.\n\n"
+        "The CDC counted 2 deaths (a newborn and a child) after the NSA review.\n\n"
+        "End of the digest.\n\n" + DIVIDER + "\nSources\n\n1. x\n"
+    )
+    out = subprocess.run(
+        [sys.executable, "scripts/check_spoken.py", str(path)],
+        capture_output=True, text=True, cwd=ROOT,
+    )
+    assert out.returncode == 0, out.stdout
+    assert "PASS on every mechanical criterion" in out.stdout
+    assert "read verbatim by choice" in out.stdout
+    assert "CDC" in out.stdout
+
+
+def test_the_briefings_own_prose_is_still_held_to_the_rules(tmp_path):
+    import subprocess
+    import sys
+
+    from digest.emit import DIVIDER
+
+    path = tmp_path / "d.txt"
+    path.write_text(
+        "The Weekly Digest.\n\n"
+        "A headline\n\n"
+        "The CDC reviewed it (twice) this week.\n\n"
+        "End of the digest.\n\n" + DIVIDER + "\nSources\n\n1. x\n"
+    )
+    out = subprocess.run(
+        [sys.executable, "scripts/check_spoken.py", str(path)],
+        capture_output=True, text=True, cwd=ROOT,
+    )
+    assert out.returncode == 1
+    assert "acronyms that may not be spelled out" in out.stdout

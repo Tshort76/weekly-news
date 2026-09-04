@@ -34,6 +34,36 @@ FORECAST = re.compile(
     re.IGNORECASE,
 )
 PARENTHETICAL = re.compile(r"\([^)]{4,}\)")
+# render_txt announces a carried entry, then prints the outlet's paragraph as a
+# single line two lines below.
+CARRIED_MARKER = re.compile(r"^In .+'s own words\.$")
+
+
+def split_by_author(spoken: str) -> tuple[str, str]:
+    """Separate what the briefing wrote from what it is quoting.
+
+    Both are read aloud, so both matter — but only one of them is ours to fix.
+    A semicolon in a reporter's paragraph is their house style, and reporting
+    it as a defect in the briefing trains the reader to ignore the whole list.
+    """
+    lines = spoken.splitlines()
+    ours: list[str] = []
+    theirs: list[str] = []
+    n = 0
+    while n < len(lines):
+        if CARRIED_MARKER.match(lines[n].strip()):
+            # The headline two lines back is the outlet's too, so it moves
+            # across with the paragraph rather than being judged as ours.
+            while ours and not ours[-1].strip():
+                ours.pop()
+            if ours:
+                theirs.append(ours.pop())
+            theirs.extend(lines[n + 1: n + 3])
+            n += 3
+            continue
+        ours.append(lines[n])
+        n += 1
+    return "\n".join(ours), "\n".join(theirs)
 
 
 def check(path: Path) -> int:
@@ -41,8 +71,10 @@ def check(path: Path) -> int:
     spoken = spoken_part(raw)
     has_appendix = DIVIDER in raw
     words = len(spoken.split())
+    spoken, quoted = split_by_author(spoken)
 
     problems: list[tuple[str, list[str]]] = []
+    noted: list[tuple[str, list[str]]] = []
 
     urls = [line.strip() for line in spoken.splitlines() if URL.search(line)]
     if urls:
@@ -64,6 +96,20 @@ def check(path: Path) -> int:
     if parens:
         problems.append(("parentheticals, which do not read aloud", parens[:5]))
 
+    # The same rules over the quoted paragraphs, reported rather than failed.
+    # Verbatim is the point: these are somebody else's sentences and the choice
+    # to read them unaltered was deliberate.
+    if quoted:
+        quoted_acronyms = sorted({a for a in ACRONYM.findall(quoted) if a not in ACRONYM_OK})
+        if quoted_acronyms:
+            noted.append(("acronyms", quoted_acronyms[:8]))
+        quoted_parens = [m.group(0)[:50] for m in PARENTHETICAL.finditer(quoted)]
+        if quoted_parens:
+            noted.append(("parentheticals", quoted_parens[:4]))
+        quoted_digits = sorted(set(re.findall(r"\b\d[\d,.]*\b", quoted)))
+        if quoted_digits:
+            noted.append(("figures written as digits", quoted_digits[:8]))
+
     if words > MAX_WORDS:
         problems.append((f"over the {MAX_WORDS}-word ceiling", [f"{words} words"]))
 
@@ -71,6 +117,8 @@ def check(path: Path) -> int:
     print(f"spoken words    {words}  (ceiling {MAX_WORDS})")
     print(f"minutes aloud   about {words / 145:.0f} at 145 words a minute")
     print(f"sources appendix{'  present' if has_appendix else '  MISSING'}")
+    if quoted:
+        print(f"quoted aloud    {len(quoted.split())} words in the reporters' own wording")
     print()
 
     if not problems:
@@ -78,6 +126,14 @@ def check(path: Path) -> int:
     else:
         for title, examples in problems:
             print(f"  [!] {title}")
+            for example in examples:
+                print(f"        {example}")
+    if noted:
+        print()
+        print("  In the quoted paragraphs, which are read verbatim by choice.")
+        print("  Not defects in the briefing — the outlet wrote them this way.")
+        for title, examples in noted:
+            print(f"  [-] {title}")
             for example in examples:
                 print(f"        {example}")
     print()
