@@ -63,13 +63,14 @@ def article_text(url: str, timeout: int = 12) -> str:
 
 
 def duckduckgo(query: str, limit: int = 4, timeout: int = 15) -> list[Evidence]:
-    """The no-key HTML endpoint. Free, and best-effort in the literal sense.
+    """The no-key HTML endpoint. Free, and dependable if you are patient.
 
-    It is scraped markup with no agreement behind it, and it rate-limits hard:
-    a dozen queries in a row earns an "anomaly" page with no results and a
-    cooldown that outlasts several minutes of pacing. Fine for trying a handful,
-    not something to build a weekly run on. Set search_backend = "brave" and
-    supply a key for grounding that actually happens every week.
+    It is scraped markup with no agreement behind it, and a burst earns an
+    "anomaly" page with an address-level block that outlasts an hour. Spacing
+    the queries out avoids that entirely: measured here, nineteen searches at
+    SEARCH_PACE_SECONDS apart all returned results and none were refused.
+    Weekly is exactly the shape of job that can afford the wait. Set
+    search_backend = "brave" with a key if that ever stops holding.
     """
     url = "https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(query)
     page = fetch_bytes(url, timeout=timeout).decode("utf-8", "ignore")
@@ -77,9 +78,10 @@ def duckduckgo(query: str, limit: int = 4, timeout: int = 15) -> list[Evidence]:
         raise SearchBlocked(
             "DuckDuckGo served its anomaly page instead of results. This is an "
             "address-level block, not a per-request limit: once it starts, a "
-            "single query an hour later is refused too, so waiting longer "
-            "between queries does not clear it. Set search_backend = \"brave\" "
-            "with a key, or \"none\" to stop asking."
+            "single query an hour later is refused too, so there is no waiting "
+            "it out inside a run. Pacing the queries prevents it; this run has "
+            "stopped searching. Set search_backend = \"brave\" with a key, or "
+            "\"none\" to stop asking."
         )
     snippets = [_clean(s) for s in _SNIPPET.findall(page)]
     return [Evidence(kind="search", text=s) for s in snippets if len(s) > 60][:limit]

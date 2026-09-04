@@ -18,12 +18,13 @@ fetch_days = 8
 # it exists: 57-character summaries and 403 on every article URL, and it is
 # thirteen of the sources here.
 #
-# search_backend: "duckduckgo" needs no key, and spacing the queries out does
-# not make it dependable. Measured here: a dozen queries earned the anomaly
-# page, and a single query more than an hour later was still refused, on every
-# request shape. The block follows the address, not the pace. Left as the
-# default because it costs nothing to try and fails softly — the run says so in
-# the log and writes those items from the headline alone.
+# search_backend: "duckduckgo" needs no key and works, provided the queries are
+# spaced. Measured both ways: a burst earns an "anomaly" page and an
+# address-level block that a query an hour later is still inside, while
+# nineteen queries at fifteen seconds apart all came back with results. A
+# weekly job can afford the wait — forty items is ten minutes. If it is ever
+# refused mid-run the run says so in the log, stops searching, and writes those
+# items from the headline alone.
 # "brave" needs BRAVE_SEARCH_API_KEY (or ~/.config/digest/brave_key) and its
 # free tier is far above the at-most-one-query-per-item this costs. "none"
 # leaves article fetching on and skips searching.
