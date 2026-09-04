@@ -284,3 +284,71 @@ def test_the_governor_reserves_room_for_the_frame():
     entry_words = sum(e.word_count for e in edition.entries)
     assert entry_words <= max_words - FRAME_RESERVE_WORDS
     assert edition.word_count <= max_words
+
+
+# ------------------------------------------------------- carrying source text
+
+
+def _reported(chars: int = 900, kind: str = "article") -> Cluster:
+    from digest.models import Evidence
+
+    item = make_classified(item={"title": "A judge struck the rule down", "blurb": "Short."})
+    item.evidence = [Evidence(kind=kind, text="The court said so plainly. " * (chars // 27))]
+    return Cluster(cluster_id="c1", title="t", items=[item], shared_mechanism="m")
+
+
+def test_a_story_someone_already_wrote_is_not_rewritten():
+    client = ScriptedClient(RECORDED["entry"])
+    entry = write_entry(_reported(), Config(), client, [])
+    assert client.calls == []
+    assert entry.provenance == "source"
+    assert entry.attribution == "Economist — Business"
+    assert entry.headline == "A judge struck the rule down"
+
+
+def test_a_search_snippet_is_not_somebody_writing_the_story_up():
+    """Other outlets glossing the event are corroboration. Publishing them as
+    the source would misstate where the words came from."""
+    client = ScriptedClient(_payload("The court said so plainly."))
+    entry = write_entry(_reported(kind="search"), Config(), client, [])
+    assert entry.provenance == "written" and len(client.calls) == 1
+
+
+def test_a_cluster_of_several_stories_is_still_synthesised():
+    """No single outlet wrote the thing several stories have in common, so
+    there is nothing to carry — splicing two articles is neither their words
+    nor an honest summary."""
+    from digest.models import Evidence
+
+    cluster = _reported()
+    second = make_classified(item={"url": "https://e.com/2"})
+    second.evidence = [Evidence(kind="article", text="More text. " * 200)]
+    cluster.items.append(second)
+    client = ScriptedClient(_payload("The court said so plainly."))
+    entry = write_entry(cluster, Config(), client, [])
+    assert entry.provenance == "written" and len(client.calls) == 1
+
+
+def test_a_thin_report_is_still_written_by_the_model():
+    client = ScriptedClient(_payload("The court said so plainly."))
+    entry = write_entry(_reported(chars=100), Config(), client, [])
+    assert entry.provenance == "written" and len(client.calls) == 1
+
+
+def test_a_carried_excerpt_stops_on_a_sentence_boundary():
+    from digest.config import RunCfg
+    from digest.synthesize import _excerpt
+
+    entry = write_entry(_reported(), Config(run=RunCfg(source_max_words=20)), ScriptedClient(), [])
+    assert entry.body.endswith(".")
+    assert len(entry.body.split()) <= 25
+    assert _excerpt("One two three. Four five six.", 3) == "One two three."
+
+
+def test_the_reader_is_told_whose_words_they_are():
+    from digest.emit import render_md, render_txt
+
+    edition = synthesize([_reported()], Config(), ScriptedClient(), "2026-W36")
+    assert "Economist — Business's own words" in render_md(edition)
+    assert "In Economist — Business's own words." in render_txt(edition)
+    assert "carried in the reporter's own words" in render_md(edition)

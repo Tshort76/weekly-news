@@ -178,6 +178,10 @@ class Entry:
     region: str = "global"
     mechanism: str | None = None
     item_count: int = 1
+    # "source" when a person already wrote this up and we are carrying their
+    # words; "written" when the model wrote it. The reader is told which.
+    provenance: str = "written"
+    attribution: str = ""
 
     @property
     def word_count(self) -> int:
@@ -189,6 +193,9 @@ class Entry:
 
     @classmethod
     def from_dict(cls, d: dict) -> "Entry":
+        d = dict(d)
+        d.setdefault("provenance", "written")
+        d.setdefault("attribution", "")
         return cls(**d)
 
 

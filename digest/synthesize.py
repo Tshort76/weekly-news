@@ -18,6 +18,7 @@ from .cluster import theme_candidate
 from .config import Config
 from .llm import Client, LLMError
 from .models import Cluster, Edition, Entry
+from .normalize import strip_furniture
 
 log = logging.getLogger("digest.synthesize")
 
@@ -335,9 +336,90 @@ def _spoken_text(payload: dict) -> str:
     )
 
 
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
+
+
+def _human_text(cluster: Cluster) -> tuple[str, str] | None:
+    """The article a person already wrote, if we have enough of one.
+
+    Only a single-story cluster qualifies. When several stories share a
+    mechanism the point of the entry is the synthesis across them, and no one
+    outlet wrote that — splicing two articles together would be neither their
+    words nor an honest summary.
+
+    Search snippets never count. They are other outlets glossing the event, not
+    the story itself, and presenting them as the source would be a lie about
+    where the words came from.
+    """
+    if len(cluster.items) != 1:
+        return None
+    item = cluster.items[0]
+    article = max(
+        (e.text for e in item.evidence if e.kind == "article"), key=len, default=""
+    )
+    text = max([item.item.blurb, article], key=len)
+    return (text, item.item.source) if text else None
+
+
+def _excerpt(text: str, max_words: int) -> str:
+    """Cut on a sentence boundary, never mid-thought."""
+    kept: list[str] = []
+    used = 0
+    for sentence in _SENTENCE_SPLIT.split(text.strip()):
+        words = len(sentence.split())
+        if kept and used + words > max_words:
+            break
+        kept.append(sentence)
+        used += words
+    return " ".join(kept).strip()
+
+
+def carry_source(cluster: Cluster, cfg: Config) -> Entry | None:
+    """Publish the outlet's own words rather than a rewrite of them.
+
+    The model is only worth running where nobody has already done the work. If
+    a person wrote the story up, their account is better than a paraphrase of
+    it — and it costs no quota and cannot invent anything.
+    """
+    found = _human_text(cluster)
+    if not found:
+        return None
+    text, outlet = found
+    if len(text) < cfg.run.source_min_chars:
+        return None
+    body = _excerpt(strip_furniture(text), cfg.run.source_max_words)
+    if not body:
+        return None
+    item = cluster.items[0]
+    sentences = _SENTENCE_SPLIT.split(body)
+    return Entry(
+        cluster_id=cluster.cluster_id,
+        cluster_title=cluster.title,
+        headline=item.item.title.rstrip("."),
+        body=body,
+        hook=sentences[0] if sentences else "",
+        questions=[],
+        sources=_sources(cluster),
+        fit=cluster.fit,
+        region=cluster.region,
+        mechanism=cluster.shared_mechanism or item.mechanism,
+        item_count=1,
+        provenance="source",
+        attribution=outlet,
+    )
+
+
 def write_entry(
     cluster: Cluster, cfg: Config, client: Client, prior_entries: list[dict]
 ) -> Entry | None:
+    carried = carry_source(cluster, cfg)
+    if carried is not None:
+        log.info(
+            "carrying %s's own words for %s — no model call",
+            carried.attribution, cluster.cluster_id,
+        )
+        return carried
+
     rendered = _render_cluster(cluster)
     prior = _prior_note(cluster, prior_entries)
     prompt = cfg.prompt("synthesize_entry.md").format(

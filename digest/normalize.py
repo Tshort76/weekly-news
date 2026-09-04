@@ -23,6 +23,16 @@ _TRACKING_EXACT = {
 }
 
 _TAG = re.compile(r"<[^>]+>")
+
+# The page's furniture, which survives tag-stripping because it is real text:
+# share buttons, the byline of the photo agency, the footer that invites you to
+# read the article you are already reading. Harmless in a blurb nobody prints,
+# not harmless once the text is published as the reporter's own words.
+_FURNITURE = re.compile(
+    r"(?i)\b(read full article|comments?|advertisement|share this article|"
+    r"post\s+email\s+whatsapp\s+copy link(\s+share)?|copy link|"
+    r"sign up for [^.]{0,60}?[.:]|subscribe to [^.]{0,60}?[.:])\b"
+)
 _WS = re.compile(r"\s+")
 
 
@@ -33,6 +43,27 @@ def strip_html(text: str) -> str:
     # Unescape twice: some feeds double-encode (&amp;lt;p&amp;gt;).
     out = _TAG.sub(" ", html.unescape(html.unescape(text)))
     return _WS.sub(" ", out).strip()
+
+
+_PHOTO_CREDIT = re.compile(r"^(?:[A-Z][\w.'’-]+ ){0,3}[A-Z][\w.'’-]+/[A-Z][\w.'’-]+\s+")
+
+
+def strip_furniture(text: str) -> str:
+    """Drop page furniture, and any trailing fragment left without a full stop.
+
+    A cut that ends mid-fragment reads as a transcription error when the words
+    are attributed to a named reporter, so the tail goes rather than the reader
+    wondering what happened to the sentence.
+    """
+    out = _WS.sub(" ", _FURNITURE.sub(" ", text)).strip(" -–—|·,")
+    # A photo credit ("Tingshu Wang/Reuters") leads the body on picture-led
+    # sites and is not part of the reporting.
+    out = _PHOTO_CREDIT.sub("", out).strip()
+    if out and out[-1] not in ".!?\"'":
+        head, sep, _ = out.rpartition(".")
+        if sep and len(head) > 80:
+            out = head + "."
+    return out.strip()
 
 
 def canonical_url(url: str) -> str:

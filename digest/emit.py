@@ -120,10 +120,15 @@ def render_txt(edition: Edition) -> str:
             lines.append("")
         lines.append(entry.headline.rstrip("."))
         lines.append("")
+        if entry.provenance == "source" and entry.attribution:
+            lines.append(f"In {entry.attribution}'s own words.")
+            lines.append("")
         if entry.body:
             lines.append(entry.body)
             lines.append("")
-        if entry.hook:
+        # A carried entry's hook is its own opening sentence, so reading it
+        # again would just repeat the paragraph the listener just heard.
+        if entry.hook and entry.provenance != "source":
             lines.append(entry.hook)
             lines.append("")
         for question in entry.questions:
@@ -161,6 +166,9 @@ def render_md(edition: Edition) -> str:
     stamp = edition.generated_at.strftime("%-d %B %Y")
     n = len(edition.entries)
     facts = [f"Generated {stamp}", f"{n} item{'' if n == 1 else 's'}", f"{edition.word_count} words"]
+    carried = sum(1 for e in edition.entries if e.provenance == "source")
+    if carried:
+        facts.append(f"{carried} carried in the reporter's own words")
     if edition.theme:
         facts.insert(0, f"Theme of the week: {edition.theme}")
     out += [f"*{'. '.join(facts)}.*", ""]
@@ -171,9 +179,11 @@ def render_md(edition: Edition) -> str:
 
     for entry in edition.entries:
         out += [f"## {entry.headline}", ""]
+        if entry.provenance == "source" and entry.attribution:
+            out += [f"<small>**{entry.attribution}'s own words**, not a summary.</small>", ""]
         if entry.body:
             out += [entry.body, ""]
-        if entry.hook:
+        if entry.hook and entry.provenance != "source":
             out += [f"*{entry.hook}*", ""]
         for question in entry.questions:
             out += [f"> {question}", ""]

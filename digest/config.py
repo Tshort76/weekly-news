@@ -33,6 +33,11 @@ class RunCfg:
     # duckduckgo needs no key and rate-limits hard; brave needs a key and does
     # not. "none" turns searching off while leaving article fetching on.
     search_backend: str = "duckduckgo"
+    # A story a person already wrote up at this length is carried in their
+    # words instead of being rewritten. Capped so one long article cannot eat
+    # the briefing; the appendix link carries the rest.
+    source_min_chars: int = 700
+    source_max_words: int = 200
 
 
 @dataclass
@@ -184,6 +189,8 @@ def load(path: str | Path | None = None) -> Config:
             ground=bool(run.get("ground", True)),
             ground_min_chars=int(run.get("ground_min_chars", 500)),
             search_backend=run.get("search_backend", "duckduckgo"),
+            source_min_chars=int(run.get("source_min_chars", 700)),
+            source_max_words=int(run.get("source_max_words", 200)),
             output_dir=_expand(run.get("output_dir", "~/digests")),
         ),
         models=ModelsCfg(
