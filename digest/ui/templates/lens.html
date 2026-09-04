@@ -62,10 +62,10 @@
 </form>
 
 <h2>Start from a preset instead</h2>
-{% for name, title in lenses %}
+{% for name, title, checked in lenses %}
 <form method="post" action="/lens/use" class="actions">
   <input type="hidden" name="name" value="{{ name }}">
-  <button class="quiet">Use "{{ title }}"</button>
+  <button class="quiet">Use "{{ title }}"</button>{% if not checked %} <span class="sub">written, not yet checked against real headlines</span>{% endif %}
 </form>
 {% endfor %}
 <p class="sub">A preset replaces your lens with the exact file that was measured — not a rebuild of it, because rewrapping the same words moves the classifier by about ten points.</p>

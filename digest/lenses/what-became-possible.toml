@@ -1,0 +1,97 @@
+# Science and technology, through capability rather than announcement.
+#
+# NOT YET CALIBRATED. The wording is written, the shape is right, and nobody has
+# scored it against labelled headlines. The app says so where it offers this,
+# and the check-the-lens screen is how you find out what it does with yours.
+#
+# Feeds ship unverified too — check them before the first run, or the app will
+# on the Feeds screen.
+
+name = "what became possible, not what was announced"
+
+about = "a change in what can now be done: a result that holds, a capability that did not exist, a cost that fell far enough to change who can afford it"
+not_about = "funding, launches and roadmaps: rounds raised, products shipped, benchmarks claimed, partnerships signed"
+
+mechanism_examples = [
+  "error rate below the threshold for error correction",
+  "synthesis route that removes the rare-earth step",
+  "assay cheap enough for a clinic rather than a lab",
+]
+
+regions = ["east_asia", "south_asia", "europe", "uk", "us", "mena", "africa", "latam", "global"]
+domains = ["biology", "medicine", "physics", "computing", "materials", "energy", "space", "climate", "other"]
+
+[fit.3]
+lead = "Something can now be done that could not be done before, and the result holds."
+examples = [
+  { text = "a result replicated at a scale that rules out the obvious artefact" },
+  { text = "a manufacturing step removed", note = "cost, or a supply chain nobody controls" },
+  { text = "a measurement precise enough to settle a standing disagreement" },
+  { text = "a treatment that works through a mechanism no existing one uses" },
+  { text = "a model or a machine crossing a threshold with a named consequence" },
+]
+
+[fit.2]
+lead = "Real movement toward a capability, with the mechanism stated:"
+examples = [
+  { text = "a method that works in one system and names what would generalise it" },
+  { text = "a regulator approving a class of thing, not one product" },
+  { text = "an instrument or a dataset that unblocks other people's work" },
+]
+
+[fit.1]
+lead = "Interesting but mostly announcement:"
+examples = [
+  { text = "a funding round" },
+  { text = "a product launch" },
+  { text = "a benchmark score" },
+  { text = "a partnership" },
+]
+unless = "the item explains what became possible as a result"
+
+[fit.0]
+never = [
+  "personalities", "company gossip", "stock moves", "conference keynotes",
+  "prizes", "opinion pieces without a result", "predictions",
+]
+
+[kinds]
+core = "capability"
+core_gloss = "the item is about what can now be done (results, methods, thresholds crossed)"
+adjacent = "announcement"
+adjacent_gloss = "the item is about who is spending or shipping (funding, launches, roadmaps)"
+neither_gloss = "off-lens entirely"
+
+[bias]
+high_interest = []
+extra = "A result from a small group counts exactly as one from a large one."
+
+[[feeds]]
+name = "Ars Technica"
+url = "http://feeds.arstechnica.com/arstechnica/index"
+section = "science-and-technology"
+weight = 0.9
+
+[[feeds]]
+name = "IEEE Spectrum"
+url = "https://spectrum.ieee.org/feeds/feed.rss"
+section = "science-and-technology"
+weight = 0.9
+
+[[feeds]]
+name = "Economist — Science and Technology"
+url = "https://www.economist.com/science-and-technology/rss.xml"
+section = "science-and-technology"
+weight = 1.0
+
+[[feeds]]
+name = "Quanta Magazine"
+url = "https://api.quantamagazine.org/feed/"
+section = "science"
+weight = 1.0
+
+[[feeds]]
+name = "Nature"
+url = "https://www.nature.com/nature.rss"
+section = "science"
+weight = 1.0

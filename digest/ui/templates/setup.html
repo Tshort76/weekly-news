@@ -12,9 +12,9 @@
 
 <form method="post" action="/setup">
   <h2>What should this briefing be about?</h2>
-  {% for name, title in lenses %}
+  {% for name, title, checked in lenses %}
   <label class="opt"><input type="radio" name="lens" value="{{ name }}" {{ "checked" if loop.first }}>
-    <b>{{ title }}</b></label>
+    <b>{{ title }}</b>{% if not checked %} <span class="chip">not yet checked against real headlines</span>{% endif %}</label>
   {% endfor %}
 
   <h2>Which model does the reading and writing?</h2>

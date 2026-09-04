@@ -358,7 +358,10 @@ def _admin_command(args, cfg) -> int:
     if args.command == "lens":
         if args.action == "list":
             for name in presets.available():
-                print(f"  {name:<24} {presets.load(name).name}")
+                mark = " " if presets.calibrated(name) else "*"
+                print(f" {mark}{name:<24} {presets.load(name).name}")
+            print("\n  * written, but not yet checked against real headlines.")
+            print("    `digest open` has a screen that checks one against yours.")
             return 0
         if args.action == "path":
             print(paths.lens_file())

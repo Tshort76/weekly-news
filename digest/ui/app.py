@@ -256,7 +256,8 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
             found=found, memory=memory,
             classify=discover.recommend("classify", found, memory),
             synthesize=discover.recommend("synthesize", found, memory),
-            lenses=[(n, presets.load(n).name) for n in presets.available()],
+            lenses=[(n, presets.load(n).name, presets.calibrated(n))
+                    for n in presets.available()],
             legacy=_legacy_path(),
         )
 
@@ -302,8 +303,9 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
         stored = store.load()
         spec = stored.spec or presets.load(presets.DEFAULT)
         return page(request, "lens.html", spec=spec, stored=stored,
-                    saved=bool(saved), lenses=[(n, presets.load(n).name)
-                                               for n in presets.available()])
+                    saved=bool(saved),
+                    lenses=[(n, presets.load(n).name, presets.calibrated(n))
+                            for n in presets.available()])
 
     @app.post("/lens")
     async def save_lens(request: Request):

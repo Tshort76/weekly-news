@@ -89,6 +89,29 @@ python -m digest run --dry-run      # reads digest.toml from the working directo
 A checkout keeps working exactly as it did: `digest.toml` in the working directory is
 still found and still read, with no import step.
 
+### Lenses
+
+The lens is the written test every headline is judged against, and it is what
+makes this yours rather than a copy of someone else's briefing. Four ship with
+the app:
+
+| Preset | About |
+| --- | --- |
+| `architecture-of-rule` | World affairs through institutions and systems: what got reorganised, rather than who is winning. **Checked against labelled headlines.** |
+| `what-became-possible` | Science and technology through capability: what can now be done, rather than what was funded or launched. |
+| `plumbing-not-prices` | Money through machinery: who may lend to whom, what settles where, which claims are senior. |
+| `capacity-not-targets` | Climate and energy through what exists: built, connected, closed, repriced — not pledged. |
+
+Only the first has been scored against hand-labelled headlines; the others are
+written but unchecked, and the app says so wherever it offers them. The way to
+make one yours is the check-the-lens screen: sort twenty-five of your own
+headlines into want, maybe and skip, see where the lens disagrees, and turn each
+disagreement into an example with one button.
+
+If you would rather write it than fill in a form, `lens.md` is a plain markdown
+file and the app notices when you have edited it by hand — it shows you the diff
+before the form would overwrite anything.
+
 ### The commands
 
 | Command | What it does |

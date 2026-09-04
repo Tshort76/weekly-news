@@ -1,0 +1,87 @@
+# Climate and energy, through what exists rather than what was promised.
+#
+# NOT YET CALIBRATED — see the note at the top of what-became-possible.toml.
+
+name = "capacity built, not targets announced"
+
+about = "a change in physical or institutional capacity: what was built, connected, closed, repriced, or made buildable"
+not_about = "targets and pledges: net-zero dates, summit communiqués, commitments without a mechanism"
+
+mechanism_examples = [
+  "interconnection queue reform releasing stalled capacity",
+  "auction design shifting who can bid",
+  "grid constraint priced into dispatch",
+]
+
+regions = ["east_asia", "south_asia", "europe", "uk", "us", "mena", "africa", "latam", "global"]
+domains = ["power", "grid", "fuels", "industry", "transport", "buildings", "land", "finance", "other"]
+
+[fit.3]
+lead = "Capacity changed, or the rule that governs it did."
+examples = [
+  { text = "generation or storage connected, or retired, at a scale that moves a system" },
+  { text = "a grid or interconnection rule that releases or blocks capacity" },
+  { text = "an auction or tariff design change that alters who can build" },
+  { text = "a supply chain for a critical input reroutes for durable reasons" },
+  { text = "a permitting regime created or revoked" },
+  { text = "a cost crossing the level where a technology gets built without subsidy" },
+]
+
+[fit.2]
+lead = "Meaningful movement inside the existing system:"
+examples = [
+  { text = "a large project reaching final investment decision" },
+  { text = "an industrial policy with real money and a named mechanism" },
+  { text = "a regulator changing what a utility may recover" },
+]
+
+[fit.1]
+lead = "Interesting but mostly pledges:"
+examples = [
+  { text = "a net-zero target" },
+  { text = "a summit communiqué" },
+  { text = "a corporate commitment" },
+  { text = "a modelling study of a scenario" },
+]
+unless = "the item explains what changes physically or legally as a result"
+
+[fit.0]
+never = [
+  "personalities", "activism as spectacle", "opinion pieces without a mechanism",
+  "predictions", "prizes", "greenwashing rows",
+]
+
+[kinds]
+core = "capacity"
+core_gloss = "the item is about what exists or is now buildable (plant, grid, rules, costs)"
+adjacent = "pledge"
+adjacent_gloss = "the item is about what was promised (targets, communiqués, commitments)"
+neither_gloss = "off-lens entirely"
+
+[bias]
+high_interest = []
+extra = "A megawatt counts the same wherever it is."
+
+[[feeds]]
+name = "Carbon Brief"
+url = "https://www.carbonbrief.org/feed/"
+section = "climate"
+weight = 1.0
+
+[[feeds]]
+name = "IEEE Spectrum"
+url = "https://spectrum.ieee.org/feeds/feed.rss"
+section = "energy"
+weight = 0.9
+
+[[feeds]]
+name = "Economist — Science and Technology"
+url = "https://www.economist.com/science-and-technology/rss.xml"
+section = "science-and-technology"
+weight = 1.0
+
+[[feeds]]
+name = "Ars Technica"
+url = "http://feeds.arstechnica.com/arstechnica/index"
+section = "science-and-technology"
+weight = 0.8

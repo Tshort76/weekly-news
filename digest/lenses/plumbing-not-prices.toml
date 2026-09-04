@@ -1,0 +1,87 @@
+# Money and markets, through the machinery rather than the level.
+#
+# NOT YET CALIBRATED — see the note at the top of what-became-possible.toml.
+
+name = "the plumbing of money, not the price of it"
+
+about = "a change in how money moves: who may lend to whom, what settles where, which claims are senior, what a rule now permits or forbids"
+not_about = "the level of things: prices, indices, rates as scores, earnings beats, forecasts"
+
+mechanism_examples = [
+  "collateral haircut change forcing a funding shift",
+  "settlement moving to a different clearing house",
+  "capital control redirecting export receipts onshore",
+]
+
+regions = ["east_asia", "south_asia", "europe", "uk", "us", "mena", "africa", "latam", "global"]
+domains = ["banking", "markets", "payments", "regulation", "sovereign", "corporate", "crypto", "trade", "other"]
+
+[fit.3]
+lead = "A rule, a pipe or a claim structure changed."
+examples = [
+  { text = "a central bank changes its operating framework or its collateral rules" },
+  { text = "a clearing, settlement or custody arrangement moves" },
+  { text = "a capital control, or its removal" },
+  { text = "a change in who is allowed to lend, hold or issue" },
+  { text = "a restructuring that reorders who gets paid first" },
+  { text = "a currency's role in invoicing or reserves shifting for a stated reason" },
+]
+
+[fit.2]
+lead = "Meaningful movement inside the existing machinery:"
+examples = [
+  { text = "a supervisory rule with second-order effects" },
+  { text = "a large issuer changing where or how it funds itself" },
+  { text = "a market maker or exchange changing what it will hold" },
+]
+
+[fit.1]
+lead = "Interesting but mostly the level:"
+examples = [
+  { text = "a rate decision reported as a number" },
+  { text = "an index at a record" },
+  { text = "an earnings beat or miss" },
+  { text = "a forecast revision" },
+]
+unless = "the item explains what the change does to the plumbing"
+
+[fit.0]
+never = [
+  "stock tips", "personalities", "market colour", "predictions",
+  "opinion pieces without a mechanism", "crypto price moves",
+]
+
+[kinds]
+core = "plumbing"
+core_gloss = "the item is about how money moves (rules, claims, settlement, access)"
+adjacent = "level"
+adjacent_gloss = "the item is about how much things cost (prices, rates, indices, earnings)"
+neither_gloss = "off-lens entirely"
+
+[bias]
+high_interest = []
+extra = "A change in a small market counts if the mechanism is general."
+
+[[feeds]]
+name = "Economist — Finance and Economics"
+url = "https://www.economist.com/finance-and-economics/rss.xml"
+section = "finance-and-economics"
+weight = 1.0
+
+[[feeds]]
+name = "Economist — Business"
+url = "https://www.economist.com/business/rss.xml"
+section = "business"
+weight = 1.0
+
+[[feeds]]
+name = "FT — World"
+url = "https://www.ft.com/world?format=rss"
+section = "world"
+weight = 0.9
+
+[[feeds]]
+name = "Semafor"
+url = "https://www.semafor.com/rss.xml"
+section = "mixed"
+weight = 0.7

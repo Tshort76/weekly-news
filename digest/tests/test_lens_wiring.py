@@ -5,9 +5,12 @@ from __future__ import annotations
 import json
 import sqlite3
 
+import pytest
+
 from digest.classify import classify_batch, enum_line
 from digest.config import Config
 from digest.lens import presets, store
+from digest.lens.compile import compile_lens
 from digest.state import SCHEMA_VERSION, State
 
 from .conftest import make_item
@@ -130,3 +133,33 @@ def test_a_run_is_recorded_so_the_home_screen_needs_no_log_parsing(tmp_path):
         state.finish_run("2026-W36", started, "ok", fetched=286, entries=44)
         run = state.recent_runs()[0]
         assert run["status"] == "ok" and run["fetched"] == 286
+
+
+# --------------------------------------------------------------- the presets
+
+
+@pytest.mark.parametrize("name", presets.available())
+def test_every_preset_loads_and_compiles_to_the_rubric_shape(name):
+    out = compile_lens(presets.load(name))
+    for head in ("LENS:", "Score FIT", "3 — ", "0 — ", "KIND:", "NOVELTY", "MECHANISM:"):
+        assert head in out
+
+
+@pytest.mark.parametrize("name", presets.available())
+def test_every_preset_ships_feeds_that_carry_its_kind_of_story(name):
+    """A lens with no feeds has a quiet week every week."""
+    assert presets.load(name).feeds
+
+
+@pytest.mark.parametrize("name", presets.available())
+def test_every_preset_names_the_enums_the_pipeline_is_wired_to(name):
+    spec = presets.load(name)
+    assert len(spec.regions) >= 2 and len(spec.domains) >= 2
+    assert spec.kinds.core and spec.kinds.adjacent
+
+
+def test_only_a_preset_with_a_measured_rubric_is_called_calibrated():
+    """The flag reads the file the app installs, so it cannot drift from it."""
+    assert presets.calibrated("architecture-of-rule") is True
+    uncalibrated = [n for n in presets.available() if not presets.calibrated(n)]
+    assert uncalibrated  # the honest state today, and the app says so

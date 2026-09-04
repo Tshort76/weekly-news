@@ -38,6 +38,16 @@ def load(name: str) -> LensSpec:
     return LensSpec.from_toml(spec_path(name))
 
 
+def calibrated(name: str) -> bool:
+    """True when a measured rubric ships beside the spec.
+
+    The measured file is the one the app installs, so this flag cannot drift
+    from the thing it describes: if there is no scored .md, the preset is a
+    lens somebody wrote and nobody checked, and the app says so.
+    """
+    return (DIRECTORY / f"{name}.md").exists()
+
+
 def markdown(name: str) -> str:
     """The rubric text for a preset: the measured file if there is one."""
     measured = DIRECTORY / f"{name}.md"
