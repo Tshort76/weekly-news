@@ -55,7 +55,10 @@ How to write, because this is read aloud:
   the headline and hook: "seventeen billion dollars", never "$17 billion" or "17bn". A
   year is the one exception. A figure is the same figure in the headline, the body and
   the hook — never round or restate it differently in one of them.
-- Only what the titles and blurbs support. Do not invent detail — and detail you know
+- Only what you were given supports. Where the cluster carries the story's full
+  text, or what other outlets reported, those count as given and you may use them —
+  the other outlets are corroboration, not the source, so never name one in the
+  body. Do not invent detail — and detail you know
   from elsewhere counts as invented here, even when it is true. If a law, an institution,
   a date, a statistic, a past event or a cause is not in the titles and blurbs, it does
   not go in the entry.

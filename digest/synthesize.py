@@ -276,11 +276,17 @@ def novel_names(text: str, source: str) -> list[str]:
 
 
 def _render_cluster(cluster: Cluster) -> str:
-    return json.dumps(
-        {
-            "title": cluster.title,
-            "shared_mechanism": cluster.shared_mechanism,
-            "stories": [
+    """The stories, and separately whatever else was found out about them.
+
+    Evidence is kept in its own key rather than folded into the blurbs. The
+    writer has to be able to tell what the story itself said from what some
+    other outlet said about the same event, because only one of those is the
+    source it is writing up.
+    """
+    payload: dict = {
+        "title": cluster.title,
+        "shared_mechanism": cluster.shared_mechanism,
+        "stories": [
                 {
                     "title": c.item.title,
                     "blurb": c.item.blurb,
@@ -289,12 +295,16 @@ def _render_cluster(cluster: Cluster) -> str:
                     "domain": c.domain,
                     "mechanism": c.mechanism,
                 }
-                for c in cluster.items
-            ],
-        },
-        ensure_ascii=False,
-        indent=2,
-    )
+            for c in cluster.items
+        ],
+    }
+    own = [e for c in cluster.items for e in c.evidence if e.kind == "article"]
+    others = [e for c in cluster.items for e in c.evidence if e.kind == "search"]
+    if own:
+        payload["full_text_of_the_story_itself"] = [e.text for e in own]
+    if others:
+        payload["what_other_outlets_reported"] = [e.text for e in others]
+    return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
 def _sources(cluster: Cluster) -> list[dict]:
@@ -336,7 +346,8 @@ def write_entry(
         prior_coverage=prior,
         writer_notes=_writer_notes(cfg),
     )
-    source_text = f"{rendered}\n{prior}"
+    evidence = " ".join(e.text for c in cluster.items for e in c.evidence)
+    source_text = f"{rendered}\n{prior}\n{evidence}"
 
     payload = None
     for attempt in range(2):

@@ -18,6 +18,7 @@ from . import classify as classify_stage
 from . import cluster as cluster_stage
 from . import deliver as deliver_stage
 from . import emit as emit_stage
+from . import ground as ground_stage
 from . import ingest as ingest_stage
 from . import selection
 from . import synthesize as synth_stage
@@ -97,6 +98,12 @@ def run(
     )
     dropped.extend(select_dropped)
     log.info("%d items selected", len(selected))
+
+    # Only the selected items, and only the thin ones among those. Re-saved so
+    # the evidence is part of the week's record: an audit or a comparison run
+    # rebuilds from these rows and has to see the same text the writer saw.
+    selected = ground_stage.ground(selected, cfg)
+    state.save_classified(selected, week)
 
     clusters, degraded = cluster_stage.cluster(selected, cfg, client)
     edition = synth_stage.synthesize(

@@ -64,6 +64,10 @@ def main() -> None:
             raise SystemExit(f"no classifications stored for {args.week}")
 
         selected, _ = selection.select(classified, cfg, state.prior_mechanisms(args.week))
+        # Evidence rides along in the stored rows, so a comparison run sees the
+        # same text the pipeline saw without re-fetching anything.
+        grounded = sum(1 for c in selected if c.evidence)
+        print(f"evidence already stored for {grounded} of {len(selected)} selected items")
         print(f"selected: {len(selected)} items (same selection as any other backend, pure fn)")
 
         # The Gemini acceptance run's clustering call failed and fell back to

@@ -25,6 +25,14 @@ class RunCfg:
     contest_share: float = 0.20
     fetch_days: int = 8
     output_dir: Path = Path.home() / "digests"
+    # Grounding: a selected item whose feed entry carries less than this gets
+    # its own page fetched, and failing that a search. 500 is about three
+    # sentences — below that a writer is describing a story it was barely told.
+    ground: bool = True
+    ground_min_chars: int = 500
+    # duckduckgo needs no key and rate-limits hard; brave needs a key and does
+    # not. "none" turns searching off while leaving article fetching on.
+    search_backend: str = "duckduckgo"
 
 
 @dataclass
@@ -173,6 +181,9 @@ def load(path: str | Path | None = None) -> Config:
             max_items=int(run.get("max_items", 60)),
             contest_share=float(run.get("contest_share", 0.20)),
             fetch_days=int(run.get("fetch_days", 8)),
+            ground=bool(run.get("ground", True)),
+            ground_min_chars=int(run.get("ground_min_chars", 500)),
+            search_backend=run.get("search_backend", "duckduckgo"),
             output_dir=_expand(run.get("output_dir", "~/digests")),
         ),
         models=ModelsCfg(

@@ -18,13 +18,16 @@ from pathlib import Path
 
 log = logging.getLogger("digest.credentials")
 
-ENV_VARS = {"gemini": "GEMINI_API_KEY", "anthropic": "ANTHROPIC_API_KEY"}
+ENV_VARS = {"gemini": "GEMINI_API_KEY", "anthropic": "ANTHROPIC_API_KEY",
+            "brave": "BRAVE_SEARCH_API_KEY"}
 DOTENV_NAME = ".env"
 DEFAULT_KEY_FILES = {
     "gemini": Path.home() / ".config/digest/gemini_key",
     "anthropic": Path.home() / ".config/digest/anthropic_key",
+    "brave": Path.home() / ".config/digest/brave_key",
 }
-KEYCHAIN_SERVICES = {"gemini": "digest-gemini", "anthropic": "digest-anthropic"}
+KEYCHAIN_SERVICES = {"gemini": "digest-gemini", "anthropic": "digest-anthropic",
+                     "brave": "digest-brave"}
 
 
 def parse_dotenv(text: str) -> dict[str, str]:

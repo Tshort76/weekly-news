@@ -19,7 +19,13 @@ def load_fixture(name: str):
 
 @pytest.fixture
 def cfg(tmp_path) -> Config:
-    return Config(run=RunCfg(output_dir=tmp_path / "out"), state_dir=tmp_path / "state")
+    # ground=False keeps the suite off the network. The grounding stage has its
+    # own tests with every fetch stubbed; a pipeline test that quietly dialled
+    # out would be slow, flaky and dependent on someone else's uptime.
+    return Config(
+        run=RunCfg(output_dir=tmp_path / "out", ground=False),
+        state_dir=tmp_path / "state",
+    )
 
 
 def make_item(**kwargs) -> Item:

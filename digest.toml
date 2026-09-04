@@ -7,6 +7,25 @@ max_words = 8500
 max_items = 60
 contest_share = 0.20
 fetch_days = 8
+
+# Grounding. After selection, an item whose feed entry carries less than
+# ground_min_chars gets its own article fetched, and if that is refused, a
+# search for other coverage of the same event. 500 characters is about three
+# sentences; below that the writer is describing a story it was barely told,
+# which is where invented detail comes from.
+#
+# Most feeds carry the article body and need none of this. The Economist is why
+# it exists: 57-character summaries and 403 on every article URL, and it is
+# thirteen of the sources here.
+#
+# search_backend: "duckduckgo" needs no key but rate-limits hard — a dozen
+# queries in a row earns an anomaly page and a cooldown, so treat it as
+# best-effort. "brave" needs BRAVE_SEARCH_API_KEY (or ~/.config/digest/brave_key);
+# its free tier is far above the at-most-one-query-per-item this costs. "none"
+# leaves article fetching on and skips searching.
+ground = true
+ground_min_chars = 500
+search_backend = "duckduckgo"
 output_dir = "~/digests"
 
 [models]

@@ -54,6 +54,30 @@ class Item:
 
 
 @dataclass
+class Evidence:
+    """Text about a story beyond what its own feed entry carried.
+
+    `kind` says where it came from and how far to trust it. "article" is the
+    story's own page. "search" is another outlet writing about the same event,
+    which grounds a thin item but is not the primary source and is never
+    presented as one.
+    """
+
+    kind: str  # article | search
+    text: str
+    url: str = ""
+    source: str = ""
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Evidence":
+        return cls(kind=d["kind"], text=d.get("text", ""),
+                   url=d.get("url", ""), source=d.get("source", ""))
+
+
+@dataclass
 class Classified:
     """An Item plus the classifier's verdict on it."""
 
@@ -65,6 +89,9 @@ class Classified:
     domain: str
     mechanism: str | None
     reason: str
+    # Gathered after selection, for the items actually being written up. Empty
+    # when the feed entry already said enough.
+    evidence: list[Evidence] = field(default_factory=list)
 
     @property
     def id(self) -> str:
@@ -85,6 +112,7 @@ class Classified:
             "domain": self.domain,
             "mechanism": self.mechanism,
             "reason": self.reason,
+            "evidence": [e.to_dict() for e in self.evidence],
         }
 
     @classmethod
@@ -98,6 +126,7 @@ class Classified:
             domain=d.get("domain", "other"),
             mechanism=d.get("mechanism"),
             reason=d.get("reason", ""),
+            evidence=[Evidence.from_dict(e) for e in d.get("evidence", [])],
         )
 
 
