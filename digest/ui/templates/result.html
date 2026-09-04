@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% set active = "calibrate" %}
+{% block body %}
+<h1>The lens agrees with you on {{ report.agreement }} of {{ total }}</h1>
+<p class="sub">{{ model }}, {{ report.seconds | round(1) }} seconds. What matters is the two lists, not the score.</p>
+
+<div class="two">
+  <div class="box">
+    <h4>You wanted these — the lens would drop them ({{ report.false_drops | length }})</h4>
+    {% for title in report.false_drops %}
+    <div class="item">{{ title }}
+      <form method="post" action="/calibrate/example" class="actions">
+        <input type="hidden" name="headline" value="{{ title }}">
+        <input type="hidden" name="level" value="3">
+        <button class="quiet">Add as an example of what you want</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="item sub">Nothing. Every headline you wanted gets through.</div>
+    {% endfor %}
+  </div>
+  <div class="box">
+    <h4>The lens would keep these — you skipped them ({{ report.false_keeps | length }})</h4>
+    {% for title in report.false_keeps %}
+    <div class="item">{{ title }}
+      <form method="post" action="/calibrate/example" class="actions">
+        <input type="hidden" name="headline" value="{{ title }}">
+        <input type="hidden" name="level" value="1">
+        <button class="quiet">Add as an example of what you skip</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="item sub">Nothing.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<p class="sub">Extra items you skim past cost little; a missing one you never know about. So the list on the left is the one worth acting on.</p>
+<div class="actions">
+  <a class="btn" href="/calibrate">Label some more</a>
+  <a class="btn" href="/lens">Edit the lens</a>
+</div>
+{% endblock %}

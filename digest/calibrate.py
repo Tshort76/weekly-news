@@ -114,6 +114,38 @@ CHOICES = {"want": {"fit": 3, "novelty": 3}, "maybe": {"fit": 2, "novelty": 2},
            "skip": {"fit": 0, "novelty": 0}}
 
 
+def compare(items, labels: dict[str, dict], models: list[tuple[str, str]], cfg) -> list[dict]:
+    """Score each candidate model over the same items and labels.
+
+    The only honest answer to "is the smaller model good enough for me?", and a
+    minute's work on a local model for twenty-five items. Every row says what it
+    got wrong in both directions, because that is the number that matters and an
+    accuracy percentage hides it.
+    """
+    import copy  # noqa: PLC0415
+    import time  # noqa: PLC0415
+
+    from .classify import classify  # noqa: PLC0415
+    from .llm import Client  # noqa: PLC0415
+
+    rows = []
+    for provider, model in models:
+        trial = copy.deepcopy(cfg)
+        trial.models.provider = provider
+        trial.models.classify_provider = provider
+        trial.models.classify = model
+        started = time.time()
+        try:
+            results = classify(list(items), trial, Client(trial))
+        except Exception as exc:
+            rows.append({"model": model, "provider": provider, "error": str(exc)[:200]})
+            continue
+        report = score(results, labels)
+        report.seconds = time.time() - started
+        rows.append({"model": model, "provider": provider, "report": report})
+    return rows
+
+
 def labels_from_choices(choices: dict[str, str]) -> dict[str, dict]:
     return {
         item_id: dict(CHOICES[choice], title="")

@@ -54,7 +54,7 @@ CREATE INDEX IF NOT EXISTS classified_week ON classified(week);
 # The database carries its own version in PRAGMA user_version. Everything above
 # is version 1, so a store written before this existed is already at 1 once the
 # script has run — nothing to migrate for an existing user.
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 RUNS = """
 CREATE TABLE IF NOT EXISTS runs (
@@ -90,7 +90,31 @@ def _m002_kind_slots(conn) -> None:
         )
 
 
-MIGRATIONS = {1: _m002_kind_slots}
+LABELS = """
+CREATE TABLE IF NOT EXISTS labels (
+    item_id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    blurb TEXT,
+    source TEXT,
+    choice TEXT NOT NULL,
+    week TEXT,
+    labelled_at TEXT NOT NULL
+);
+"""
+
+
+def _m003_labels(conn) -> None:
+    """Somewhere to keep what the user said about their own headlines.
+
+    Calibration is a conversation, and a conversation you have to start again
+    every time is not one. These survive a lens change on purpose: the whole
+    question being asked is whether the lens now agrees with you, and you cannot
+    ask that if changing the lens throws away your answers.
+    """
+    conn.executescript(LABELS)
+
+
+MIGRATIONS = {1: _m002_kind_slots, 2: _m003_labels}
 
 
 class State:
@@ -99,7 +123,7 @@ class State:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.path)
         self.conn.row_factory = sqlite3.Row
-        self.conn.executescript(SCHEMA + RUNS)
+        self.conn.executescript(SCHEMA + RUNS + LABELS)
         self._migrate()
         self.conn.commit()
 
@@ -115,6 +139,31 @@ class State:
 
     def close(self) -> None:
         self.conn.close()
+
+    # -------------------------------------------------------------- labels
+
+    def save_labels(self, rows: list[dict], week: str = "") -> None:
+        """rows: {item_id, title, blurb, source, choice}."""
+        now = datetime.now(timezone.utc).isoformat()
+        self.conn.executemany(
+            """INSERT OR REPLACE INTO labels
+               (item_id, title, blurb, source, choice, week, labelled_at)
+               VALUES (?,?,?,?,?,?,?)""",
+            [
+                (r["item_id"], r["title"], r.get("blurb", ""), r.get("source", ""),
+                 r["choice"], week, now)
+                for r in rows
+            ],
+        )
+        self.conn.commit()
+
+    def labels(self) -> list[dict]:
+        return [dict(r) for r in self.conn.execute(
+            "SELECT * FROM labels ORDER BY labelled_at DESC")]
+
+    def clear_labels(self) -> None:
+        self.conn.execute("DELETE FROM labels")
+        self.conn.commit()
 
     # ---------------------------------------------------------------- runs
 

@@ -10,6 +10,8 @@
 <nav class="side">
   <div class="brand">Weekly digest<small>{{ lens_name or "not set up" }}</small></div>
   <a href="/" class="{{ 'on' if active == 'home' }}">This week</a>
+  <a href="/lens" class="{{ 'on' if active == 'lens' }}">Lens</a>
+  <a href="/calibrate" class="{{ 'on' if active == 'calibrate' }}">Check the lens</a>
   <a href="/feeds" class="{{ 'on' if active == 'feeds' }}">Feeds</a>
   <a href="/settings" class="{{ 'on' if active == 'settings' }}">Settings</a>
   <a href="/about" class="{{ 'on' if active == 'about' }}">About</a>

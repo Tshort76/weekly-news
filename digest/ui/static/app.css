@@ -101,3 +101,17 @@ tr.off { opacity: .5; }
 .row-actions { display: flex; gap: .4rem; }
 .row-actions form { display: inline; }
 .opt { border: 1px solid var(--rule); border-radius: 5px; padding: .5rem .7rem; }
+.ex { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: .4rem; }
+.ex .input { min-width: 0; }
+.label-row { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center;
+             padding: .5rem 0; border-top: 1px solid var(--rule); }
+.label-row small { display: block; color: var(--muted); font-size: .78rem; }
+.label-row .btns { display: flex; gap: .6rem; }
+.label-row .pick { margin: 0; font-size: .8rem; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.box { border: 1px solid var(--rule); border-radius: 5px; padding: .7rem .9rem; }
+.box h4 { margin: 0 0 .5rem; font-size: .8rem; text-transform: uppercase;
+          letter-spacing: .06em; color: var(--muted); }
+.box .item { padding: .4rem 0; border-top: 1px dotted var(--rule); font-size: .85rem; }
+pre.diff { background: var(--code-bg); padding: 1rem; overflow-x: auto; font-size: .78rem; }
+textarea.input { min-height: 3rem; }

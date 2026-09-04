@@ -69,6 +69,10 @@ def _real_run(**kwargs):
 def create_app(runner: jobs.Runner | None = None) -> FastAPI:
     app = FastAPI(title="Weekly Digest", docs_url=None, redoc_url=None)
     app.state.runner = runner or jobs.Runner(paths.data_dir(), _real_run)
+    # The headlines currently being labelled. In memory rather than stored: they
+    # are a working set for one sitting, and the labels themselves are what is
+    # kept.
+    app.state.sample = []
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     templates = Jinja2Templates(directory=str(HERE / "templates"))
 
@@ -248,6 +252,114 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
 
         legacy.import_legacy()
         return RedirectResponse("/", status_code=303)
+
+    # ------------------------------------------------------------------ lens
+
+    @app.get("/lens", response_class=HTMLResponse)
+    def lens_page(request: Request, saved: str = ""):
+        stored = store.load()
+        spec = stored.spec or presets.load(presets.DEFAULT)
+        return page(request, "lens.html", spec=spec, stored=stored,
+                    saved=bool(saved), lenses=[(n, presets.load(n).name)
+                                               for n in presets.available()])
+
+    @app.post("/lens")
+    async def save_lens(request: Request):
+        from .lensform import from_form  # noqa: PLC0415
+        from ..lens.serialize import to_toml  # noqa: PLC0415
+
+        form = await request.form()
+        stored = store.load()
+        spec = from_form(form, stored.spec or presets.load(presets.DEFAULT))
+        store.save(spec, to_toml(spec))
+        return RedirectResponse("/lens?saved=1", status_code=303)
+
+    @app.post("/lens/use")
+    def use_preset(name: str = Form(...)):
+        store.install_preset(name)
+        return RedirectResponse("/lens?saved=1", status_code=303)
+
+    @app.get("/lens/diff", response_class=HTMLResponse)
+    def lens_diff(request: Request):
+        """What a hand edit changed, so the form can say before it overwrites."""
+        import difflib  # noqa: PLC0415
+
+        from ..lens.compile import compile_lens  # noqa: PLC0415
+
+        stored = store.load()
+        rebuilt = compile_lens(stored.spec) if stored.spec else ""
+        diff = list(difflib.unified_diff(
+            rebuilt.splitlines(), stored.markdown.splitlines(),
+            "what the form would write", "your edited lens.md", lineterm="",
+        ))
+        return page(request, "diff.html", diff=diff)
+
+    # ----------------------------------------------------------- calibration
+
+    @app.get("/calibrate", response_class=HTMLResponse)
+    def calibrate_page(request: Request):
+        cfg = load()
+        with State(cfg.db_path) as state:
+            existing = {r["item_id"]: r for r in state.labels()}
+        return page(request, "calibrate.html", labelled=existing,
+                    items=app.state.sample or [], report=None)
+
+    @app.post("/calibrate/sample")
+    def draw_sample(request: Request):
+        from ..ingest import sample  # noqa: PLC0415
+
+        app.state.sample = sample(load(), 25)
+        return RedirectResponse("/calibrate", status_code=303)
+
+    @app.post("/calibrate/save")
+    async def save_labels(request: Request):
+        form = await request.form()
+        cfg = load()
+        wanted = {i.id: i for i in (app.state.sample or [])}
+        rows = [
+            {"item_id": item_id, "title": wanted[item_id].title,
+             "blurb": wanted[item_id].blurb[:400],
+             "source": wanted[item_id].source, "choice": choice}
+            for item_id, choice in form.items()
+            if item_id in wanted and choice in ("want", "maybe", "skip")
+        ]
+        with State(cfg.db_path) as state:
+            state.save_labels(rows, pipeline.iso_week())
+        return RedirectResponse("/calibrate/result", status_code=303)
+
+    @app.get("/calibrate/result", response_class=HTMLResponse)
+    def calibrate_result(request: Request):
+        """Run the lens over what the user labelled and show the two disagreements."""
+        from .. import calibrate as calibration  # noqa: PLC0415
+        from ..classify import classify  # noqa: PLC0415
+        from ..llm import Client  # noqa: PLC0415
+
+        cfg = load()
+        with State(cfg.db_path) as state:
+            saved = state.labels()
+        by_id = {r["item_id"]: r for r in saved}
+        items = [i for i in (app.state.sample or []) if i.id in by_id]
+        if not items:
+            return page(request, "calibrate.html", labelled=by_id, items=[], report=None)
+        labels = calibration.labels_from_choices(
+            {r["item_id"]: r["choice"] for r in saved}
+        )
+        results = classify(items, cfg, Client(cfg))
+        report = calibration.score(results, labels)
+        return page(request, "result.html", report=report, total=len(items),
+                    model=cfg.models.classify)
+
+    @app.post("/calibrate/example")
+    def add_to_lens(headline: str = Form(...), level: str = Form("1"),
+                    note: str = Form("")):
+        from .lensform import add_example  # noqa: PLC0415
+        from ..lens.serialize import to_toml  # noqa: PLC0415
+
+        stored = store.load()
+        spec = add_example(stored.spec or presets.load(presets.DEFAULT),
+                           level, headline, note)
+        store.save(spec, to_toml(spec))
+        return RedirectResponse("/lens?saved=1", status_code=303)
 
     @app.get("/about", response_class=HTMLResponse)
     def about(request: Request):

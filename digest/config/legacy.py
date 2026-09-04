@@ -178,8 +178,17 @@ def import_legacy(
     # The lens goes across as bytes, not as a recompile. Phase 0 measured that
     # rewrapping the same words moves the classifier by about ten points, so an
     # import must hand over exactly the file that was being used yesterday.
-    write(paths.lens_file(), lens_source.read_text(encoding="utf-8"))
-    write(paths.lens_spec_file(), lens_spec_source.read_text(encoding="utf-8"))
+    from ..lens.store import _stamp, digest_of  # noqa: PLC0415
+
+    markdown = lens_source.read_text(encoding="utf-8")
+    write(paths.lens_file(), markdown)
+    # Stamped with the hash of what was actually written, so a later hand edit
+    # is detectable. Without this the form would overwrite someone's edits with
+    # no warning, because "no hash recorded" reads the same as "unchanged".
+    write(
+        paths.lens_spec_file(),
+        _stamp(lens_spec_source.read_text(encoding="utf-8"), digest_of(markdown)),
+    )
 
     moved_db = copy_state(paths.LEGACY_DATA, paths.data_dir())
     log.info("imported %s into %s", legacy_path, paths.config_dir())

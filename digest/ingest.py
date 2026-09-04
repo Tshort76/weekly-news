@@ -245,6 +245,33 @@ def probe(url: str, now: datetime | None = None, days: int = 8) -> FeedReport:
     return report
 
 
+def sample(cfg: Config, n: int = 25, now: datetime | None = None) -> list[Item]:
+    """A spread of recent headlines for the user to sort.
+
+    Spread across feeds rather than taken in order: the first twenty-five items
+    of a fetch are whatever the busiest feed published this morning, and asking
+    someone to calibrate their lens on one outlet's Tuesday teaches the lens
+    about that outlet.
+    """
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=cfg.run.fetch_days)
+    by_source: dict[str, list[Item]] = {}
+    for source in cfg.sources:
+        try:
+            by_source[source.name] = fetch_source(source, cutoff)
+        except Exception as exc:
+            log.warning("feed failed while sampling: %s (%s)", source.name, exc)
+
+    picked: list[Item] = []
+    round_number = 0
+    while len(picked) < n and any(len(v) > round_number for v in by_source.values()):
+        for items in by_source.values():
+            if len(items) > round_number and len(picked) < n:
+                picked.append(items[round_number])
+        round_number += 1
+    return picked
+
+
 def ingest(cfg: Config, now: datetime | None = None) -> list[Item]:
     now = now or datetime.now(timezone.utc)
     cutoff = now - timedelta(days=cfg.run.fetch_days)

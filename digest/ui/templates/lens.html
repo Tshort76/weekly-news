@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% set active = "lens" %}
+{% block body %}
+<h1>The lens</h1>
+<p class="sub">The written test every headline is judged against. This is the product; everything else is plumbing.</p>
+{% if saved %}<p class="banner ok">Saved. <a href="/calibrate">Check it against your own headlines</a>.</p>{% endif %}
+
+{% if stored.hand_edited %}
+<p class="banner warn">Someone edited <span class="mono">lens.md</span> by hand. Saving this form will replace those edits. <a href="/lens/diff">Show me the difference</a>.</p>
+{% endif %}
+
+<form method="post" action="/lens">
+  <label>Name <input class="input" name="name" value="{{ spec.name }}"></label>
+  <label>What this briefing is about <textarea class="input" name="about" rows="2">{{ spec.about }}</textarea></label>
+  <label>What it is not about <textarea class="input" name="not_about" rows="2">{{ spec.not_about }}</textarea></label>
+
+  <h2>Headlines you would definitely want</h2>
+  <p class="sub">Examples, not adjectives. "A cartel forms or breaks" classifies better than "structurally important" — the examples are what the model actually keys on.</p>
+  <input class="input" name="fit3_lead" value="{{ spec.fit3.lead }}">
+  {% for example in spec.fit3.examples %}
+  <div class="ex"><input class="input" name="fit3_text" value="{{ example.text }}">
+    <input class="input" name="fit3_note" value="{{ example.note }}" placeholder="why it counts"></div>
+  {% endfor %}
+  <div class="ex"><input class="input" name="fit3_text" placeholder="another headline">
+    <input class="input" name="fit3_note" placeholder="why"></div>
+
+  <h2>Headlines you would probably want</h2>
+  <input class="input" name="fit2_lead" value="{{ spec.fit2.lead }}">
+  {% for example in spec.fit2.examples %}
+  <div class="ex"><input class="input" name="fit2_text" value="{{ example.text }}">
+    <input class="input" name="fit2_note" value="{{ example.note }}"></div>
+  {% endfor %}
+  <div class="ex"><input class="input" name="fit2_text" placeholder="another headline">
+    <input class="input" name="fit2_note" placeholder="why"></div>
+
+  <h2>Near your topic, but you would usually skip</h2>
+  <input class="input" name="fit1_lead" value="{{ spec.fit1.lead }}">
+  {% for example in spec.fit1.examples %}
+  <div class="ex"><input class="input" name="fit1_text" value="{{ example.text }}">
+    <input class="input" name="fit1_note" value="{{ example.note }}"></div>
+  {% endfor %}
+  <div class="ex"><input class="input" name="fit1_text" placeholder="another headline">
+    <input class="input" name="fit1_note" placeholder="why"></div>
+  <label>…unless <input class="input" name="fit1_unless" value="{{ spec.fit1.unless }}"></label>
+
+  <h2>Never</h2>
+  <label><input class="input" name="never" value="{{ spec.never | join(', ') }}"></label>
+
+  <h2>What to call the two halves</h2>
+  <p class="sub">The model is shown these words; the code keys on fixed slots behind them, so the balance rule works whatever you call yours.</p>
+  <label>Your subject <input class="input" name="kind_core" value="{{ spec.kinds.core }}"></label>
+  <label>…which means <input class="input" name="kind_core_gloss" value="{{ spec.kinds.core_gloss }}"></label>
+  <label>The adjacent thing <input class="input" name="kind_adjacent" value="{{ spec.kinds.adjacent }}"></label>
+  <label>…which means <input class="input" name="kind_adjacent_gloss" value="{{ spec.kinds.adjacent_gloss }}"></label>
+
+  <h2>Places you care about</h2>
+  <p class="sub">Named so the briefing can lean toward them — and told not to inflate the score for them, which is the point of saying it out loud.</p>
+  <label><input class="input" name="high_interest" value="{{ spec.high_interest | join(', ') }}"></label>
+  <label>Anything else about balance <input class="input" name="bias_extra" value="{{ spec.bias_extra }}"></label>
+
+  <div class="actions"><button class="primary">Save the lens</button></div>
+</form>
+
+<h2>Start from a preset instead</h2>
+{% for name, title in lenses %}
+<form method="post" action="/lens/use" class="actions">
+  <input type="hidden" name="name" value="{{ name }}">
+  <button class="quiet">Use "{{ title }}"</button>
+</form>
+{% endfor %}
+<p class="sub">A preset replaces your lens with the exact file that was measured — not a rebuild of it, because rewrapping the same words moves the classifier by about ten points.</p>
+{% endblock %}

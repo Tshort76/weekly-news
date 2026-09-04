@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% set active = "lens" %}
+{% block body %}
+<h1>Your edits</h1>
+<p class="sub">What the form would write, against what is in lens.md now. Lines marked <span class="mono">+</span> are yours.</p>
+<pre class="diff">{% for line in diff %}{{ line }}
+{% endfor %}</pre>
+<p><a class="btn" href="/lens">Back to the lens</a></p>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% set active = "calibrate" %}
+{% block body %}
+<h1>Would you want to read these?</h1>
+<p class="sub">Sort a handful of this week's headlines. Then the lens is run over the same ones and you see where it disagrees with you. Your calls, not a test — change any of them whenever you like.</p>
+
+{% if not items %}
+<form method="post" action="/calibrate/sample" class="actions">
+  <button class="primary">Fetch 25 headlines from my feeds</button>
+</form>
+{% if labelled %}<p class="sub">{{ labelled | length }} headlines labelled previously. They are kept across a lens change on purpose — that is the whole question being asked.</p>{% endif %}
+{% else %}
+<form method="post" action="/calibrate/save">
+  {% for item in items %}
+  <div class="label-row">
+    <div><b>{{ item.title }}</b><small>{{ item.blurb[:160] }} — {{ item.source }}</small></div>
+    <div class="btns">
+      {% for choice in ("want", "maybe", "skip") %}
+      <label class="pick"><input type="radio" name="{{ item.id }}" value="{{ choice }}"
+        {{ "checked" if labelled.get(item.id, {}).get("choice") == choice }}> {{ choice }}</label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <div class="actions"><button class="primary">Run the lens over these</button></div>
+</form>
+{% endif %}
+{% endblock %}
