@@ -35,6 +35,15 @@ HERE = Path(__file__).resolve().parent
 HOST, PORT = "127.0.0.1", 8765
 
 
+def _resume_from(header: str | None, fallback: int) -> int:
+    """Where to pick the stream up. A header that is absent or junk means start
+    from the fallback, which replays the buffer rather than losing it."""
+    try:
+        return int(header)
+    except (TypeError, ValueError):
+        return fallback
+
+
 def _config_or_none():
     try:
         return load()
@@ -113,13 +122,20 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
         return RedirectResponse("/", status_code=303)
 
     @app.get("/progress")
-    def progress(last_event_id: int = 0):
-        """The live stream. Resumes from the id the browser last saw."""
+    def progress(request: Request, last_event_id: int = 0):
+        """The live stream. Resumes from the id the browser last saw.
+
+        `EventSource` reconnects on its own and reports its position in the
+        `Last-Event-ID` header — a page cannot add a query parameter to a retry
+        it never issued. So the header is the real resume path and the query
+        parameter is only for a page reconnecting deliberately.
+        """
         job = app.state.runner.job
         if job is None:
             return JSONResponse({"status": "idle"})
+        resume = _resume_from(request.headers.get("last-event-id"), last_event_id)
         return StreamingResponse(
-            jobs.stream(job, last_event_id),
+            jobs.stream(job, resume),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )

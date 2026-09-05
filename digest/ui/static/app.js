@@ -29,7 +29,8 @@
   });
 
   source.onerror = function () {
-    // The browser retries on its own, carrying Last-Event-ID. Nothing to do.
+    // The browser retries on its own, carrying Last-Event-ID, which /progress
+    // reads to pick the stream up where this one stopped. Nothing to do here.
   };
 
   function describe(event) {

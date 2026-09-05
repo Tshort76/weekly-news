@@ -120,6 +120,25 @@ def test_the_progress_stream_replays_what_a_reconnecting_page_missed(installed):
     assert "event: done" in body
 
 
+def test_a_browsers_automatic_retry_resumes_from_its_header(installed):
+    """EventSource cannot add a query parameter to a retry it issues itself."""
+    runner = Runner(paths.data_dir(), fake_pipeline())
+    client = TestClient(create_app(runner))
+    client.post("/run")
+    runner.join(2)
+    body = client.get("/progress", headers={"Last-Event-ID": "1"}).text
+    assert body.count("event: progress") == 1
+
+
+def test_a_junk_resume_header_replays_rather_than_failing(installed):
+    runner = Runner(paths.data_dir(), fake_pipeline())
+    client = TestClient(create_app(runner))
+    client.post("/run")
+    runner.join(2)
+    body = client.get("/progress", headers={"Last-Event-ID": ""}).text
+    assert body.count("event: progress") == 2
+
+
 def test_the_stream_says_idle_before_anything_has_run(client):
     assert client.get("/progress").json() == {"status": "idle"}
 
