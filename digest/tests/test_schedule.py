@@ -75,6 +75,32 @@ def test_a_run_from_a_scheduler_records_itself(tmp_path):
     assert "--scheduled" in schedule.command()
 
 
+def test_the_scheduler_never_picks_up_a_stranger_named_digest(tmp_path, monkeypatch):
+    """Homebrew's `nss` ships a `digest` too, and PATH order is not ours to fix.
+
+    A scheduled job that runs the wrong binary fails once a week where nobody
+    is watching, so the console script is located beside our own interpreter
+    rather than searched for by name.
+    """
+    impostor = tmp_path / "elsewhere"
+    impostor.mkdir()
+    (impostor / "digest").write_text("#!/bin/sh\nexit 0\n")
+    monkeypatch.setenv("PATH", str(impostor))
+
+    interpreter = tmp_path / "venv" / "bin" / "python"
+    interpreter.parent.mkdir(parents=True)
+    interpreter.touch()
+    monkeypatch.setattr(schedule.sys, "executable", str(interpreter))
+
+    # No console script beside the interpreter: fall back to -m digest, never
+    # to the impostor that PATH would have handed us.
+    assert schedule.command()[:3] == [str(interpreter), "-m", "digest"]
+
+    # One appears beside it: that is ours, and it wins.
+    (interpreter.parent / "digest").touch()
+    assert schedule.command()[0] == str(interpreter.parent / "digest")
+
+
 # ------------------------------------------------------------------- Linux
 
 

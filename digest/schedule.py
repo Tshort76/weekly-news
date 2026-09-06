@@ -49,13 +49,23 @@ def _default_runner(args: list[str], stdin: str | None = None) -> subprocess.Com
 def command() -> list[str]:
     """How to invoke this app from a scheduler.
 
-    The console script when there is one — an installed tool has `digest` on
-    PATH — and otherwise this interpreter with `-m digest`, which is what a
-    checkout has. Absolute, because a scheduler has no PATH worth trusting.
+    Deliberately **not** `shutil.which("digest")`. `digest` is not a rare name —
+    Homebrew's `nss` package installs one, and on a machine where that comes
+    first on PATH the search returns an unrelated binary. Writing that into a
+    launchd plist produces a weekly job that runs the wrong program and fails
+    where nobody is looking, which is the worst place to be wrong.
+
+    So the console script is taken from beside the interpreter that is running
+    us, where an installed tool puts it, and the fallback is that same
+    interpreter with `-m digest`. Both are this app by construction rather than
+    by name, and both are absolute, because a scheduler has no PATH worth
+    trusting.
     """
-    console = shutil.which("digest")
-    if console:
-        return [console, "run", "--scheduled", "--html"]
+    here = Path(sys.executable).parent
+    for name in ("digest", "digest.exe"):
+        console = here / name
+        if console.exists():
+            return [str(console), "run", "--scheduled", "--html"]
     return [sys.executable, "-m", "digest", "run", "--scheduled", "--html"]
 
 
