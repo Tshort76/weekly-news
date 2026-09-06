@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Digest Health</title>
+<style>
+/* House palette ---------------------------------------------------------- */
+:root {
+  --bg: #fbfaf7; --fg: #22282e; --muted: #5d6670; --faint: #8b939b;
+  --rule: #dcdfd9; --card: #ffffff; --code-bg: #eef0ea;
+  --accent: #0e6e63; --accent-soft: #e3efec;
+  --ok: #2f6b4f;
+  --warn: #9a6a1c; --warn-soft: #f6ecd9;
+  --stop: #9c3a3a; --stop-soft: #f6e6e4;
+  --shell: #0a6b60; --shell-soft: #bbfaf1;
+  --ok-soft: #e2efe7;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171c21; --fg: #d9dee2; --muted: #97a1aa; --faint: #7c858e;
+    --rule: #323a41; --card: #1e242a; --code-bg: #232a30;
+    --accent: #4cbcab; --accent-soft: #1e2f2c;
+    --ok: #7fc6a0;
+    --warn: #d5a04a; --warn-soft: #2e2718;
+    --stop: #e08b84; --stop-soft: #33201e;
+    --shell: #63dcc9; --shell-soft: #10403a;
+    --ok-soft: #1c2d24;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171c21; --fg: #d9dee2; --muted: #97a1aa; --faint: #7c858e;
+  --rule: #323a41; --card: #1e242a; --code-bg: #232a30;
+  --accent: #4cbcab; --accent-soft: #1e2f2c;
+  --ok: #7fc6a0;
+  --warn: #d5a04a; --warn-soft: #2e2718;
+  --stop: #e08b84; --stop-soft: #33201e;
+  --shell: #63dcc9; --shell-soft: #10403a;
+  --ok-soft: #1c2d24;
+}
+
+/* House standalone ------------------------------------------------------- */
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  font-size: 16px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+/* Dashboard deviation: 62rem rather than the house 47rem. A feed table with
+   seven columns and a funnel with labels on both ends do not fit prose width. */
+main { max-width: 62rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+
+h1, h2, h3, h4 {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  line-height: 1.25; text-wrap: balance;
+}
+h1 { font-size: 2.1rem; margin: .5rem 0 .3rem; }
+h2 { font-size: 1.5rem; margin: 3.25rem 0 .75rem; padding-top: 1.25rem;
+     border-top: 2px solid var(--fg); }
+h3 { font-size: 1.14rem; margin: 2rem 0 .6rem; }
+h4 { font-size: .98rem; margin: 1.4rem 0 .4rem; }
+p { margin: 0 0 1rem; }
+ul, ol { margin: 0 0 1rem; padding-left: 1.3rem; }
+li { margin-bottom: .35rem; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; }
+code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            font-size: .86em; }
+code { background: var(--code-bg); padding: .1em .35em; border-radius: 3px; }
+
+.eyebrow { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+           color: var(--accent); font-weight: 600; margin: 0 0 .5rem; }
+.byline { color: var(--muted); font-size: .9rem; margin-bottom: 1.75rem; }
+.kicker { font-size: .72rem; letter-spacing: .13em; text-transform: uppercase;
+          color: var(--faint); font-weight: 600; margin: 0; }
+.lede { font-size: 1.05rem; }
+
+.bar { position: sticky; top: 0; z-index: 5;
+       background: color-mix(in srgb, var(--bg) 88%, transparent);
+       -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+       border-bottom: 1px solid var(--rule); padding: .4rem 1.25rem;
+       display: flex; gap: .9rem; align-items: baseline; flex-wrap: wrap;
+       font-size: .72rem; line-height: 1.9; color: var(--muted); }
+.bar nav { display: flex; gap: .9rem; flex-wrap: wrap; }
+.bar a { color: var(--muted); text-decoration: none; text-transform: uppercase;
+         font-weight: 600; letter-spacing: .1em; white-space: nowrap;
+         border-bottom: 1px solid transparent; padding-bottom: 1px; }
+.bar a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.bar a[aria-current="true"] { color: var(--accent);
+                              border-bottom-color: var(--accent); }
+.bar .spacer { flex: 1; }
+.bar button { font: inherit; letter-spacing: .1em; text-transform: uppercase;
+              font-weight: 600; color: var(--muted); background: none;
+              border: 1px solid var(--rule); border-radius: 3px;
+              padding: .05rem .5rem; cursor: pointer; }
+.bar button:hover { color: var(--accent); border-color: var(--accent); }
+
+details.sec { margin: 0; }
+details.sec[open] { margin-bottom: 1rem; }
+details.sec > summary { list-style: none; cursor: pointer; display: block;
+                        margin: 2.5rem 0 .75rem; padding-top: 1.1rem;
+                        border-top: 2px solid var(--fg);
+                        scroll-margin-top: 3.5rem; }
+details.sec > summary::-webkit-details-marker { display: none; }
+details.sec > summary .kicker { display: block; margin-bottom: .15rem; }
+details.sec > summary h2 { margin: 0; padding: 0 1.75rem 0 0; border: 0;
+                           position: relative; scroll-margin-top: 3.5rem; }
+details.sec > summary h2::after { content: "+"; position: absolute;
+                                  right: 0; top: 0; line-height: inherit;
+                                  color: var(--faint); font-weight: 400; }
+details.sec[open] > summary h2::after { content: "−"; }
+details.sec > summary:hover h2,
+details.sec > summary:hover h2::after { color: var(--accent); }
+details.sec .count { font-family: "Avenir Next", system-ui, sans-serif;
+                     font-size: .68rem; letter-spacing: .09em;
+                     text-transform: uppercase; font-weight: 600;
+                     color: var(--faint); margin-left: .55rem;
+                     vertical-align: .18em; }
+.sec-body > :first-child { margin-top: 0; }
+
+.note { background: var(--accent-soft); border-left: 3px solid var(--accent);
+        padding: .9rem 1.15rem; margin: 1.25rem 0; }
+.note p:last-child { margin: 0; }
+.note.caution { background: var(--warn-soft); border-left-color: var(--warn); }
+.note .lbl { font-weight: 700; }
+
+.tablewrap { overflow-x: auto; margin: 1.25rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem;
+        background: var(--card); min-width: 30rem;
+        font-variant-numeric: tabular-nums; }
+th, td { border: 1px solid var(--rule); padding: .5rem .7rem;
+         text-align: left; vertical-align: top; }
+th { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
+     color: var(--muted); font-weight: 600; }
+td.n, th.n { text-align: right; }
+tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+tr.dim td { color: var(--faint); }
+
+.stamp { display: inline-block; font-size: .64rem; letter-spacing: .09em;
+         text-transform: uppercase; font-weight: 700; padding: .1rem .45rem;
+         border-radius: 2px; background: var(--accent-soft);
+         color: var(--accent); vertical-align: .15em; white-space: nowrap; }
+.stamp.todo { background: var(--warn-soft); color: var(--warn); }
+.stamp.stop { background: var(--stop-soft); color: var(--stop); }
+.stamp.unwired { background: none; color: var(--warn);
+                 border: 1px solid var(--warn); }
+
+.rowset { border: 1px solid var(--rule); background: var(--card); margin: 1.25rem 0; }
+.rowset > details.row + details.row { border-top: 1px solid var(--rule); }
+details.row { scroll-margin-top: 4.5rem; }
+details.row > summary { list-style: none; cursor: pointer; position: relative;
+                        padding: .55rem 2.5rem .55rem .9rem; font-size: .9rem;
+                        font-weight: 600; transition: color .15s;
+                        display: flex; gap: .7rem; align-items: baseline; flex-wrap: wrap; }
+details.row > summary::-webkit-details-marker { display: none; }
+details.row > summary::after { content: "+"; position: absolute; right: .9rem;
+                               top: .5rem; line-height: 1; font-weight: 400;
+                               font-family: ui-monospace, "SF Mono", Menlo, monospace;
+                               font-size: 1.1rem; color: var(--faint); }
+details.row[open] > summary::after { content: "−"; color: var(--accent); }
+details.row > summary:hover, details.row > summary:hover::after { color: var(--accent); }
+details.row[open] > summary { border-bottom: 1px dotted var(--rule); }
+.row-body { padding: .7rem .9rem .8rem; font-weight: 400; font-size: .9rem; }
+.row-body > :first-child { margin-top: 0; }
+.row-body > :last-child { margin-bottom: 0; }
+.tip { display: block; margin-top: .6rem; padding-top: .55rem;
+       border-top: 1px dotted var(--rule); font-size: .82rem; color: var(--muted); }
+.mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .8rem; }
+
+/* Dashboard components --------------------------------------------------- */
+/* Severity is a stripe on the left edge — form, not just colour. */
+details.row.w > summary { border-left: 3px solid var(--warn); }
+details.row.e > summary { border-left: 3px solid var(--stop); }
+details.row.i > summary { border-left: 3px solid var(--rule); }
+.sev { font-size: .64rem; letter-spacing: .09em; text-transform: uppercase;
+       font-weight: 700; min-width: 4.2rem; }
+.w .sev { color: var(--warn); } .e .sev { color: var(--stop); } .i .sev { color: var(--faint); }
+.mod { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .76rem;
+       color: var(--muted); font-weight: 400; min-width: 6rem; }
+.times { font-weight: 400; color: var(--faint); font-size: .8rem; }
+.src { margin-left: auto; font-weight: 400; color: var(--faint); font-size: .72rem;
+       letter-spacing: .06em; text-transform: uppercase; padding-right: .5rem; }
+
+/* Stat strip: one object, shared edges and baselines. */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+         border: 1px solid var(--rule); background: var(--card); margin: 1rem 0; }
+.stats > div { padding: .7rem .9rem .6rem; border-right: 1px solid var(--rule); }
+.stats > div:last-child { border-right: 0; }
+.stats b { display: block; font-family: "Iowan Old Style", Palatino, Georgia, serif;
+           font-size: 1.7rem; line-height: 1.1; font-weight: 400;
+           font-variant-numeric: tabular-nums; }
+.stats small { display: block; font-size: .68rem; letter-spacing: .08em;
+               text-transform: uppercase; color: var(--muted); margin-top: .2rem; }
+.stats .sub { font-size: .76rem; color: var(--faint); display: block; margin-top: .15rem; }
+
+/* Status chip — semantic colours, separate from the accent. */
+.chip { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em;
+        text-transform: uppercase; padding: .12rem .5rem; border-radius: 10px; white-space: nowrap; }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.stop { background: var(--stop-soft); color: var(--stop); }
+.chip.idle { background: var(--code-bg); color: var(--muted); }
+
+/* Stage strip — the eleven stages as a single ruled row. */
+.stages { display: flex; border: 1px solid var(--rule); background: var(--card);
+          margin: 1rem 0; overflow-x: auto; }
+.stages > div { flex: 1 1 0; min-width: 5.4rem; padding: .5rem .6rem .45rem;
+                border-right: 1px solid var(--rule); font-size: .78rem; position: relative; }
+.stages > div:last-child { border-right: 0; }
+.stages .nm { display: block; font-size: .66rem; letter-spacing: .08em;
+              text-transform: uppercase; color: var(--muted); }
+.stages .t { display: block; font-variant-numeric: tabular-nums; font-weight: 600; }
+.stages .d { display: block; color: var(--faint); font-size: .72rem; }
+.stages > div::before { content: ""; position: absolute; left: 0; right: 0; top: 0;
+                        height: 3px; background: var(--ok); }
+.stages > div.warn::before { background: var(--warn); }
+.stages > div.zero::before { background: var(--rule); }
+/* Width of the top bar encodes share of wall clock. */
+.wall { display: flex; height: 10px; border: 1px solid var(--rule); background: var(--card);
+        margin: .2rem 0 1rem; overflow: hidden; }
+.wall > i { display: block; height: 100%; background: var(--accent); opacity: .85; }
+.wall > i:nth-child(even) { opacity: .55; }
+.wall-key { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: .74rem; color: var(--muted); }
+
+/* Funnel — horizontal bars on one scale (306 = 100%). */
+.funnel { display: grid; grid-template-columns: 9rem 1fr 4rem; gap: .35rem .8rem;
+          align-items: center; margin: 1rem 0; font-size: .88rem; }
+.funnel .lbl { text-align: right; color: var(--muted); }
+.funnel .bar-bg { height: 1.2rem; background: var(--code-bg); position: relative; }
+.funnel .bar-fg { height: 100%; background: var(--accent); }
+.funnel .n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.funnel .why { grid-column: 2 / 4; font-size: .8rem; color: var(--muted); margin: -.15rem 0 .3rem; }
+.funnel .why b { color: var(--fg); font-weight: 600; }
+.funnel .why .never { color: var(--faint); font-style: italic; }
+
+/* Mini history strip inside a table cell. */
+.hist { display: inline-flex; gap: 2px; vertical-align: middle; }
+.hist i { display: inline-block; width: 1.55rem; text-align: center; font-style: normal;
+          font-size: .7rem; font-variant-numeric: tabular-nums; background: var(--code-bg);
+          border-radius: 2px; padding: 0 .1rem; color: var(--muted); }
+.hist i.f { background: var(--stop-soft); color: var(--stop); font-weight: 700; }
+.hist i.q { background: var(--warn-soft); color: var(--warn); font-weight: 700; }
+.hist i.p { color: var(--faint); }
+.share { display: inline-block; height: .55rem; background: var(--accent); opacity: .7;
+         vertical-align: middle; margin-right: .35rem; }
+
+/* Two-up call blocks. */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+@media (max-width: 40rem) { .two { grid-template-columns: 1fr; } }
+.blk { border: 1px solid var(--rule); background: var(--card); padding: .8rem 1rem .9rem; }
+.blk h4 { margin: 0 0 .5rem; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.blk h4 .mod { min-width: 0; }
+.blk dl { display: grid; grid-template-columns: max-content 1fr; gap: .2rem .9rem;
+          margin: 0; font-size: .86rem; }
+.blk dt { color: var(--muted); }
+.blk dd { margin: 0; font-variant-numeric: tabular-nums; }
+.blk dd b { font-weight: 600; }
+
+/* Stacked distribution bar. */
+.dist { display: flex; height: .9rem; border: 1px solid var(--rule); overflow: hidden; margin: .3rem 0 .25rem; }
+.dist > i { display: block; height: 100%; }
+.dist-key { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .76rem; color: var(--muted); }
+.dist-key i { display: inline-block; width: .7rem; height: .7rem; vertical-align: -1px; margin-right: .3rem; }
+.k1 { background: var(--accent); } .k2 { background: color-mix(in srgb, var(--accent) 55%, var(--bg)); }
+.k3 { background: var(--warn); } .k4 { background: var(--code-bg); }
+
+.legend { font-size: .78rem; color: var(--muted); margin: .5rem 0 0; }
+.legend .stamp { margin-right: .3rem; }
+
+@media print {
+  .bar { display: none; }
+  details.sec > summary h2::after { content: none; }
+  details.row { break-inside: avoid; }
+  details.row > summary::after { content: none; }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <nav aria-label="On this page">
+    <a href="#run">Last run</a>
+    <a href="#attention">Needs attention</a>
+    <a href="#sources">Sources</a>
+    <a href="#calls">Model calls</a>
+    <a href="#funnel">Funnel</a>
+    <a href="#ground">Grounding</a>
+    <a href="#history">History</a>
+    <a href="#provenance">Provenance</a>
+  </nav>
+  <span class="spacer"></span>
+  <button type="button" data-all="open">Expand all</button>
+  <button type="button" data-all="close">Collapse all</button>
+</div>
+
+<main>
+  <p class="eyebrow">Weekly digest · the architecture of rule · mockup</p>
+  <h1>Digest Health</h1>
+  <p class="byline">Is the thing healthy, and if not, which part is wrong · <code>GET /health</code> · numbers are illustrative, drawn from the shape of a real week</p>
+
+  <p class="legend">Every panel carries its provenance:
+    <span class="stamp">exists</span> readable from <code>state.db</code>, <code>feeds.toml</code> or <code>config.toml</code> today ·
+    <span class="stamp unwired">unwired</span> the table exists but nothing writes it — a fix, not a schema change ·
+    <span class="stamp todo">requires</span> needs the <code>run_events</code> table proposed in the design.</p>
+
+  <!-- 1 · Last run ------------------------------------------------------ -->
+  <details class="sec" open id="run">
+    <summary>
+      <span class="kicker">1 · Status</span>
+      <h2>Last run <span class="count">2026-W37</span></h2>
+    </summary>
+    <div class="sec-body">
+      <p style="margin:0 0 .4rem"><span class="chip ok">ok</span> &nbsp;Live run (not dry) · started Fri 11 Sep 07:00 · finished 07:51 · <b>51 min</b> · 19 feeds enabled · both stages on Ollama
+        &nbsp;<span class="stamp unwired">unwired</span> <span class="stamp todo">requires · durations</span></p>
+
+      <div class="stats">
+        <div><b>306</b><small>fetched</small><span class="sub">19 of 19 feeds answered</span></div>
+        <div><b>302</b><small>after dedupe</small><span class="sub">4 already seen</span></div>
+        <div><b>60</b><small>selected</small><span class="sub">of 302 judged, 0 unjudged</span></div>
+        <div><b>60</b><small>entries</small><span class="sub">7 in the reporter's words</span></div>
+        <div><b>8,397</b><small>words</small><span class="sub">58 min aloud</span></div>
+        <div><b>4</b><small>warnings</small><span class="sub">0 errors</span></div>
+      </div>
+
+      <p class="kicker" style="margin-top:1.2rem">Stages · elapsed per stage · the strip is live from <code>/progress</code> while a run is in progress</p>
+      <div class="stages">
+        <div><span class="nm">fetch</span><span class="t">7 s</span><span class="d">19 feeds</span></div>
+        <div class="zero"><span class="nm">dedupe</span><span class="t">0 s</span><span class="d">−4</span></div>
+        <div class="warn"><span class="nm">classify</span><span class="t">9 m 41 s</span><span class="d">13 batches · 1 retry</span></div>
+        <div class="zero"><span class="nm">select</span><span class="t">0 s</span><span class="d">−242</span></div>
+        <div><span class="nm">ground</span><span class="t">7 m 10 s</span><span class="d">42 thin · 25 searches</span></div>
+        <div class="zero"><span class="nm">partition</span><span class="t">0 s</span><span class="d">7 carried</span></div>
+        <div><span class="nm">cluster</span><span class="t">1 m 20 s</span><span class="d">1 call</span></div>
+        <div class="warn"><span class="nm">write</span><span class="t">32 m 04 s</span><span class="d">53 entries · 2 re-asks</span></div>
+        <div><span class="nm">emit</span><span class="t">3 s</span><span class="d">txt md html pdf</span></div>
+        <div class="zero"><span class="nm">audio</span><span class="t">—</span><span class="d">off</span></div>
+        <div class="zero"><span class="nm">deliver</span><span class="t">—</span><span class="d">off</span></div>
+      </div>
+      <div class="wall" aria-hidden="true">
+        <i style="width:.3%"></i><i style="width:19%"></i><i style="width:14%"></i><i style="width:2.6%"></i><i style="width:63%"></i><i style="width:.2%"></i>
+      </div>
+      <p class="wall-key"><span>Share of the 51 minutes:</span><span>fetch 0.2%</span><span>classify 19%</span><span>ground 14%</span><span>cluster 3%</span><span>write 63%</span><span>emit 0.1%</span></p>
+      <p class="tip">Status, counts and the dry flag come from <code>runs</code> once every run writes it (today only <code>run --scheduled</code> does, and a failed run never calls <code>finish_run</code>). Per-stage times for a finished run need <code>run_events kind='stage'</code>; the live strip needs nothing new.</p>
+    </div>
+  </details>
+
+  <!-- 2 · Needs attention ---------------------------------------------- -->
+  <details class="sec" open id="attention">
+    <summary>
+      <span class="kicker">2 · Warnings</span>
+      <h2>Needs attention <span class="count">4 warnings · 3 spoken-check notes</span></h2>
+    </summary>
+    <div class="sec-body">
+      <p>Every <code>WARNING</code> and <code>ERROR</code> the run logged, one row per distinct message, with a count when it repeated. The system warns rather than fails; this is where the warnings go. <span class="stamp todo">requires · run warnings</span> <span class="stamp">exists · spoken check, partial flag</span></p>
+
+      <div class="rowset">
+        <details class="row w">
+          <summary><span class="sev">warning</span><span class="mod">llm</span>TimeoutError on attempt 1/5 for gemma3:27b, waiting 10s <span class="times">×1 · 07:38</span><span class="src">write · entry 41/53</span></summary>
+          <div class="row-body">
+            <p>One transient timeout during writing; the retry succeeded on attempt 2. Ollama is unpaced, so nothing waited on a rate limit. A second occurrence in the same run would be worth a look at what else the machine was doing at 07:38.</p>
+            <span class="tip">Source: <code>digest.llm</code> WARNING line, captured by the SQLite log handler with <code>kind='call'</code>, <code>subject='gemma3:27b'</code>, <code>n=1</code>.</span>
+          </div>
+        </details>
+        <details class="row w">
+          <summary><span class="sev">warning</span><span class="mod">synthesize</span>cluster c23 named Bundesbank, which the stories do not — asking again <span class="times">×2 · 07:22, 07:41</span><span class="src">write</span></summary>
+          <div class="row-body">
+            <p>The invention guard fired twice (clusters c23 and c47) and both re-asks came back clean, so no entry was dropped. If a re-ask fails the second time the cluster is dropped and the edition is marked <code>[PARTIAL]</code>; that would show as an error here.</p>
+            <span class="tip">Source: <code>digest.synthesize</code> WARNING line, captured free. The dropping case is an ERROR line from the same function.</span>
+          </div>
+        </details>
+        <details class="row w">
+          <summary><span class="sev">warning</span><span class="mod">classify</span>malformed JSON, retrying once <span class="times">×1 · 07:05</span><span class="src">classify · batch 7/13</span></summary>
+          <div class="row-body">
+            <p>Batch 7 came back as prose the first time and as a valid 25-item array on the retry. Zero items ended up unjudged. A batch that fails <em>both</em> times marks all 25 items <code>classification failed</code>, which the funnel counts as unjudged.</p>
+            <span class="tip">Source: <code>digest.llm</code> WARNING line from <code>complete_json</code>.</span>
+          </div>
+        </details>
+        <details class="row w">
+          <summary><span class="sev">warning</span><span class="mod">ground</span>8 selected items were written from their headline and blurb alone <span class="times">07:18</span><span class="src">ground</span></summary>
+          <div class="row-body">
+            <p>Of 42 thin items, 34 were grounded and 8 got nothing: the article was refused and the search returned no usable snippet. They are still written; the writer had less to go on. Six of the eight are Economist items. See <a href="#ground">Grounding</a>.</p>
+            <span class="tip">Derived at page load from <code>classified.json</code>: selected rows with <code>len(blurb) &lt; ground_min_chars</code> and an empty <code>evidence</code> list. The per-item outcome (searched and found nothing, versus search blocked) needs <code>run_events kind='ground'</code>.</span>
+          </div>
+        </details>
+      </div>
+
+      <h4>Spoken-text check <span class="stamp">exists · computed from the .txt at page load</span></h4>
+      <p class="sub" style="font-size:.86rem;color:var(--muted)">The mechanical criteria from <code>scripts/check_spoken.py</code>, run over <code>~/digests/digest-2026-W37.txt</code>. Reported, not failed — the audio is still made.</p>
+      <div class="rowset">
+        <details class="row w">
+          <summary><span class="sev">note</span><span class="mod">spoken</span>acronyms that may not be spelled out: ECB, IMF, NATO</summary>
+          <div class="row-body"><p>Three acronyms in the briefing's own sentences. The quoted paragraphs are checked separately and not counted; their acronyms are the outlet's choice.</p></div>
+        </details>
+        <details class="row i">
+          <summary><span class="sev">note</span><span class="mod">spoken</span>8,397 words · 58 minutes at 145 words a minute · ceiling 8,500</summary>
+          <div class="row-body"><p>Under the ceiling by 103 words. The length governor did not have to drop anything.</p></div>
+        </details>
+        <details class="row i">
+          <summary><span class="sev">note</span><span class="mod">spoken</span>In the quoted paragraphs, read verbatim by choice: 2 parentheticals, 9 figures as digits</summary>
+          <div class="row-body"><p>Not defects in the briefing — the outlet wrote them this way. Listed so nobody re-checks them.</p></div>
+        </details>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3 · Sources -------------------------------------------------------- -->
+  <details class="sec" id="sources">
+    <summary>
+      <span class="kicker">3 · Feeds</span>
+      <h2>Sources <span class="count">19 enabled · 19 answered · 0 quiet</span> <span class="stamp todo">requires · per run</span></h2>
+    </summary>
+    <div class="sec-body">
+      <p>One row per feed in <code>feeds.toml</code>. <em>This run</em> is what the feed contributed after the freshness cutoff and the trailer filter. The four-run strip and the median are what make a low number a comparison rather than a threshold.
+        <span class="stamp">exists · list, enabled, verified</span> <span class="stamp">exists · items per week, with a caveat</span> <span class="stamp todo">requires · per run, failed vs quiet</span></p>
+
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>Feed</th><th class="n">This run</th><th>Last 4 runs</th><th class="n">Median</th><th>Share of fetch</th><th>Verified</th><th>State</th></tr></thead>
+        <tbody>
+          <tr><td>Semafor</td><td class="n">128</td><td><span class="hist"><i>184</i><i>179</i><i>161</i><i>128</i></span></td><td class="n">170</td><td><span class="share" style="width:6.3rem"></span>42%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>FT — World</td><td class="n">25</td><td><span class="hist"><i>25</i><i>25</i><i>25</i><i>25</i></span></td><td class="n">25</td><td><span class="share" style="width:1.2rem"></span>8%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Ars Technica</td><td class="n">18</td><td><span class="hist"><i class="p">—</i><i>20</i><i>17</i><i>18</i></span></td><td class="n">18</td><td><span class="share" style="width:.9rem"></span>6%</td><td>2026-09-03</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>SCMP — This Week in Asia (Politics)</td><td class="n">15</td><td><span class="hist"><i class="p">—</i><i>18</i><i>14</i><i>15</i></span></td><td class="n">15</td><td><span class="share" style="width:.75rem"></span>5%</td><td>2026-09-03</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — Finance and Economics</td><td class="n">12</td><td><span class="hist"><i>11</i><i>14</i><i>13</i><i>12</i></span></td><td class="n">12.5</td><td><span class="share" style="width:.6rem"></span>4%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — Europe</td><td class="n">11</td><td><span class="hist"><i>10</i><i>13</i><i>12</i><i>11</i></span></td><td class="n">11.5</td><td><span class="share" style="width:.55rem"></span>4%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>IEEE Spectrum</td><td class="n">11</td><td><span class="hist"><i class="p">—</i><i>12</i><i class="f">!</i><i>11</i></span></td><td class="n">11.5</td><td><span class="share" style="width:.55rem"></span>4%</td><td>2026-09-03</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — Business</td><td class="n">10</td><td><span class="hist"><i>7</i><i>13</i><i>9</i><i>10</i></span></td><td class="n">9.5</td><td><span class="share" style="width:.5rem"></span>3%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>SCMP — This Week in Asia (Economics)</td><td class="n">10</td><td><span class="hist"><i class="p">—</i><i>12</i><i>9</i><i>10</i></span></td><td class="n">10</td><td><span class="share" style="width:.5rem"></span>3%</td><td>2026-09-03</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — Asia</td><td class="n">9</td><td><span class="hist"><i>6</i><i>11</i><i>8</i><i>9</i></span></td><td class="n">8.5</td><td><span class="share" style="width:.45rem"></span>3%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — Britain</td><td class="n">9</td><td><span class="hist"><i>7</i><i>13</i><i>10</i><i>9</i></span></td><td class="n">9.5</td><td><span class="share" style="width:.45rem"></span>3%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — United States</td><td class="n">9</td><td><span class="hist"><i>8</i><i>11</i><i>9</i><i>9</i></span></td><td class="n">9</td><td><span class="share" style="width:.45rem"></span>3%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — Leaders</td><td class="n">8</td><td><span class="hist"><i>5</i><i>10</i><i>8</i><i>8</i></span></td><td class="n">8</td><td><span class="share" style="width:.4rem"></span>3%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — Science and Technology</td><td class="n">8</td><td><span class="hist"><i>8</i><i>9</i><i>7</i><i>8</i></span></td><td class="n">8</td><td><span class="share" style="width:.4rem"></span>3%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — The World This Week</td><td class="n">6</td><td><span class="hist"><i>4</i><i>7</i><i>5</i><i>6</i></span></td><td class="n">5.5</td><td><span class="share" style="width:.3rem"></span>2%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — China</td><td class="n">5</td><td><span class="hist"><i>4</i><i>6</i><i>5</i><i>5</i></span></td><td class="n">5</td><td><span class="share" style="width:.25rem"></span>2%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — Middle East and Africa</td><td class="n">5</td><td><span class="hist"><i>4</i><i>6</i><i>5</i><i>5</i></span></td><td class="n">5</td><td><span class="share" style="width:.25rem"></span>2%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — The Americas</td><td class="n">4</td><td><span class="hist"><i>4</i><i>4</i><i>3</i><i>4</i></span></td><td class="n">4</td><td><span class="share" style="width:.2rem"></span>1%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr><td>Economist — International</td><td class="n">3</td><td><span class="hist"><i>2</i><i>3</i><i>2</i><i>3</i></span></td><td class="n">2.5</td><td><span class="share" style="width:.15rem"></span>1%</td><td>2026-09-01</td><td><span class="chip ok">ok</span></td></tr>
+          <tr class="dim"><td>Nikkei Asia</td><td class="n">—</td><td><span class="hist"><i class="q">0</i><i class="q">0</i><i class="p">—</i><i class="p">—</i></span></td><td class="n">0</td><td>—</td><td>—</td><td><span class="chip idle">paused</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="legend">Strip cells: a count · <span class="hist"><i class="q">0</i></span> quiet — fetch succeeded, nothing usable (the Nikkei case: no dates) · <span class="hist"><i class="f">!</i></span> failed — the fetch raised · <span class="hist"><i class="p">—</i></span> not in the list, or paused, that week.</p>
+      <div class="note caution"><p><span class="lbl">One feed is 42% of what the classifier reads.</span> Semafor carried 184 of 289 items in the first W36 run. Not a fault — the classifier does the filtering — but it is the number to watch if the selected set starts looking like one outlet's week.</p></div>
+      <p class="tip">Items per feed per week today come from <code>classified.json → item.source</code>, which merges every run of that week (W36 has 542 rows against 289 and 305 fetched) and cannot tell a quiet feed from a failed one — both are zero rows. Per-run counts, fetch time and the failed/quiet distinction need <code>run_events kind='feed'</code>. A feed failing three runs running is a query over that table, surfaced in Needs attention.</p>
+    </div>
+  </details>
+
+  <!-- 4 · Model calls ---------------------------------------------------- -->
+  <details class="sec" id="calls">
+    <summary>
+      <span class="kicker">4 · Models</span>
+      <h2>Model calls <span class="count">70 calls · 2 retries · 0 failed</span> <span class="stamp todo">requires · counts, timings</span></h2>
+    </summary>
+    <div class="sec-body">
+      <p>One block per stage. Which model serves which stage, and the pacing, are config; the counts and timings are the part that needs recording.
+        <span class="stamp">exists · provider, model, pacing, unjudged, kind share</span> <span class="stamp todo">requires · calls, retries, timings</span></p>
+
+      <div class="two">
+        <div class="blk">
+          <h4>Filter <span class="mod">qwen3:30b · ollama · local · unpaced</span></h4>
+          <dl>
+            <dt>Calls</dt><dd><b>13</b> batches of 25 (last: 2)</dd>
+            <dt>Retries</dt><dd>1 · malformed JSON on batch 7</dd>
+            <dt>Rate limited</dt><dd>0 · local backend is never paced</dd>
+            <dt>Failed</dt><dd>0 · <b>0 items unjudged</b></dd>
+            <dt>Per call</dt><dd>median 44 s · min 12 s · max 71 s</dd>
+            <dt>Total</dt><dd>9 m 41 s</dd>
+            <dt>Settings</dt><dd class="mono">temp 0.0 · seed 7 · think off · num_ctx 32768</dd>
+          </dl>
+        </div>
+        <div class="blk">
+          <h4>Write <span class="mod">gemma3:27b · ollama · local · unpaced</span></h4>
+          <dl>
+            <dt>Calls</dt><dd><b>57</b> · 1 cluster + 1 frame + 53 entries + 2 re-asks</dd>
+            <dt>Retries</dt><dd>1 · TimeoutError, entry 41</dd>
+            <dt>Rate limited</dt><dd>0</dd>
+            <dt>Failed</dt><dd>0 · 0 entries dropped</dd>
+            <dt>Per call</dt><dd>median 33 s · min 18 s · max 80 s (cluster)</dd>
+            <dt>Total</dt><dd>33 m 24 s</dd>
+            <dt>Settings</dt><dd class="mono">temp 0.3 (ollama default) · seed 7</dd>
+          </dl>
+        </div>
+      </div>
+      <p><b>43 m 05 s</b> of the run's 51 minutes was spent inside model calls. The remaining 8 are the 25 paced searches (6 m 15 s of deliberate sleeping) and I/O.</p>
+
+      <h4>Hosted backend <span class="chip idle">none this run</span></h4>
+      <p style="font-size:.88rem;color:var(--muted)">When a stage runs on Gemini or Anthropic this block shows the pacing interval (<code>min_interval_seconds</code>), 429s obeyed, the longest wait honoured, and whether the quota breaker tripped — the W36 run of 2 Sep that produced 60 <code>RateLimitError</code> lines and a <code>[PARTIAL]</code> edition would have filled it.</p>
+
+      <h4>What the verdicts say about the filter <span class="stamp">exists · classified</span></h4>
+      <p style="margin:.2rem 0 0;font-size:.86rem;color:var(--muted)">Kind, over 302 judged items</p>
+      <div class="dist" aria-hidden="true"><i class="k1" style="width:31%"></i><i class="k2" style="width:44%"></i><i class="k4" style="width:25%"></i></div>
+      <p class="dist-key"><span><i class="k1"></i>architecture 94</span><span><i class="k2"></i>contest 133</span><span><i class="k4"></i>neither 75</span></p>
+      <p style="margin:.8rem 0 0;font-size:.86rem;color:var(--muted)">Fit, over 302 judged items</p>
+      <div class="dist" aria-hidden="true"><i class="k4" style="width:41%"></i><i class="k2" style="width:30%"></i><i class="k1" style="width:22%"></i><i class="k3" style="width:7%"></i></div>
+      <p class="dist-key"><span><i class="k4"></i>0 · 124</span><span><i class="k2"></i>1 · 90</span><span><i class="k1"></i>2 · 67</span><span><i class="k3"></i>3 · 21</span></p>
+      <p class="tip">A local model that answers <em>neither</em> zero times is filing every off-lens item as <em>contest</em>, and the balance rule is then doing the off-lens filtering on its own. 75 of 302 is healthy. Unjudged items are rows whose <code>reason</code> starts <code>classification failed:</code>.</p>
+    </div>
+  </details>
+
+  <!-- 5 · Funnel --------------------------------------------------------- -->
+  <details class="sec" id="funnel">
+    <summary>
+      <span class="kicker">5 · Filtering</span>
+      <h2>The funnel <span class="count">306 → 60 → 8,397 words</span></h2>
+    </summary>
+    <div class="sec-body">
+      <p>Every bar to one scale. Under each step, what left and why.
+        <span class="stamp unwired">unwired · fetched, selected</span> <span class="stamp">exists · judged, drop by rule, carried</span> <span class="stamp todo">requires · dedupe count per run, invention drops</span></p>
+
+      <div class="funnel">
+        <span class="lbl">fetched</span><div class="bar-bg"><div class="bar-fg" style="width:100%"></div></div><span class="n">306</span>
+        <span class="why">19 feeds · 9 newsletter and podcast trailers skipped before counting <span class="stamp todo">requires</span></span>
+
+        <span class="lbl">after dedupe</span><div class="bar-bg"><div class="bar-fg" style="width:98.7%"></div></div><span class="n">302</span>
+        <span class="why"><b>−4</b> "already seen in a prior edition" — the fetch window overlaps by a day, and every item fetched last week was marked seen</span>
+
+        <span class="lbl">judged</span><div class="bar-bg"><div class="bar-fg" style="width:98.7%"></div></div><span class="n">302</span>
+        <span class="why"><b>0 unjudged</b> — every batch answered, every item matched by id</span>
+
+        <span class="lbl">selected</span><div class="bar-bg"><div class="bar-fg" style="width:19.6%"></div></div><span class="n">60</span>
+        <span class="why"><b>−214</b> below threshold (fit &lt; 2, and not fit 1 with novelty 3) · <b>−0</b> saga rule <span class="never">— matched against 60 prior mechanisms; this rule fired for the first time this week: 0 hits</span> · <b>−11</b> balance rule (contest capped at 20%) · <b>−17</b> over the 60-item cap</span>
+
+        <span class="lbl">grounded</span><div class="bar-bg"><div class="bar-fg" style="width:19.6%"></div></div><span class="n">60</span>
+        <span class="why">18 had enough text already · 42 thin, of which <b>34</b> found evidence and <b>8</b> did not · nothing leaves at this step</span>
+
+        <span class="lbl">written</span><div class="bar-bg"><div class="bar-fg" style="width:19.6%"></div></div><span class="n">60</span>
+        <span class="why"><b>7</b> carried in the reporter's own words · <b>53</b> written by the model in 60 clusters · 0 dropped for invention · 0 dropped by the length governor</span>
+
+        <span class="lbl">published</span><div class="bar-bg"><div class="bar-fg" style="width:19.6%"></div></div><span class="n">60</span>
+        <span class="why">8,397 words · not partial · not quiet · txt, md, html, pdf written to <code>~/digests/</code></span>
+      </div>
+      <p><a href="/review/2026-W37">Every dropped item with its reason, on the review page →</a></p>
+      <p class="tip">Drop-by-rule is <code>pipeline.audit()</code>: the pure <code>select</code> replayed over stored classifications, so the numbers here are exactly the review page's. The saga rule reads <code>entries.mechanism</code> from earlier weeks; before 2026-09-06 that table was empty, so the rule had never run against anything — the panel says so instead of showing a bare 0. The dedupe count is <code>runs.fetched</code> minus the classified count, which is only right for the first run of a week.</p>
+    </div>
+  </details>
+
+  <!-- 6 · Grounding ------------------------------------------------------ -->
+  <details class="sec" id="ground">
+    <summary>
+      <span class="kicker">6 · Evidence</span>
+      <h2>Grounding <span class="count">34 of 42 thin items grounded</span></h2>
+    </summary>
+    <div class="sec-body">
+      <p>Of the 60 selected: who had enough text already, who was thin, and where the thin ones' evidence came from. Per source, because that is where the Economist story lives.
+        <span class="stamp">exists · evidence kind per selected item</span> <span class="stamp todo">requires · thin-but-empty vs blocked, search failures</span></p>
+
+      <div class="stats">
+        <div><b>18</b><small>had enough</small><span class="sub">blurb ≥ 500 chars</span></div>
+        <div><b>9</b><small>own article</small><span class="sub">page fetched, ≥ 500 chars</span></div>
+        <div><b>25</b><small>other outlets</small><span class="sub">DuckDuckGo snippets</span></div>
+        <div><b>8</b><small>still thin</small><span class="sub">written from the blurb</span></div>
+        <div><b>6 m 15 s</b><small>paced sleep</small><span class="sub">25 searches × 15 s</span></div>
+      </div>
+
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>Source</th><th class="n">Selected</th><th class="n">Had enough</th><th class="n">Own article</th><th class="n">Other outlets</th><th class="n">Still thin</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Economist (13 feeds)</td><td class="n">27</td><td class="n">0</td><td class="n">0</td><td class="n">21</td><td class="n">6</td><td>57-character summaries; every article URL answers <code>403</code></td></tr>
+          <tr><td>FT — World</td><td class="n">6</td><td class="n">0</td><td class="n">0</td><td class="n">4</td><td class="n">2</td><td>Article URLs answer <code>403</code></td></tr>
+          <tr><td>Semafor</td><td class="n">12</td><td class="n">10</td><td class="n">2</td><td class="n">0</td><td class="n">0</td><td>Feed carries the body</td></tr>
+          <tr><td>SCMP (2 feeds)</td><td class="n">7</td><td class="n">2</td><td class="n">5</td><td class="n">0</td><td class="n">0</td><td>Pages fetch cleanly</td></tr>
+          <tr><td>Ars Technica</td><td class="n">5</td><td class="n">4</td><td class="n">1</td><td class="n">0</td><td class="n">0</td><td><code>content</code> field carries the article</td></tr>
+          <tr><td>IEEE Spectrum</td><td class="n">3</td><td class="n">2</td><td class="n">1</td><td class="n">0</td><td class="n">0</td><td></td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h4>Search backend <span class="chip ok">not blocked</span></h4>
+      <dl style="display:grid;grid-template-columns:max-content 1fr;gap:.2rem .9rem;margin:0;font-size:.88rem">
+        <dt style="color:var(--muted)">Backend</dt><dd style="margin:0">duckduckgo (no key) · paced 15 s apart</dd>
+        <dt style="color:var(--muted)">Queries</dt><dd style="margin:0">25 made · 25 returned results · 0 failed · 0 refused</dd>
+        <dt style="color:var(--muted)">If blocked</dt><dd style="margin:0">an "anomaly" page stops all further searching for the run; that shows here as a <span class="chip stop">blocked</span> chip and in Needs attention, with the count of items that stayed thin because of it</dd>
+      </dl>
+      <p class="tip">Per-item evidence kind is in <code>classified.json → evidence[].kind</code> for selected rows, re-saved after <code>ground</code>. "Had enough" is recovered at query time from <code>len(blurb)</code> against <code>ground_min_chars</code>. Whether an empty-evidence thin item was searched and found nothing, or never searched because the backend was blocked, is only in the log today (and the article <code>403</code>s are logged at DEBUG) — <code>run_events kind='ground'</code> with an outcome per thin item makes the "why" column a fact rather than an inference.</p>
+    </div>
+  </details>
+
+  <!-- 7 · History -------------------------------------------------------- -->
+  <details class="sec" id="history">
+    <summary>
+      <span class="kicker">7 · Over time</span>
+      <h2>Run history <span class="count">6 runs · 2 live · 3 dry · 1 did not finish</span> <span class="stamp unwired">unwired</span></h2>
+    </summary>
+    <div class="sec-body">
+      <p>One row per run, newest first; a week run twice is two rows. A run that never reached <code>finish_run</code> is <em>did not finish</em>, with the last stage it recorded.
+        <span class="stamp unwired">unwired · runs, plus a dry column</span> <span class="stamp todo">requires · duration, warnings, stage reached</span></p>
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>Week</th><th>Started</th><th>Mode</th><th>Status</th><th class="n">Duration</th><th class="n">Fetched</th><th class="n">Selected</th><th class="n">Entries</th><th class="n">Words</th><th class="n">Warn</th><th>Stages</th></tr></thead>
+        <tbody>
+          <tr><td>2026-W37</td><td>Fri 11 Sep 07:00</td><td><span class="chip ok">live</span></td><td><span class="chip ok">ok</span></td><td class="n">51 m</td><td class="n">306</td><td class="n">60</td><td class="n">60</td><td class="n">8,397</td><td class="n">4</td><td>filter · write both local</td></tr>
+          <tr><td>2026-W37</td><td>Thu 3 Sep 08:51</td><td><span class="chip idle">dry</span></td><td><span class="chip stop">did not finish</span></td><td class="n">≈ 10 m</td><td class="n">386</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">0</td><td>stopped in classify, batch 8 of 16 · run with <code>--week</code></td></tr>
+          <tr><td>2026-W36</td><td>Thu 3 Sep 20:51</td><td><span class="chip ok">live</span></td><td><span class="chip ok">ok</span></td><td class="n">48 m</td><td class="n">305</td><td class="n">60</td><td class="n">60</td><td class="n">8,397</td><td class="n">3</td><td>first live run · 305 items marked seen</td></tr>
+          <tr><td>2026-W36</td><td>Wed 2 Sep 22:00</td><td><span class="chip idle">dry</span></td><td><span class="chip warn">partial</span></td><td class="n">2 h 14 m</td><td class="n">289</td><td class="n">60</td><td class="n">41</td><td class="n">6,120</td><td class="n">60</td><td>write on gemini-3.8-flash · quota exhausted · 19 entries failed</td></tr>
+          <tr><td>2026-W36</td><td>Tue 1 Sep 19:12</td><td><span class="chip idle">dry</span></td><td><span class="chip ok">ok</span></td><td class="n">44 m</td><td class="n">281</td><td class="n">60</td><td class="n">60</td><td class="n">8,210</td><td class="n">2</td><td></td></tr>
+          <tr class="dim"><td>2026-W35</td><td>Fri 28 Aug 07:00</td><td><span class="chip idle">dry</span></td><td><span class="chip ok">ok</span></td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td>before <code>runs</code> was written; known only from the log file</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="tip">The <code>runs</code> table exists and is empty on this machine: only <code>run --scheduled</code> writes it, the UI never does, and a run that raises never reaches <code>finish_run</code>. The W37 row marked <em>did not finish</em> is real — <code>logs/2026-W37.log</code> stops at batch 8/16 and nothing else records that it was killed. Dry-run identification for weeks before the <code>dry</code> column exists is not recoverable.</p>
+    </div>
+  </details>
+
+  <!-- 8 · Provenance ----------------------------------------------------- -->
+  <details class="sec" id="provenance">
+    <summary>
+      <span class="kicker">8 · Reference</span>
+      <h2>Provenance, panel by panel</h2>
+    </summary>
+    <div class="sec-body">
+      <p>The same ledger the design document carries, as a lookup. The minimum new recording is one table, <code>run_events</code>, fed by a <code>logging.Handler</code> on the <code>digest</code> logger: every WARNING and ERROR is captured with no code change; six existing log calls gain an <code>extra=</code> for feeds, calls, grounding and stage boundaries. Plus two wiring fixes: every run writes <code>runs</code> (with a <code>dry</code> column, and <code>finish_run</code> in a <code>finally</code>), and the UI installs the log handlers it currently never installs.</p>
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>Panel</th><th>Readable today</th><th>After the two wiring fixes</th><th>Needs <code>run_events</code></th></tr></thead>
+        <tbody>
+          <tr><td>1 · Last run</td><td>live stage strip (<code>jobs.Job.events</code> via <code>/progress</code>)</td><td>status, counts, dry flag, duration</td><td>per-stage times for finished runs (<code>kind='stage'</code>)</td></tr>
+          <tr><td>2 · Needs attention</td><td>spoken check from <code>editions.path</code> at page load; <code>partial</code>, <code>quiet</code></td><td>—</td><td>every WARNING/ERROR row (captured free by the handler)</td></tr>
+          <tr><td>3 · Sources</td><td><code>feeds.toml</code>; items per feed per <em>week</em> from <code>classified.json → item.source</code> (merged across runs; quiet = failed)</td><td>—</td><td>per-run counts, fetch time, failed vs quiet (<code>kind='feed'</code>)</td></tr>
+          <tr><td>4 · Model calls</td><td>provider, model, pacing (<code>config.toml</code>); unjudged and kind/fit shares (<code>classified</code>)</td><td>—</td><td>calls, retries, 429s, breaker, timings (<code>kind='call'</code>)</td></tr>
+          <tr><td>5 · Funnel</td><td>judged, drop by rule (<code>audit()</code>), prior mechanisms, carried vs written (<code>editions.json</code>)</td><td>fetched, selected, dedupe count (first run of a week)</td><td>invention and governor drops per run</td></tr>
+          <tr><td>6 · Grounding</td><td>evidence kind per selected item and per source (<code>classified.json → evidence[].kind</code>); "had enough" from blurb length</td><td>—</td><td>thin-but-empty vs blocked, search failures (<code>kind='ground'</code>; WARNINGs captured free)</td></tr>
+          <tr><td>7 · History</td><td>—</td><td>rows, mode, status, counts</td><td>duration, warning count, stage reached</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="tip">Not built, and why: token counts and cost (Ollama is unmetered, hosted is optional); a time-series store, month charts or alerting (one person, one machine, one run a week); the per-item dropped table (the review page has it); calibration scores (the lens's, not the run's); parsing <code>&lt;week&gt;.log</code> (a regex over prose breaks the first time a message is reworded).</p>
+    </div>
+  </details>
+</main>
+
+<script>
+(function () {
+  function sections() {
+    return Array.prototype.slice.call(document.querySelectorAll("details.sec"));
+  }
+  function jump() {
+    if (!location.hash || location.hash === "#") { return; }
+    var target;
+    try { target = document.querySelector(location.hash); } catch (e) { return; }
+    if (!target) { return; }
+    for (var el = target; el; el = el.parentElement) {
+      if (el.tagName === "DETAILS") { el.open = true; }
+    }
+    var previous = document.querySelector(".hit");
+    if (previous) { previous.classList.remove("hit"); }
+    (target.closest("tr") || target).classList.add("hit");
+    target.scrollIntoView({block: "start"});
+  }
+  window.addEventListener("hashchange", jump);
+  document.addEventListener("DOMContentLoaded", jump);
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest("[data-all]");
+    if (!button) { return; }
+    var open = button.getAttribute("data-all") === "open";
+    sections().forEach(function (section) { section.open = open; });
+  });
+  var links = {};
+  sections().forEach(function (section) {
+    var id = section.id || (section.querySelector("[id]") && section.querySelector("[id]").id);
+    if (!id) { return; }
+    var link = document.querySelector('.bar a[href="#' + id + '"]');
+    if (link) { links[id] = {link: link, top: section}; }
+  });
+  function mark() {
+    var best = null, bestTop = -Infinity;
+    Object.keys(links).forEach(function (id) {
+      var top = links[id].top.getBoundingClientRect().top - 80;
+      if (top <= 0 && top > bestTop) { bestTop = top; best = id; }
+    });
+    Object.keys(links).forEach(function (id) {
+      if (id === best) { links[id].link.setAttribute("aria-current", "true"); }
+      else { links[id].link.removeAttribute("aria-current"); }
+    });
+  }
+  addEventListener("scroll", mark, {passive: true});
+  mark();
+})();
+</script>
+</body>
+</html>
