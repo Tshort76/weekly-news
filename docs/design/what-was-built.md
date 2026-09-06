@@ -56,9 +56,12 @@ Making one calibrated is a morning: point its feeds at a real week, label
 twenty-five headlines on the check-the-lens screen, adjust, and save the scored
 markdown beside the spec.
 
-**Their feeds are unverified.** Feed URLs in the three new presets were written,
-not fetched. `digest feeds check` and the Feeds screen fetch one and report what
-it would contribute, which is where a wrong URL surfaces.
+**Their feeds are verified as of 2026-09-06.** All eight URLs across
+`plumbing-not-prices` and `capacity-not-targets` were fetched and all eight
+answered. Two are worth knowing about before anyone relies on them: the four
+Economist section feeds carry 56-character blurbs, so every item from them is
+looked up before it is written, and Carbon Brief publishes about twelve items at
+a time with only five in a typical week — a real feed, but a thin one on its own.
 
 **Windows is untested.** Every path, console and scheduler assumption was made on
 a Mac. `schedule.Schtasks` generates the right argument list, including quoting a
