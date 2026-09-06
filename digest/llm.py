@@ -431,6 +431,7 @@ class Client:
 
         for attempt in range(attempts):
             self._wait_turn(backend)
+            began = time.monotonic()
             try:
                 text = backend.generate(
                     model=model, prompt=prompt, system=system,
@@ -471,11 +472,24 @@ class Client:
                 log.warning(
                     "%s on attempt %d/%d for %s, waiting %.0fs",
                     type(exc).__name__, attempt + 1, attempts, model, delay,
+                    extra={"event": {
+                        "kind": "call", "subject": model, "n": attempt + 1,
+                        "ms": int(delay * 1000),
+                        "detail": {"stage": stage, "backend": backend.name,
+                                   "error": type(exc).__name__,
+                                   "status": status_of(exc)},
+                    }},
                 )
                 time.sleep(delay)
                 continue
 
             self._last_call[backend.name] = time.monotonic()
+            log.debug(
+                "%s answered for %s", model, stage,
+                extra={"event": {"kind": "call", "subject": model, "n": attempt + 1,
+                                 "ms": int((time.monotonic() - began) * 1000),
+                                 "detail": {"stage": stage, "backend": backend.name}}},
+            )
             return text
 
         raise LLMError(f"{model} failed after {attempts} attempts: {last}")

@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import re
 import ssl
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -279,13 +280,25 @@ def ingest(cfg: Config, now: datetime | None = None) -> list[Item]:
     items: list[Item] = []
     failures = 0
     for source in cfg.sources:
+        began = time.monotonic()
         try:
             got = fetch_source(source, cutoff)
         except (urllib.error.URLError, OSError, ValueError) as exc:
             failures += 1
-            log.warning("feed failed, skipping: %s (%s)", source.name, exc)
+            # `n=0` with a WARNING level is what lets the dashboard tell a feed
+            # that failed from one that answered with nothing to say.
+            log.warning(
+                "feed failed, skipping: %s (%s)", source.name, exc,
+                extra={"event": {"kind": "feed", "subject": source.name, "n": 0,
+                                 "ms": int((time.monotonic() - began) * 1000),
+                                 "detail": {"error": type(exc).__name__}}},
+            )
             continue
-        log.info("fetched %d items from %s", len(got), source.name)
+        log.info(
+            "fetched %d items from %s", len(got), source.name,
+            extra={"event": {"kind": "feed", "subject": source.name, "n": len(got),
+                             "ms": int((time.monotonic() - began) * 1000)}},
+        )
         items.extend(got)
 
     if cfg.sources and failures == len(cfg.sources):

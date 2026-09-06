@@ -174,6 +174,19 @@ def ground(rows: list[Classified], cfg: Config) -> list[Classified]:
                 log.warning("search failed for %r (%s)", row.item.title[:60], exc)
 
         row.evidence = found
+        # Per item, because "8 items stayed thin" is a number and "which 8, and
+        # was it a paywall or a blocked search" is the thing worth knowing. An
+        # item that stayed thin while `blocked` is a different problem from one
+        # that was searched for and genuinely had no other coverage.
+        outcome = ("article" if found and found[0].kind == "article"
+                   else "search" if found else "blocked" if blocked else "none")
+        log.debug(
+            "grounding %s: %s", row.id, outcome,
+            extra={"event": {"kind": "ground", "subject": row.id,
+                             "detail": {"outcome": outcome,
+                                        "source": row.item.source,
+                                        "title": row.item.title[:120]}}},
+        )
         if not found:
             empty += 1
         elif found[0].kind == "article":

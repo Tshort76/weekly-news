@@ -198,11 +198,10 @@ def main(argv: list[str] | None = None) -> int:
         return _admin_command(args, cfg)
 
     week = getattr(args, "week", None) or pipeline.iso_week()
-    log_path = setup_logging(cfg.log_dir, week, args.verbose)
+    log_path = setup_logging(cfg.log_dir, week, args.verbose, db_path=cfg.db_path)
 
     with State(cfg.db_path) as state:
         if args.command in {"run", "classify-only"}:
-            started = state.start_run(week) if getattr(args, "scheduled", False) else None
             result = pipeline.run(
                 cfg,
                 state,
@@ -214,13 +213,6 @@ def main(argv: list[str] | None = None) -> int:
                 no_drive=getattr(args, "no_drive", False),
                 classify_only=args.command == "classify-only",
             )
-            if started:
-                state.finish_run(
-                    week, started, "ok",
-                    fetched=result.fetched, selected=result.selected,
-                    entries=len(result.edition.entries),
-                    words=result.edition.word_count,
-                )
             if args.command == "classify-only":
                 print(
                     f"\nWeek {week}: classified {result.kept_after_dedupe} items "

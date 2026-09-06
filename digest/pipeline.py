@@ -10,6 +10,7 @@ hides an item from next week.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +25,7 @@ from . import selection
 from . import synthesize as synth_stage
 from .config import Config
 from .dedupe import dedupe
+from . import logging_setup
 from .llm import Client
 from .models import Dropped, Edition
 from .normalize import normalize_all
@@ -58,7 +60,7 @@ class RunResult:
     selected: int = 0
 
 
-def run(
+def _run(
     cfg: Config,
     state: State,
     *,
@@ -84,7 +86,17 @@ def run(
     client = client or Client(cfg)
     progress = progress or _noop
 
+    last = time.monotonic()
+
     def checkpoint(stage: str, **detail) -> None:
+        nonlocal last
+        now = time.monotonic()
+        log.info(
+            "stage %s finished", stage,
+            extra={"event": {"kind": "stage", "subject": stage,
+                             "ms": int((now - last) * 1000), "detail": detail}},
+        )
+        last = now
         progress(stage, detail)
         if cancel is not None and cancel.is_set():
             # Between stages only. Stopping mid-classification would leave a
@@ -187,6 +199,51 @@ def run(
     if not no_drive:
         result.uploaded = deliver_stage.deliver(list(files.values()), cfg, state, week)
     return result
+
+
+def run(cfg: Config, state: State, **kwargs) -> RunResult:
+    """Run a week, and make sure the run leaves a record of itself either way.
+
+    The recording used to be the caller's job and only `run --scheduled` did it,
+    so on a machine where weeks were run by hand or from the browser the `runs`
+    table stayed empty. Worse, a run that raised never reached `finish_run` and
+    sat at "running" for ever, so the one kind of run most worth knowing about —
+    the kind that died — was the only kind that recorded nothing.
+
+    Hence the `finally`. A cancelled run says cancelled, a failed one carries the
+    exception's first line, and an edition that came out `[PARTIAL]` says so
+    rather than "ok", because entries were dropped and somebody should be told.
+    """
+    week = kwargs.get("week") or iso_week()
+    kwargs["week"] = week
+    started = state.start_run(week, dry=bool(kwargs.get("dry_run")))
+
+    # `started` does not exist until now, and logging was set up before the run,
+    # so the sink is created blind and told which run it belongs to here.
+    handler = logging_setup.database_handler()
+    if handler is not None:
+        handler.started = started
+
+    result: RunResult | None = None
+    status, note = "failed", ""
+    try:
+        result = _run(cfg, state, **kwargs)
+        status = "partial" if result.edition.partial else "ok"
+        return result
+    except Cancelled as exc:
+        status, note = "cancelled", str(exc)
+        raise
+    except Exception as exc:
+        note = f"{type(exc).__name__}: {exc}"
+        raise
+    finally:
+        state.finish_run(
+            week, started, status, note=note or None,
+            fetched=result.fetched if result else None,
+            selected=result.selected if result else None,
+            entries=len(result.edition.entries) if result else None,
+            words=result.edition.word_count if result else None,
+        )
 
 
 def render(cfg: Config, state: State, week: str, want_html: bool, want_pdf: bool) -> dict[str, Path]:

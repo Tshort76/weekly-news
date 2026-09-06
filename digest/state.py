@@ -54,7 +54,7 @@ CREATE INDEX IF NOT EXISTS classified_week ON classified(week);
 # The database carries its own version in PRAGMA user_version. Everything above
 # is version 1, so a store written before this existed is already at 1 once the
 # script has run — nothing to migrate for an existing user.
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 RUNS = """
 CREATE TABLE IF NOT EXISTS runs (
@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS runs (
     status TEXT NOT NULL,
     fetched INTEGER, selected INTEGER, entries INTEGER, words INTEGER,
     note TEXT,
+    dry INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (week, started)
 );
 """
@@ -114,7 +115,40 @@ def _m003_labels(conn) -> None:
     conn.executescript(LABELS)
 
 
-MIGRATIONS = {1: _m002_kind_slots, 2: _m003_labels}
+
+EVENTS = """
+CREATE TABLE IF NOT EXISTS run_events (
+    week    TEXT NOT NULL,
+    started TEXT NOT NULL,
+    at      TEXT NOT NULL,
+    level   TEXT NOT NULL,
+    kind    TEXT NOT NULL,
+    subject TEXT,
+    n       REAL,
+    ms      INTEGER,
+    message TEXT NOT NULL,
+    detail  TEXT
+);
+CREATE INDEX IF NOT EXISTS run_events_run ON run_events(week, started);
+"""
+
+
+def _m004_run_events(conn) -> None:
+    """Somewhere for a run to say what happened while it was happening.
+
+    Two things made this necessary at once. `check_spoken` and the pipeline now
+    warn rather than fail, and a warning nobody can see is the same as no
+    warning at all. And a run that dies leaves nothing behind but an
+    unstructured log file — the 2026-W37 log stops mid-classify and nothing
+    anywhere records that the run was killed.
+    """
+    conn.executescript(EVENTS)
+    columns = {r["name"] for r in conn.execute("PRAGMA table_info(runs)")}
+    if "dry" not in columns:
+        conn.execute("ALTER TABLE runs ADD COLUMN dry INTEGER NOT NULL DEFAULT 0")
+
+
+MIGRATIONS = {1: _m002_kind_slots, 2: _m003_labels, 3: _m004_run_events}
 
 
 class State:
@@ -123,7 +157,7 @@ class State:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.path)
         self.conn.row_factory = sqlite3.Row
-        self.conn.executescript(SCHEMA + RUNS + LABELS)
+        self.conn.executescript(SCHEMA + RUNS + LABELS + EVENTS)
         self._migrate()
         self.conn.commit()
 
@@ -167,11 +201,11 @@ class State:
 
     # ---------------------------------------------------------------- runs
 
-    def start_run(self, week: str) -> str:
+    def start_run(self, week: str, dry: bool = False) -> str:
         started = datetime.now(timezone.utc).isoformat()
         self.conn.execute(
-            "INSERT OR REPLACE INTO runs (week, started, status) VALUES (?,?,?)",
-            (week, started, "running"),
+            "INSERT OR REPLACE INTO runs (week, started, status, dry) VALUES (?,?,?,?)",
+            (week, started, "running", int(dry)),
         )
         self.conn.commit()
         return started
@@ -189,6 +223,62 @@ class State:
             ),
         )
         self.conn.commit()
+
+
+    # -------------------------------------------------------------- events
+
+    def add_event(self, week: str, started: str, **row) -> None:
+        self.conn.execute(
+            """INSERT INTO run_events
+                 (week, started, at, level, kind, subject, n, ms, message, detail)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            (week, started, row.get("at") or datetime.now(timezone.utc).isoformat(),
+             row.get("level", "INFO"), row.get("kind", "note"), row.get("subject"),
+             row.get("n"), row.get("ms"), row.get("message", ""), row.get("detail")),
+        )
+        self.conn.commit()
+
+    def events(self, week: str, started: str, kind: str | None = None,
+               min_level: str | None = None) -> list[dict]:
+        sql = "SELECT * FROM run_events WHERE week = ? AND started = ?"
+        args: list = [week, started]
+        if kind:
+            sql += " AND kind = ?"
+            args.append(kind)
+        if min_level:
+            # Three levels, ordered by name only by accident, so name them.
+            wanted = {"WARNING": ("WARNING", "ERROR", "CRITICAL"),
+                      "ERROR": ("ERROR", "CRITICAL")}.get(min_level, (min_level,))
+            sql += f" AND level IN ({','.join('?' * len(wanted))})"
+            args.extend(wanted)
+        return [dict(r) for r in self.conn.execute(sql + " ORDER BY at", args)]
+
+    def last_run(self) -> dict | None:
+        rows = self.recent_runs(1)
+        return rows[0] if rows else None
+
+    def feed_history(self, limit_runs: int = 4) -> dict[str, list[dict]]:
+        """Per-feed counts for the last few runs, newest last.
+
+        Keyed by feed name so the table can show a strip beside each row. A run
+        that recorded no feed events at all contributes nothing rather than a
+        row of zeroes, which would read as "every feed went quiet".
+        """
+        runs = self.conn.execute(
+            """SELECT DISTINCT week, started FROM run_events WHERE kind = 'feed'
+               ORDER BY started DESC LIMIT ?""", (limit_runs,)
+        ).fetchall()
+        history: dict[str, list[dict]] = {}
+        for run in reversed(runs):
+            for row in self.conn.execute(
+                """SELECT subject, n, level FROM run_events
+                   WHERE kind = 'feed' AND week = ? AND started = ?""",
+                (run["week"], run["started"]),
+            ):
+                history.setdefault(row["subject"], []).append(
+                    {"n": row["n"], "failed": row["level"] in ("WARNING", "ERROR")}
+                )
+        return history
 
     def recent_runs(self, limit: int = 10) -> list[dict]:
         rows = self.conn.execute(

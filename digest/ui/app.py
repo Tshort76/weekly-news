@@ -69,8 +69,17 @@ def _real_run(**kwargs):
 
     Opened here rather than passed in because this runs on the job thread and
     SQLite connections belong to one thread.
+
+    Logging is installed here for the same reason the CLI installs it: without
+    it a run started from the browser wrote no log file and recorded no events,
+    so every `<week>.log` on disk came from the terminal and a browser run that
+    went wrong left nothing behind at all.
     """
+    from .. import logging_setup  # noqa: PLC0415
+
     cfg = load()
+    week = kwargs.get("week") or pipeline.iso_week()
+    logging_setup.setup(cfg.log_dir, week, db_path=cfg.db_path)
     with State(cfg.db_path) as state:
         return pipeline.run(cfg, state, want_html=True, **kwargs)
 
