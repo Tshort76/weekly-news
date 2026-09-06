@@ -154,3 +154,77 @@ Two consequences worth carrying:
   The instinct to fix the one false positive was right and the fix was worse than
   the flaw. The preset ships as scored, with its one known false positive
   recorded here and in the labels file beside it.
+
+
+---
+
+# Postscript: the last two presets (2026-09-06)
+
+`plumbing-not-prices` and `capacity-not-targets` were taken from written to
+measured, which finishes the set. Both are shipped as scored. The scores are the
+least interesting thing that came out of it.
+
+| Preset | Agreement | Let in wrongly | Dropped wrongly | **Wanted and dropped** |
+| --- | --- | --- | --- | --- |
+| plumbing-not-prices | 22/30 | 2 | 6 | **1** |
+| capacity-not-targets | 21/30 | 5 | 4 | **0** |
+
+## The presets' feeds did not match their own lenses
+
+This is the finding, and it was invisible until somebody tried to measure them.
+
+`plumbing-not-prices` — a lens about the plumbing of money — shipped with FT
+World and Semafor, two general news feeds. Across fourteen items they produced
+**nothing on-lens**, and the first labelled draw had one clear want in thirty.
+`capacity-not-targets` — climate and energy — shipped with one climate feed
+against three general technology feeds; five of thirty headlines touched the
+domain at all, and the draw produced **zero** wants. There was nothing to
+measure.
+
+Both feed lists were replaced with feeds that match the lens, every URL fetched
+before it was added, and both presets re-sampled and re-labelled. That is the
+difference between a preset and a template with the topic swapped in, and no
+amount of reading the lens would have shown it — only drawing its own week did.
+
+## An obvious cleanup that costs a story
+
+Carbon Brief leads every article with a print-and-share widget, so
+`Print article Share` led every blurb the classifier read. Stripping it is the
+most obvious improvement imaginable, and it was measured rather than assumed.
+
+| | Let in wrongly | Dropped wrongly | Wanted and dropped |
+| --- | --- | --- | --- |
+| As shipped | 5 | 6 | **0** |
+| Furniture stripped | 1 | 8 | **1** |
+
+Stripping it made the model markedly more conservative: four fewer wrong keeps,
+two more wrong drops, and it began dropping a headline the labeller wanted —
+the one failure the bar exists to catch. So the furniture stays in the text the
+classifier reads, with the measurement recorded at the call site in
+`digest/normalize.py`. Phase 0 said a change carrying no meaning moves this
+model by about ten points; this is that finding costing something real.
+
+## A defect the calibration screen had all along
+
+`ingest.sample`, which feeds the check-the-lens screen, returned raw items while
+the run path normalised. So a user calibrating their lens read
+`<div class="print-share">` where the story should be, and their labels were then
+compared against a classifier reading clean text. The two sides of the instrument
+were reading different things. Fixed, with a test.
+
+## What the labelling found in the lenses themselves
+
+More useful than either score, and left for the lens authors rather than patched:
+
+- **`plumbing-not-prices` never says whether tax is plumbing.** "Who may lend,
+  what settles where, which claims are senior" does not reach a tax authority's
+  claim on booked profits, so an IRS story has nowhere to land. It also never
+  says whether *enforcing* an existing rule counts as a rule changing, and
+  "what a rule now permits or forbids" is unscoped in the fit block — which is
+  the whole reason for the one wanted headline it dropped.
+- **`capacity-not-targets` has a rung for events and a rung for pledges and
+  nothing between for an output statistic.** A solar generation record or a
+  quarterly emissions fall reports the outcome of capacity already built; five
+  of the eleven borderline rows sat exactly there. Its wrong keeps are all
+  announce-language stories — "utilities eye SMRs", "could spur billions" —
+  which is precisely the line the lens claims to draw and does not hold.

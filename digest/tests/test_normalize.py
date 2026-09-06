@@ -84,3 +84,12 @@ def test_a_cut_that_lands_mid_fragment_loses_the_fragment():
 
 def test_ordinary_prose_is_left_alone():
     assert strip_furniture("A normal sentence stays whole.") == "A normal sentence stays whole."
+
+
+def test_a_print_and_share_widget_does_not_lead_the_story():
+    """Carbon Brief puts one above every article, so it led every blurb."""
+    from digest.normalize import strip_furniture, strip_html
+
+    raw = ('<div class="print-share"><button>Print article</button>'
+           '<button>Share</button></div><p>UK solar hit a record this summer.</p>')
+    assert strip_furniture(strip_html(raw)) == "UK solar hit a record this summer."

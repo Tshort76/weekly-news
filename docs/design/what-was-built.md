@@ -43,18 +43,18 @@ in the ordinary suite.
 
 ## What is built but not measured
 
-**Three of the four presets are uncalibrated.** `what-became-possible`,
-`plumbing-not-prices` and `capacity-not-targets` are written, have the right
-shape, ship feeds, and have been scored against nothing. The design said a preset
-should never be a template with the topic swapped in, and these are closer to
-that than anyone would like. So the app labels them: `presets.calibrated()` is
-true only when a measured `.md` ships beside the spec, which is the same file the
-app installs, so the flag cannot drift from the fact. The lens picker and
-`digest lens list` both say which is which.
+**All four presets are calibrated as of 2026-09-06.** Each was scored against
+thirty headlines drawn from its own feeds and labelled by hand, and each ships
+the measured markdown plus the labels it was scored against, so `calibrated()`
+reads a fact rather than a claim.
 
-Making one calibrated is a morning: point its feeds at a real week, label
-twenty-five headlines on the check-the-lens screen, adjust, and save the scored
-markdown beside the spec.
+Measuring the last two found that two of them shipped feeds that did not match
+their own lenses — a money-plumbing lens reading general world news, a climate
+lens reading general technology — which is exactly the "template with the topic
+swapped in" the design forbids, and which nothing but drawing their own week
+would have revealed. Both feed lists were replaced and every URL fetched before
+it was added. `docs/design/phase-0-lens-compiler.md` has the numbers and the two
+lens-wording defects the labelling turned up.
 
 **Their feeds are verified as of 2026-09-06.** All eight URLs across
 `plumbing-not-prices` and `capacity-not-targets` were fetched and all eight

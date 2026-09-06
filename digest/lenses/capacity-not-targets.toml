@@ -69,19 +69,25 @@ section = "climate"
 weight = 1.0
 
 [[feeds]]
-name = "IEEE Spectrum"
-url = "https://spectrum.ieee.org/feeds/feed.rss"
+name = "Canary Media"
+url = "https://www.canarymedia.com/feed"
+section = "energy"
+weight = 1.0
+
+[[feeds]]
+name = "Utility Dive"
+url = "https://www.utilitydive.com/feeds/news/"
+section = "energy"
+weight = 1.0
+
+[[feeds]]
+name = "pv magazine"
+url = "https://www.pv-magazine.com/feed/"
 section = "energy"
 weight = 0.9
 
 [[feeds]]
-name = "Economist — Science and Technology"
-url = "https://www.economist.com/science-and-technology/rss.xml"
-section = "science-and-technology"
-weight = 1.0
-
-[[feeds]]
-name = "Ars Technica"
-url = "http://feeds.arstechnica.com/arstechnica/index"
-section = "science-and-technology"
-weight = 0.8
+name = "IEEE Spectrum — Energy"
+url = "https://spectrum.ieee.org/feeds/topic/energy.rss"
+section = "energy"
+weight = 0.9

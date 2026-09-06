@@ -1,0 +1,194 @@
+{
+  "_note": "The headlines this lens was scored against, and the score. Drawn from this preset's own feeds. A score with no labels beside it is a claim, not a measurement.",
+  "model": "qwen3:30b",
+  "measured": {
+    "agreement": 21,
+    "of": 30,
+    "let_in_wrongly": 5,
+    "dropped_wrongly": 4,
+    "wanted_and_dropped": 0,
+    "note": "qwen3:30b, 30 headlines from this preset's own five feeds, labelled 2 want / 11 maybe / 17 skip. Both wanted headlines are kept. The wrong keeps are all announce-language stories, which is precisely the line this lens claims to draw and does not hold: 'utilities eye SMRs', 'could spur billions'. The labeller found the lens has a rung for events and a rung for pledges and nothing between for an output statistic, which is where five of the eleven maybes sat. Shipped as scored."
+  },
+  "labels": [
+    {
+      "title": "Analysis: UK solar power hits record high over summer 2026",
+      "source": "Carbon Brief",
+      "choice": "maybe",
+      "why": "output stat: a generation record reports the outcome of capacity already built; lens has no rung for it"
+    },
+    {
+      "title": "Solar is now bigger than coal in China \u2014 and yet still way behind",
+      "source": "Canary Media",
+      "choice": "maybe",
+      "why": "output stat: installed solar now exceeds coal capacity in China, a stock fact matching KIND 'what exists' but no FIT rung, wrapped in a newsletter roundup"
+    },
+    {
+      "title": "Utilities eye small modular nuclear reactors for reliability as hyperscalers drive demand",
+      "source": "Utility Dive",
+      "choice": "skip",
+      "why": "announced: utilities 'eye' SMRs and 'see potential' is interest, not a build or a rule"
+    },
+    {
+      "title": "Ireland\u2019s leap of faith to power data centers",
+      "source": "pv magazine",
+      "choice": "maybe",
+      "why": "announced: EUR18.9bn grid package is real money with a mechanism (fit 2) but the 3.3 GW figure is a year-end projection, not connected capacity"
+    },
+    {
+      "title": "Betting on AI and Robots to Automate Superconductor Discovery",
+      "source": "IEEE Spectrum \u2014 Energy",
+      "choice": "skip",
+      "why": "materials-discovery research, no capacity or rule changes"
+    },
+    {
+      "title": "How this summer\u2019s heat and drought impacted crops in Europe \u2013 in six charts",
+      "source": "Carbon Brief",
+      "choice": "skip",
+      "why": "climate impacts on crops, not capacity"
+    },
+    {
+      "title": "Solar-plus-storage is having a global growth spurt",
+      "source": "Canary Media",
+      "choice": "maybe",
+      "why": "output stat: investment-flow trend into solar-plus-storage, chart column, nothing built or repriced named"
+    },
+    {
+      "title": "National Grid\u2019s different gas-electric forecasts are responsible\u00a0planning",
+      "source": "Utility Dive",
+      "choice": "skip",
+      "why": "opinion piece by the utility's own counsel defending its planning, no capacity event"
+    },
+    {
+      "title": "South Korea to double 2027 budget for farm solar, agrivoltaics",
+      "source": "pv magazine",
+      "choice": "maybe",
+      "why": "announced: a 2027 budget proposal with real money (KRW 1.8tn) and a named support mechanism, but proposed rather than enacted"
+    },
+    {
+      "title": "The First Battery Was Inspired By a Dead Frog",
+      "source": "IEEE Spectrum \u2014 Energy",
+      "choice": "skip",
+      "why": "history feature"
+    },
+    {
+      "title": "Analysis: China\u2019s CO2 emissions fall in Q2 2026 due to plummeting oil use",
+      "source": "Carbon Brief",
+      "choice": "maybe",
+      "why": "output stat: emissions fell 1% as an outcome of a Hormuz oil shock; brushes 'supply chain reroutes' but fails 'durable', and no capacity changed"
+    },
+    {
+      "title": "New York\u2019s big new bet on nuclear energy",
+      "source": "Canary Media",
+      "choice": "maybe",
+      "why": "announced: a state directive to develop new nuclear is a plan with a named actor, nothing built or permitted yet"
+    },
+    {
+      "title": "Land-based wind power pipeline shrinks as price gap with solar widens",
+      "source": "Utility Dive",
+      "choice": "maybe",
+      "why": "output stat: a 44 GW pipeline shrinking as the wind-solar price gap widens is a cost signal about what gets built, but a pipeline tally rather than a cancellation or repricing event"
+    },
+    {
+      "title": "Solar\u2019s infrastructure obstacle",
+      "source": "pv magazine",
+      "choice": "skip",
+      "why": "explainer on interconnection and equipment constraints with no specific change"
+    },
+    {
+      "title": "Guest post: Why tough methane cuts are crucial for keeping warming \u2018well-below\u2019 2C",
+      "source": "Carbon Brief",
+      "choice": "skip",
+      "why": "modelling and targets argument, fit 1 without a physical or legal consequence"
+    },
+    {
+      "title": "Hyundai breaks ground on Louisiana steel mill. Is it green enough?",
+      "source": "Canary Media",
+      "choice": "want",
+      "why": "construction starts on a ~$6bn steel mill, a large project past FID and now physically underway; fit 2-3, domain industry"
+    },
+    {
+      "title": "CISA scraps 6 free cybersecurity assessments for critical infrastructure operators",
+      "source": "Utility Dive",
+      "choice": "skip",
+      "why": "scope: a real institutional change on an on-domain feed, but cybersecurity assessments are not energy capacity or a rule governing it"
+    },
+    {
+      "title": "Why agrivoltaics have yet to take off in Switzerland",
+      "source": "pv magazine",
+      "choice": "skip",
+      "why": "explainer on why agrivoltaics has not taken off, ongoing story with no new rule or build"
+    },
+    {
+      "title": "Explainer: The CMIP7 emissions scenarios \u2013 and how they explore future climate change",
+      "source": "Carbon Brief",
+      "choice": "skip",
+      "why": "climate-model scenario explainer"
+    },
+    {
+      "title": "This novel power line could link 3 grids across 3 time zones",
+      "source": "Canary Media",
+      "choice": "maybe",
+      "why": "announced: a first-of-a-kind interregional line still being developed; blurb cuts off before the deciding fact (permit or customer)"
+    },
+    {
+      "title": "Santee Cooper partners with Google in shift toward AI-driven forecasting",
+      "source": "Utility Dive",
+      "choice": "skip",
+      "why": "utility adopts AI forecasting tools, no capacity or rule change"
+    },
+    {
+      "title": "The Hydrogen Stream: Posco, BHP advance hydrogen reduction ironmaking technology",
+      "source": "pv magazine",
+      "choice": "skip",
+      "why": "corporate collaboration agreement on a technology, the fit-1 'corporate commitment' example"
+    },
+    {
+      "title": "Where does balcony solar stand in your state?",
+      "source": "Canary Media",
+      "choice": "maybe",
+      "why": "scale: a rolling state-by-state tracker of laws enabling plug-in solar is a permitting regime story, but a tracker update at kilowatt scale"
+    },
+    {
+      "title": "PG&E sees rising interest in \u2018customer-driven\u2019 flexible interconnection pilot",
+      "source": "Utility Dive",
+      "choice": "want",
+      "why": "a live interconnection program energising large loads in months instead of years is the lens's own 'interconnection reform releasing capacity' mechanism; load-side rather than generation, and a pilot"
+    },
+    {
+      "title": "T\u00dcV\u00a0Rheinland\u00a0validates 4 kWh generation in Aptera\u2019s solar electric vehicle",
+      "source": "pv magazine",
+      "choice": "skip",
+      "why": "scale: a third-party test of one vehicle's solar yield is a product validation, not system capacity"
+    },
+    {
+      "title": "Clean energy super PAC looks to take down a Democratic governor",
+      "source": "Canary Media",
+      "choice": "skip",
+      "why": "electoral politics and personalities"
+    },
+    {
+      "title": "Transmission expansion could spur billions in savings, especially in PJM: study",
+      "source": "Utility Dive",
+      "choice": "skip",
+      "why": "modelling study of a transmission scenario, the fit-1 example verbatim"
+    },
+    {
+      "title": "A circular future for renewables",
+      "source": "pv magazine",
+      "choice": "skip",
+      "why": "opinion feature on recycling with no mechanism"
+    },
+    {
+      "title": "Wind energy benefits North Dakota. So why has the state soured on it?",
+      "source": "Canary Media",
+      "choice": "skip",
+      "why": "narrative feature on local politics; may hide a permitting-moratorium fact but the blurb shows none"
+    },
+    {
+      "title": "Fervo-Google geothermal deal underscores baseload power scarcity, analysts say",
+      "source": "Utility Dive",
+      "choice": "maybe",
+      "why": "announced: a corporate PPA plus analyst commentary; the plant is under construction elsewhere but the item is about the deal and the risks"
+    }
+  ]
+}

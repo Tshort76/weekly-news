@@ -118,3 +118,37 @@ def test_a_feed_that_cannot_be_fetched_says_so_rather_than_raising(monkeypatch):
     monkeypatch.setattr(ingest, "fetch_bytes", boom)
     report = ingest.probe("https://nope.example/rss")
     assert not report.usable and "no such host" in report.describe()
+
+
+def test_the_calibration_sample_is_normalised_like_a_real_run():
+    """Both sides of a calibration must read the same thing.
+
+    `sample` feeds the check-the-lens screen and `ingest` feeds the run. When
+    only one of them normalised, the person labelled raw feed HTML while the
+    classifier they were being compared against saw clean text.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from digest import ingest as ingest_module
+    from digest.config import Config
+    from digest.models import Item, Source
+
+    messy = Item(
+        id="x", source="Carbon Brief", section="climate",
+        title="  UK solar   hits a   record  ",
+        blurb="<div class='print-share'><button>Print article</button></div>"
+              "<p>Generation reached a new high.</p>",
+        url="https://example.com/a?utm_source=rss#top",
+        published=datetime.now(timezone.utc) - timedelta(days=1),
+    )
+    original = ingest_module.fetch_source
+    ingest_module.fetch_source = lambda source, cutoff: [messy]
+    try:
+        got = ingest_module.sample(
+            Config(sources=[Source(name="Carbon Brief", url="u", section="climate")]), 5)
+    finally:
+        ingest_module.fetch_source = original
+
+    assert got[0].title == "UK solar hits a record"
+    assert "<" not in got[0].blurb
+    assert "utm_source" not in got[0].url

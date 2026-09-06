@@ -1,0 +1,194 @@
+{
+  "_note": "The headlines this lens was scored against, and the score. Drawn from this preset's own feeds. A score with no labels beside it is a claim, not a measurement.",
+  "model": "qwen3:30b",
+  "measured": {
+    "agreement": 22,
+    "of": 30,
+    "let_in_wrongly": 2,
+    "dropped_wrongly": 6,
+    "wanted_and_dropped": 1,
+    "note": "qwen3:30b, 30 headlines from this preset's own five feeds, labelled 3 want / 7 maybe / 20 skip. The one wanted headline it drops is a SoftBank bond-classification story the labeller marked want only because the lens's 'what a rule now permits or forbids' is unscoped in the fit block \u2014 a gap in the lens's wording as much as a miss by the model. Shipped as scored."
+  },
+  "labels": [
+    {
+      "title": "Inflation is back around the world\u2014as is the fight against it",
+      "source": "Economist \u2014 Finance and Economics",
+      "choice": "skip",
+      "why": "rates rising reported as a level; no framework or pipe change"
+    },
+    {
+      "title": "VW\u2019s surprise job-slashing deal is a big win for its bosses",
+      "source": "Economist \u2014 Business",
+      "choice": "skip",
+      "why": "labour relations, off-lens"
+    },
+    {
+      "title": "How the UK can stop accidentally exporting its best tech start-ups",
+      "source": "FT \u2014 Markets",
+      "choice": "skip",
+      "why": "opinion piece on listings/venture without a stated mechanism"
+    },
+    {
+      "title": "Maybe Northampton *is* an emerging market",
+      "source": "FT Alphaville",
+      "choice": "maybe",
+      "why": "EM-style lender financing a football club touches who lends to whom, but from the headline it reads as colour; would be want if a claim structure is described"
+    },
+    {
+      "title": "Targeted Financial Conditions Indices (TFCI): why average financial conditions miss what matters most",
+      "source": "Bank Underground",
+      "choice": "skip",
+      "why": "index methodology research measures conditions (the level), describes no change in rule, pipe or claim"
+    },
+    {
+      "title": "The jobs apocalypse is postponed. An AI jobs boom is here",
+      "source": "Economist \u2014 Finance and Economics",
+      "choice": "skip",
+      "why": "labour-market story, off-lens"
+    },
+    {
+      "title": "How Oura\u2019s rings found their way onto millions of fingers",
+      "source": "Economist \u2014 Business",
+      "choice": "skip",
+      "why": "consumer product story, off-lens"
+    },
+    {
+      "title": "Russian gold floods through Hong Kong in wake of western sanctions",
+      "source": "FT \u2014 Markets",
+      "choice": "want",
+      "why": "sanctions (a rule on who may deal with whom) rerouting gold flows through Hong Kong, matching the lens's 'capital control redirecting receipts' mechanism; the blurb's record volume is level but the item is about the reroute"
+    },
+    {
+      "title": "Are credit rating agencies getting fed up with hyperscalers?",
+      "source": "FT Alphaville",
+      "choice": "maybe",
+      "why": "a rating-agency tone shift is not yet a rating action; becomes want only if it changes who may hold hyperscaler debt"
+    },
+    {
+      "title": "Monetary policy transmission: it\u2019s all in the curve",
+      "source": "Bank Underground",
+      "choice": "maybe",
+      "why": "research on how policy transmits through the curve is mechanism, but describes existing machinery not a change; right subject, wrong altitude"
+    },
+    {
+      "title": "Mexico is struggling to win over bond markets",
+      "source": "Economist \u2014 Finance and Economics",
+      "choice": "skip",
+      "why": "yields and investor sentiment about a politician: level plus personality"
+    },
+    {
+      "title": "Neoclouds like CoreWeave are getting much bigger\u2014and riskier",
+      "source": "Economist \u2014 Business",
+      "choice": "maybe",
+      "why": "neocloud debt pile is fit-2 territory (large issuers changing how they fund) only if the funding structure is the story; the blurb reads as size, a level"
+    },
+    {
+      "title": "US regulator sues ISS as it steps up scrutiny of proxy advisers",
+      "source": "FT \u2014 Markets",
+      "choice": "skip",
+      "why": "SEC enforcing a subpoena against a proxy adviser governs votes not money flows; wording is hard here because enforcing an existing rule is not clearly a rule change"
+    },
+    {
+      "title": "FTAV\u2019s Friday charts quiz",
+      "source": "FT Alphaville",
+      "choice": "skip",
+      "why": "quiz, off-lens"
+    },
+    {
+      "title": "China tries to look past the property slump",
+      "source": "Economist \u2014 Finance and Economics",
+      "choice": "maybe",
+      "why": "'new policies' for property could be financing rules (plumbing) or stimulus (level); headline does not say which"
+    },
+    {
+      "title": "The glory of the corporate training video",
+      "source": "Economist \u2014 Business",
+      "choice": "skip",
+      "why": "corporate culture piece, off-lens"
+    },
+    {
+      "title": "US strikes three Iranian oil tankers in response to attacks on warships",
+      "source": "FT \u2014 Markets",
+      "choice": "skip",
+      "why": "military escalation; at most an oil-price level story"
+    },
+    {
+      "title": "FTAV\u2019s further reading",
+      "source": "FT Alphaville",
+      "choice": "skip",
+      "why": "links roundup"
+    },
+    {
+      "title": "Indian regulators\u2019 attempts to protect retail traders are backfiring",
+      "source": "Economist \u2014 Finance and Economics",
+      "choice": "want",
+      "why": "a supervisory curb on retail options trading with unintended second-order effects, near-verbatim the lens's fit-2 example"
+    },
+    {
+      "title": "LIV Golf\u2019s failure shows how not to invest in sport",
+      "source": "Economist \u2014 Business",
+      "choice": "skip",
+      "why": "sports investment colour, off-lens"
+    },
+    {
+      "title": "Treasury sell-off piles pressure on weakest US borrowers",
+      "source": "FT \u2014 Markets",
+      "choice": "skip",
+      "why": "junk spreads at a high is the level, no mechanism described"
+    },
+    {
+      "title": "Luckin Coffee killed our lunch spot. Here\u2019s what that says about geopolitics",
+      "source": "FT Alphaville",
+      "choice": "skip",
+      "why": "restaurant/geopolitics colour, off-lens"
+    },
+    {
+      "title": "Central banking has a forbidding future",
+      "source": "Economist \u2014 Finance and Economics",
+      "choice": "maybe",
+      "why": "central banking's future is institutional but the blurb frames it through Warsh; the never-list's 'personalities' makes a framework-told-through-a-person item hard to place"
+    },
+    {
+      "title": "The IRS is going after America Inc\u2019s overseas profits",
+      "source": "Economist \u2014 Business",
+      "choice": "skip",
+      "why": "tax enforcement of overseas profits is not lending, settlement or seniority on the lens's plain words; hard because whether tax counts as plumbing is unscoped"
+    },
+    {
+      "title": "Jefferies fund caught with $500mn exposure to second alleged invoice fraud",
+      "source": "FT \u2014 Markets",
+      "choice": "maybe",
+      "why": "exposes a receivables-finance claim structure and who is creditor to whom, but it is an episode of fraud exposure, not a change in the structure"
+    },
+    {
+      "title": "Why does it even matter if SoftBank\u2019s an investment holding company?",
+      "source": "FT Alphaville",
+      "choice": "want",
+      "why": "whether SoftBank counts as an investment holding company governs what its bond terms permit, a large issuer's funding constrained by a rule; hard because 'what a rule now permits or forbids' is unscoped"
+    },
+    {
+      "title": "Europe\u2019s bond markets are suffering a post-holiday shock",
+      "source": "Economist \u2014 Finance and Economics",
+      "choice": "skip",
+      "why": "rising yields reported as a level"
+    },
+    {
+      "title": "Chinese businesses of all stripes are turning to Huawei",
+      "source": "Economist \u2014 Business",
+      "choice": "skip",
+      "why": "tech adoption story, off-lens"
+    },
+    {
+      "title": "The gloves are starting to come off in markets",
+      "source": "FT \u2014 Markets",
+      "choice": "skip",
+      "why": "market colour about analysts criticising Trump; the on-lens fact (a Treasury intervention on bonds) is buried inside an off-lens item"
+    },
+    {
+      "title": "FTAV\u2019s further reading",
+      "source": "FT Alphaville",
+      "choice": "skip",
+      "why": "links roundup"
+    }
+  ]
+}

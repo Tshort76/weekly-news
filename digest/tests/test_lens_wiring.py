@@ -158,11 +158,32 @@ def test_every_preset_names_the_enums_the_pipeline_is_wired_to(name):
     assert spec.kinds.core and spec.kinds.adjacent
 
 
-def test_only_a_preset_with_a_measured_rubric_is_called_calibrated():
-    """The flag reads the file the app installs, so it cannot drift from it."""
+def test_only_a_preset_with_a_measured_rubric_is_called_calibrated(tmp_path, monkeypatch):
+    """The flag reads the file the app installs, so it cannot drift from it.
+
+    Both directions, constructed rather than read off whichever presets happen
+    to be measured today: this used to assert that at least one shipped preset
+    was uncalibrated, which passed only until the last one was measured.
+    """
     assert presets.calibrated("architecture-of-rule") is True
-    uncalibrated = [n for n in presets.available() if not presets.calibrated(n)]
-    assert uncalibrated  # the honest state today, and the app says so
+
+    monkeypatch.setattr(presets, "DIRECTORY", tmp_path)
+    (tmp_path / "measured.toml").write_text("")
+    (tmp_path / "measured.md").write_text("LENS: scored.\n")
+    (tmp_path / "written-only.toml").write_text("")
+    assert presets.calibrated("measured") is True
+    assert presets.calibrated("written-only") is False
+
+
+def test_every_shipped_preset_is_calibrated_now():
+    """All four were measured against headlines from their own feeds.
+
+    If a fifth is added, this fails until it has been scored — which is the
+    point: the design says a preset must never be a template with the topic
+    swapped in, and the only thing that can tell the difference is a score.
+    """
+    unmeasured = [n for n in presets.available() if not presets.calibrated(n)]
+    assert unmeasured == [], f"no measurement for {unmeasured}"
 
 
 @pytest.mark.parametrize(

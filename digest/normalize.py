@@ -31,6 +31,7 @@ _TAG = re.compile(r"<[^>]+>")
 _FURNITURE = re.compile(
     r"(?i)\b(read full article|comments?|advertisement|share this article|"
     r"post\s+email\s+whatsapp\s+copy link(\s+share)?|copy link|"
+    r"print article(\s+share)?|print\s+share|"
     r"sign up for [^.]{0,60}?[.:]|subscribe to [^.]{0,60}?[.:])\b"
 )
 _WS = re.compile(r"\s+")
@@ -102,6 +103,15 @@ def normalize(item: Item) -> Item:
         source=item.source,
         section=item.section,
         title=_WS.sub(" ", strip_html(item.title)),
+        # Deliberately not strip_furniture. It looks like an obvious cleanup —
+        # "Print article Share" leads every Carbon Brief blurb — and it was
+        # measured on 2026-09-06 against both preset label sets. It made the
+        # classifier markedly more conservative: on capacity-not-targets, wrong
+        # keeps fell from 5 to 1 and wrong drops rose from 6 to 8, and it began
+        # dropping a headline the labeller wanted, which is the one failure the
+        # bar exists to catch. Phase 0 again: a change with no semantic content
+        # moves this model, and here it moves it the wrong way. Furniture is
+        # still stripped in `synthesize.carry_source`, where a reader sees it.
         blurb=truncate(strip_html(item.blurb)),
         url=url,
         published=item.published,

@@ -20,7 +20,7 @@ import feedparser
 
 from .config import Config
 from .models import Item, Source
-from .normalize import canonical_url, item_id, strip_html
+from .normalize import canonical_url, item_id, normalize_all, strip_html
 
 log = logging.getLogger("digest.ingest")
 
@@ -270,7 +270,12 @@ def sample(cfg: Config, n: int = 25, now: datetime | None = None) -> list[Item]:
             if len(items) > round_number and len(picked) < n:
                 picked.append(items[round_number])
         round_number += 1
-    return picked
+    # Normalised, like the run path. Without this the calibration screen shows
+    # raw feed HTML — a `<div class="print-share">` where the story should be —
+    # while the classifier it is being compared against sees clean text. The two
+    # sides of the comparison were reading different things, which is the one
+    # thing an instrument may not do.
+    return normalize_all(picked)
 
 
 def ingest(cfg: Config, now: datetime | None = None) -> list[Item]:

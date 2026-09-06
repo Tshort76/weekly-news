@@ -31,6 +31,7 @@ sys.path.insert(0, str(ROOT))
 from digest import calibrate  # noqa: E402
 from digest.classify import classify  # noqa: E402
 from digest.config import Config  # noqa: E402
+from digest.config import load as load_installed  # noqa: E402
 from digest.ingest import sample as sample_feeds  # noqa: E402
 from digest.lens import presets  # noqa: E402
 from digest.lens.compile import compile_lens  # noqa: E402
@@ -39,11 +40,24 @@ from digest.models import Source  # noqa: E402
 
 
 def _config_for(name: str, tmp: Path) -> Config:
-    """A config whose feeds and lens are the preset's, and nothing else's."""
+    """The installed config, with this preset's feeds and lens swapped in.
+
+    Built from the installed config rather than from `Config()` so the score is
+    measured on the models actually in use. A bare `Config()` defaults to the
+    hosted provider, which silently scored the first run of this script on
+    Gemini rather than on the local model the app runs — a measurement of the
+    wrong thing, and metered spend nobody asked for.
+    """
     spec = presets.load(name)
     lens = tmp / f"{name}.md"
     lens.write_text(presets.markdown(name), encoding="utf-8")
-    return Config(
+    try:
+        base = load_installed()
+    except (FileNotFoundError, OSError, ValueError):
+        base = Config()
+        base.models.provider = "ollama"
+    return dataclasses.replace(
+        base,
         sources=[Source(name=f["name"], url=f["url"],
                         section=f.get("section", "other"), weight=f.get("weight", 1.0))
                  for f in spec.feeds],
@@ -107,12 +121,21 @@ def _items_from(rows: list[dict]):
 
     from digest.models import Item
 
-    return [
+    from digest.normalize import normalize_all
+
+    items = [
         Item(id=r["id"], source=r.get("source", ""), section="other",
              title=r["title"], blurb=r.get("blurb", ""), url=r.get("url", ""),
              published=datetime.now(timezone.utc))
         for r in rows if r.get("choice") in ("want", "maybe", "skip")
     ]
+    # Normalised, because the classifier reads normalised text in a real run and
+    # a score taken on raw feed HTML measures a pipeline nobody runs.
+    cleaned = normalize_all(items)
+    keep = {i.id for i in items}
+    for original, clean in zip(items, cleaned):
+        clean.id = original.id  # normalize recomputes it from the url
+    return [c for c in cleaned if c.id in keep]
 
 
 def _save(name, report, rows, cfg, wanted_and_dropped: int, note: str) -> None:
