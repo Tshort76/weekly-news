@@ -3,10 +3,23 @@
 
     python scripts/check_spoken.py ~/digests/digest-2026-W36.txt
 
-Everything above the line of dashes is read aloud, so it must carry no URLs, no
+Everything above the line of dashes is read aloud, so it should carry no URLs, no
 markdown, no unexpanded acronyms and no forecasting. These are the mechanical
 criteria only — whether a hook is a fact rather than a take still needs a human,
 and the script says so rather than pretending otherwise.
+
+**Findings are warnings, and the exit code is 0.** This used to exit 1 on any
+flag, and the flag was usually one unspelled acronym in an otherwise good
+edition. A weekly job wired to treat non-zero as failure would then have called
+a perfectly readable briefing broken every week, and a signal that cries wolf
+weekly is a signal nobody reads. Nothing this script measures is worth throwing
+away an edition over: an acronym is a thing to fix next week, not a reason to
+publish nothing.
+
+Exit 1 is available behind `--strict` for anyone who wants a gate. Exit 2 is
+kept for the one honest failure — the check could not be run at all, because the
+file is missing or holds no spoken part, which means something upstream is
+actually broken rather than merely imperfect.
 """
 
 from __future__ import annotations
@@ -66,35 +79,40 @@ def split_by_author(spoken: str) -> tuple[str, str]:
     return "\n".join(ours), "\n".join(theirs)
 
 
-def check(path: Path) -> int:
+def check(path: Path, strict: bool = False) -> int:
     raw = path.read_text(encoding="utf-8")
     spoken = spoken_part(raw)
+    if not spoken.strip():
+        print(f"{path} has no spoken part — nothing to check.", file=sys.stderr)
+        print("That is an upstream problem, not a wording one.", file=sys.stderr)
+        return 2
     has_appendix = DIVIDER in raw
     words = len(spoken.split())
     spoken, quoted = split_by_author(spoken)
 
-    problems: list[tuple[str, list[str]]] = []
+    # `findings` are things worth a human glance, never a reason to fail.
+    findings: list[tuple[str, list[str]]] = []
     noted: list[tuple[str, list[str]]] = []
 
     urls = [line.strip() for line in spoken.splitlines() if URL.search(line)]
     if urls:
-        problems.append(("URLs or bare domains in the spoken part", urls[:5]))
+        findings.append(("URLs or bare domains in the spoken part", urls[:5]))
 
     md = [m.group(0).strip() for m in MARKDOWN.finditer(spoken)]
     if md:
-        problems.append(("markdown residue", sorted(set(md))[:5]))
+        findings.append(("markdown residue", sorted(set(md))[:5]))
 
     acronyms = sorted({a for a in ACRONYM.findall(spoken) if a not in ACRONYM_OK})
     if acronyms:
-        problems.append(("acronyms that may not be spelled out", acronyms[:8]))
+        findings.append(("acronyms that may not be spelled out", acronyms[:8]))
 
     forecasts = [m.group(0) for m in FORECAST.finditer(spoken)]
     if forecasts:
-        problems.append(("forecasting or attributed opinion", sorted(set(forecasts))[:5]))
+        findings.append(("forecasting or attributed opinion", sorted(set(forecasts))[:5]))
 
     parens = [m.group(0)[:50] for m in PARENTHETICAL.finditer(spoken)]
     if parens:
-        problems.append(("parentheticals, which do not read aloud", parens[:5]))
+        findings.append(("parentheticals, which do not read aloud", parens[:5]))
 
     # The same rules over the quoted paragraphs, reported rather than failed.
     # Verbatim is the point: these are somebody else's sentences and the choice
@@ -111,7 +129,7 @@ def check(path: Path) -> int:
             noted.append(("figures written as digits", quoted_digits[:8]))
 
     if words > MAX_WORDS:
-        problems.append((f"over the {MAX_WORDS}-word ceiling", [f"{words} words"]))
+        findings.append((f"over the {MAX_WORDS}-word ceiling", [f"{words} words"]))
 
     print(f"file            {path}")
     print(f"spoken words    {words}  (ceiling {MAX_WORDS})")
@@ -121,11 +139,12 @@ def check(path: Path) -> int:
         print(f"quoted aloud    {len(quoted.split())} words in the reporters' own wording")
     print()
 
-    if not problems:
-        print("PASS on every mechanical criterion.")
+    if not findings:
+        print("Clean on every mechanical criterion.")
     else:
-        for title, examples in problems:
-            print(f"  [!] {title}")
+        print(f"{len(findings)} thing{'s' if len(findings) > 1 else ''} to look at.")
+        for title, examples in findings:
+            print(f"  [warn] {title}")
             for example in examples:
                 print(f"        {example}")
     if noted:
@@ -140,17 +159,26 @@ def check(path: Path) -> int:
     print("Still needs your eyes: whether each hook is a fact plus a mechanism")
     print("rather than a take, and whether anything was invented that the")
     print("headlines did not support.")
-    return 1 if problems else 0
+
+    if findings and strict:
+        print()
+        print("--strict: exiting 1 on the findings above.")
+        return 1
+    return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("path", type=Path)
+    parser.add_argument(
+        "--strict", action="store_true",
+        help="exit 1 if anything was flagged (default: warn and exit 0)",
+    )
     args = parser.parse_args()
     if not args.path.exists():
         print(f"no such file: {args.path}", file=sys.stderr)
         return 2
-    return check(args.path)
+    return check(args.path, strict=args.strict)
 
 
 if __name__ == "__main__":

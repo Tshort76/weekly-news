@@ -30,18 +30,18 @@ Sources
 """
 
 
-def run(tmp_path: Path, text: str) -> subprocess.CompletedProcess:
+def run(tmp_path: Path, text: str, *flags: str) -> subprocess.CompletedProcess:
     path = tmp_path / "digest.txt"
     path.write_text(text, encoding="utf-8")
     return subprocess.run(
-        [sys.executable, str(SCRIPT), str(path)], capture_output=True, text=True
+        [sys.executable, str(SCRIPT), str(path), *flags], capture_output=True, text=True
     )
 
 
 def test_a_clean_digest_passes(tmp_path):
     result = run(tmp_path, CLEAN)
     assert result.returncode == 0, result.stdout
-    assert "PASS on every mechanical criterion" in result.stdout
+    assert "Clean on every mechanical criterion" in result.stdout
 
 
 def test_the_sources_appendix_is_not_treated_as_spoken(tmp_path):
@@ -50,21 +50,21 @@ def test_the_sources_appendix_is_not_treated_as_spoken(tmp_path):
     assert "URLs" not in result.stdout
 
 
-def test_a_url_above_the_divider_fails(tmp_path):
+def test_a_url_above_the_divider_is_flagged_without_failing(tmp_path):
     result = run(tmp_path, CLEAN.replace("permanent.", "permanent, see https://e.com/x."))
-    assert result.returncode == 1
+    assert result.returncode == 0, result.stdout
     assert "URLs or bare domains" in result.stdout
 
 
-def test_markdown_residue_fails(tmp_path):
+def test_markdown_residue_is_flagged_without_failing(tmp_path):
     result = run(tmp_path, CLEAN.replace("Japan targets", "## Japan **targets**"))
-    assert result.returncode == 1
+    assert result.returncode == 0, result.stdout
     assert "markdown residue" in result.stdout
 
 
 def test_an_unexpanded_acronym_is_flagged(tmp_path):
     result = run(tmp_path, CLEAN.replace("The central bank", "The BOJ and the ECB"))
-    assert result.returncode == 1
+    assert result.returncode == 0, result.stdout
     assert "acronyms" in result.stdout
     assert "BOJ" in result.stdout
 
@@ -74,15 +74,15 @@ def test_common_words_are_not_flagged_as_acronyms(tmp_path):
     assert result.returncode == 0, result.stdout
 
 
-def test_forecasting_language_fails(tmp_path):
+def test_forecasting_language_is_flagged_without_failing(tmp_path):
     result = run(tmp_path, CLEAN.replace("looks permanent", "is expected to continue"))
-    assert result.returncode == 1
+    assert result.returncode == 0, result.stdout
     assert "forecasting" in result.stdout
 
 
-def test_a_parenthetical_fails(tmp_path):
+def test_a_parenthetical_is_flagged_without_failing(tmp_path):
     result = run(tmp_path, CLEAN.replace("what it steers", "what it steers (the reserves)"))
-    assert result.returncode == 1
+    assert result.returncode == 0, result.stdout
     assert "parentheticals" in result.stdout
 
 
@@ -108,7 +108,7 @@ def test_a_reporters_wording_is_reported_but_does_not_fail_the_check(tmp_path):
         capture_output=True, text=True, cwd=ROOT,
     )
     assert out.returncode == 0, out.stdout
-    assert "PASS on every mechanical criterion" in out.stdout
+    assert "Clean on every mechanical criterion" in out.stdout
     assert "read verbatim by choice" in out.stdout
     assert "CDC" in out.stdout
 
@@ -130,5 +130,41 @@ def test_the_briefings_own_prose_is_still_held_to_the_rules(tmp_path):
         [sys.executable, "scripts/check_spoken.py", str(path)],
         capture_output=True, text=True, cwd=ROOT,
     )
-    assert out.returncode == 1
+    assert out.returncode == 0, out.stdout
     assert "acronyms that may not be spelled out" in out.stdout
+
+
+# ------------------------------------------------- warnings, not failures
+
+
+def test_one_acronym_does_not_condemn_an_otherwise_good_edition(tmp_path):
+    """The reason this changed. A weekly gate that fails on `IRS` cries wolf."""
+    result = run(tmp_path, CLEAN.replace("The central bank", "The IRS and the central bank"))
+    assert result.returncode == 0, result.stdout
+    assert "acronyms" in result.stdout
+    assert "1 thing to look at" in result.stdout
+
+
+def test_strict_is_there_for_anyone_who_wants_a_gate(tmp_path):
+    flagged = CLEAN.replace("The central bank", "The IRS and the central bank")
+    assert run(tmp_path, flagged).returncode == 0
+    assert run(tmp_path, flagged, "--strict").returncode == 1
+
+
+def test_strict_still_exits_zero_when_there_is_nothing_to_report(tmp_path):
+    assert run(tmp_path, CLEAN, "--strict").returncode == 0
+
+
+def test_a_file_with_no_spoken_part_is_the_one_real_failure(tmp_path):
+    """Not a wording problem — something upstream produced nothing to read."""
+    result = run(tmp_path, "------------------------------------------------------------\nSources\n")
+    assert result.returncode == 2
+    assert "no spoken part" in result.stderr
+
+
+def test_a_missing_file_is_still_an_error_rather_than_a_warning(tmp_path):
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), str(tmp_path / "nope.txt")],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 2

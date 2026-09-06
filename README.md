@@ -472,7 +472,11 @@ The classify and synthesize tests replay saved model responses from
 than captured from a live call — replace them with real captures once you have run a
 real week.
 
-`scripts/check_spoken.py` checks a finished digest against the acceptance criteria:
+`scripts/check_spoken.py` checks a finished digest against the acceptance
+criteria. Everything it finds is a warning and it exits 0 — one unspelled
+acronym is a thing to fix next week, not a reason to throw away an edition,
+and a weekly check that fails on that is one nobody reads. Pass `--strict`
+to exit 1 on any finding. Exit 2 means the check could not run at all:
 
 ```bash
 python scripts/check_spoken.py ~/digests/digest-2026-W36.txt
