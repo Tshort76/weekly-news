@@ -213,3 +213,92 @@ def test_review_of_a_week_that_was_never_run_says_so(client):
 def test_about_says_where_the_files_are(client):
     body = client.get("/about").text
     assert str(paths.config_dir()) in body and "never bypasses a paywall" in body
+
+
+# ------------------- adding a lens example shows the damage before it saves
+
+
+def _labelled_app(monkeypatch, after_titles_dropped=()):
+    """An app with one labelled headline and a classifier that needs no model.
+
+    The second classify pass — the one that scores the candidate lens — returns
+    a lower fit for anything named in `after_titles_dropped`, which is how a
+    real addition acting as a severity dial would show up.
+    """
+    from digest.config import load, paths
+    from digest.models import Classified
+    from digest.state import State
+    from digest.ui.app import create_app
+
+    from .conftest import make_item
+
+    items = [make_item(id="a1", title="a spacecraft arrives"),
+             make_item(id="a2", title="a trade-press explainer")]
+    cfg = load()
+    with State(cfg.db_path) as state:
+        state.save_labels(
+            [{"item_id": "a1", "title": items[0].title, "blurb": "", "source": "s",
+              "choice": "want"},
+             {"item_id": "a2", "title": items[1].title, "blurb": "", "source": "s",
+              "choice": "skip"}],
+            "2026-W36",
+        )
+
+    calls = []
+
+    def fake_classify(batch, config, client):
+        calls.append(config.lens_path)
+        rows = []
+        for item in batch:
+            fit = 3 if item.id == "a1" else 3  # both kept: one is a false keep
+            if len(calls) > 1 and item.title in after_titles_dropped:
+                fit = 0
+            rows.append(Classified(item=item, fit=fit, kind="core", novelty=3,
+                                   region="us", domain="state", mechanism=None,
+                                   reason=""))
+        return rows
+
+    monkeypatch.setattr("digest.classify.classify", fake_classify)
+    app = create_app(Runner(paths.data_dir(), fake_pipeline()))
+    app.state.sample = items
+    return app, calls
+
+
+def test_previewing_an_example_names_what_it_would_cost(installed, monkeypatch):
+    app, _ = _labelled_app(monkeypatch,
+                           after_titles_dropped=("a spacecraft arrives",))
+    client = TestClient(app)
+    page = client.post("/calibrate/example/preview",
+                       data={"headline": "a trade-press explainer", "level": "1"})
+    assert page.status_code == 200
+    assert "a spacecraft arrives" in page.text
+    assert "stop seeing" in page.text.lower()
+
+
+def test_previewing_an_example_does_not_write_the_lens(installed, monkeypatch):
+    """The whole point of R08: nothing is saved until the second button."""
+    before = (paths.config_dir() / "lens.md").read_text()
+    app, _ = _labelled_app(monkeypatch,
+                           after_titles_dropped=("a spacecraft arrives",))
+    TestClient(app).post("/calibrate/example/preview",
+                         data={"headline": "a trade-press explainer", "level": "1"})
+    assert (paths.config_dir() / "lens.md").read_text() == before
+
+
+def test_confirming_after_the_preview_does_write_the_lens(installed, monkeypatch):
+    before = (paths.config_dir() / "lens.md").read_text()
+    app, _ = _labelled_app(monkeypatch)
+    TestClient(app).post("/calibrate/example",
+                         data={"headline": "a trade-press explainer", "level": "1"})
+    after = (paths.config_dir() / "lens.md").read_text()
+    assert after != before
+    assert "a trade-press explainer" in after
+
+
+def test_the_candidate_is_scored_through_its_own_lens_file(installed, monkeypatch):
+    """The second pass must not read the saved lens, or it measures nothing."""
+    app, calls = _labelled_app(monkeypatch)
+    TestClient(app).post("/calibrate/example/preview",
+                         data={"headline": "a trade-press explainer", "level": "1"})
+    assert len(calls) == 2
+    assert calls[0] != calls[1]

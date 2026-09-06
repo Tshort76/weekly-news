@@ -82,6 +82,7 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
     # are a working set for one sitting, and the labels themselves are what is
     # kept.
     app.state.sample = []
+    app.state.report = None
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     templates = Jinja2Templates(directory=str(HERE / "templates"))
 
@@ -406,19 +407,75 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
         )
         results = classify(items, cfg, Client(cfg))
         report = calibration.score(results, labels)
+        app.state.report = report
         return page(request, "result.html", report=report, total=len(items),
                     model=cfg.models.classify)
 
-    @app.post("/calibrate/example")
-    def add_to_lens(headline: str = Form(...), level: str = Form("1"),
-                    note: str = Form("")):
+    def _candidate(headline: str, level: str, note: str):
+        """The lens as it would be with this example added, and its TOML. Not saved."""
         from .lensform import add_example  # noqa: PLC0415
         from ..lens.serialize import to_toml  # noqa: PLC0415
 
         stored = store.load()
-        spec = add_example(stored.spec or presets.load(presets.DEFAULT),
-                           level, headline, note)
-        store.save(spec, to_toml(spec))
+        base = stored.spec or presets.load(presets.DEFAULT)
+        spec = add_example(base, level, headline, note)
+        return spec, to_toml(spec)
+
+    @app.post("/calibrate/example/preview", response_class=HTMLResponse)
+    def preview_example(request: Request, headline: str = Form(...),
+                        level: str = Form("1"), note: str = Form("")):
+        """Score the addition against everything labelled, before saving it.
+
+        Adding an example reads as teaching the lens one thing and is not: a
+        single never-list line, measured on a real lens, removed the false
+        positive it was aimed at and took six unrelated stories with it. So the
+        candidate is compiled to a temporary file, the labelled set is scored
+        through it, and the two scorings are compared. Nothing is written until
+        the user presses the confirm button on the page this returns.
+        """
+        import dataclasses  # noqa: PLC0415
+        import tempfile  # noqa: PLC0415
+
+        from .. import calibrate as calibration  # noqa: PLC0415
+        from ..classify import classify  # noqa: PLC0415
+        from ..lens.compile import compile_lens  # noqa: PLC0415
+        from ..llm import Client  # noqa: PLC0415
+
+        cfg = load()
+        with State(cfg.db_path) as state:
+            saved = state.labels()
+        by_id = {r["item_id"]: r for r in saved}
+        items = [i for i in (app.state.sample or []) if i.id in by_id]
+        if not items:
+            # Nothing labelled to score against, so there is no damage to show
+            # and no honest way to preview. Save it and say so on the lens page.
+            store.save(*_candidate(headline, level, note))
+            return RedirectResponse("/lens?saved=1&unscored=1", status_code=303)
+
+        labels = calibration.labels_from_choices(
+            {r["item_id"]: r["choice"] for r in saved}
+        )
+        client = Client(cfg)
+        before = app.state.report or calibration.score(
+            classify(items, cfg, client), labels)
+
+        spec, _ = _candidate(headline, level, note)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "lens.md"
+            path.write_text(compile_lens(spec), encoding="utf-8")
+            trial = dataclasses.replace(cfg, lens_path=path)
+            after = calibration.score(classify(items, trial, client), labels)
+
+        return page(request, "impact.html",
+                    impact=calibration.impact(before, after),
+                    total=len(items), headline=headline, level=level, note=note)
+
+    @app.post("/calibrate/example")
+    def add_to_lens(headline: str = Form(...), level: str = Form("1"),
+                    note: str = Form("")):
+        """Write the addition. Reached from the confirm button on the preview."""
+        store.save(*_candidate(headline, level, note))
+        app.state.report = None  # the labelled set now scores differently
         return RedirectResponse("/lens?saved=1", status_code=303)
 
     @app.get("/about", response_class=HTMLResponse)

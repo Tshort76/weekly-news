@@ -203,3 +203,46 @@ def test_want_maybe_skip_becomes_something_the_rubric_can_be_scored_against():
 
 def test_an_empty_report_does_not_divide_by_zero():
     assert Report().agreement == 0
+
+
+# ------------------------------ adding an example shows what it costs first
+
+
+def _report(false_keeps=(), false_drops=(), total=30):
+    from digest.calibrate import Report
+
+    return Report(total=total, false_keeps=list(false_keeps),
+                  false_drops=list(false_drops))
+
+
+def test_impact_separates_what_an_example_buys_from_what_it_costs():
+    from digest.calibrate import impact
+
+    before = _report(false_keeps=["a trade-press explainer"], false_drops=[])
+    after = _report(false_keeps=[], false_drops=["a spacecraft arrives", "two labs agree"])
+
+    found = impact(before, after)
+    assert found.fixed == ["a trade-press explainer"]
+    assert found.newly_dropped == ["a spacecraft arrives", "two labs agree"]
+    assert found.agreement_delta == -1
+    assert found.worth_it is False
+
+
+def test_an_example_that_costs_nothing_is_worth_it():
+    from digest.calibrate import impact
+
+    found = impact(_report(false_keeps=["noise"]), _report())
+    assert found.fixed == ["noise"]
+    assert found.newly_dropped == []
+    assert found.agreement_delta == 1
+    assert found.worth_it is True
+
+
+def test_a_wash_is_not_worth_it_either():
+    """Same score, different items — the trade is invisible in the number alone."""
+    from digest.calibrate import impact
+
+    found = impact(_report(false_keeps=["noise"]), _report(false_drops=["a real story"]))
+    assert found.agreement_delta == 0
+    assert found.newly_dropped == ["a real story"]
+    assert found.worth_it is False

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% set active = "calibrate" %}
+{% block body %}
+<h1>What this example would do to the rest of your lens</h1>
+<p class="sub">
+  Scored against all {{ total }} headlines you have labelled, using the lens as it
+  would be. Nothing has been saved yet.
+</p>
+
+<div class="box">
+  <h4>Agreement</h4>
+  <div class="item">
+    {{ impact.before.agreement }} of {{ total }} now, {{ impact.after.agreement }} of {{ total }} with this example
+    {% if impact.agreement_delta > 0 %}<strong>({{ impact.agreement_delta }} better)</strong>
+    {% elif impact.agreement_delta < 0 %}<strong>({{ -impact.agreement_delta }} worse)</strong>
+    {% else %}(no change){% endif %}
+  </div>
+</div>
+
+<div class="two">
+  <div class="box">
+    <h4>Stories you would stop seeing ({{ impact.newly_dropped | length }})</h4>
+    {% for title in impact.newly_dropped %}
+    <div class="item">{{ title }}</div>
+    {% else %}
+    <div class="item sub">None. Nothing you wanted gets lost.</div>
+    {% endfor %}
+    <p class="sub">
+      This is the list that matters. A story that stops arriving is one you never
+      learn you lost, so it costs more than an extra story you skim past.
+    </p>
+  </div>
+  <div class="box">
+    <h4>What it fixes ({{ impact.fixed | length }})</h4>
+    {% for title in impact.fixed %}
+    <div class="item">{{ title }}</div>
+    {% else %}
+    <div class="item sub">Nothing — the disagreement you aimed at is still there.</div>
+    {% endfor %}
+    {% if impact.newly_kept %}
+    <h4>New ones it lets in ({{ impact.newly_kept | length }})</h4>
+    {% for title in impact.newly_kept %}
+    <div class="item">{{ title }}</div>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+{% if impact.newly_dropped %}
+<p class="sub">
+  An example added to one level can move the whole scale rather than teaching a
+  single rule. On a real lens, one line removed the false positive it was aimed
+  at and took six unrelated stories with it. That is what you are looking at
+  here, and it is why this screen exists.
+</p>
+{% endif %}
+
+<div class="actions">
+  <form method="post" action="/calibrate/example">
+    <input type="hidden" name="headline" value="{{ headline }}">
+    <input type="hidden" name="level" value="{{ level }}">
+    <input type="hidden" name="note" value="{{ note }}">
+    <button {% if impact.newly_dropped %}class="quiet"{% endif %}>
+      {% if impact.newly_dropped %}Add it anyway{% else %}Add it to the lens{% endif %}
+    </button>
+  </form>
+  <a class="btn" href="/calibrate/result">Leave the lens alone</a>
+</div>
+{% endblock %}

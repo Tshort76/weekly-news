@@ -85,6 +85,51 @@ def score(results: list[Classified], labels: dict[str, dict]) -> Report:
     return report
 
 
+@dataclass
+class Impact:
+    """What adding one example to the lens does to the rest of the labelled set.
+
+    The button that adds an example is presented as teaching the lens one thing,
+    and calibrating `what-became-possible` measured that it is not. A single line
+    added to a never-list removed the one false positive it was aimed at and took
+    six unrelated stories down with it, moving agreement from 26 of 30 to 21. It
+    behaved as a global severity dial, not as a rule about one kind of story.
+
+    So the addition is scored against everything the user has labelled before it
+    is saved. `fixed` is what the user was trying to buy; `newly_dropped` is what
+    it costs, and is the list that matters, because a story you never see is one
+    you never learn you lost.
+    """
+
+    before: Report
+    after: Report
+    fixed: list[str] = field(default_factory=list)
+    newly_dropped: list[str] = field(default_factory=list)
+    newly_kept: list[str] = field(default_factory=list)
+
+    @property
+    def agreement_delta(self) -> int:
+        return self.after.agreement - self.before.agreement
+
+    @property
+    def worth_it(self) -> bool:
+        """Did it buy more than it cost? Advisory — the user still decides."""
+        return self.agreement_delta > 0 and not self.newly_dropped
+
+
+def impact(before: Report, after: Report) -> Impact:
+    """Compare two scorings of the same labelled set, by headline."""
+    was_dropped, now_dropped = set(before.false_drops), set(after.false_drops)
+    was_kept, now_kept = set(before.false_keeps), set(after.false_keeps)
+    return Impact(
+        before=before,
+        after=after,
+        fixed=sorted((was_kept - now_kept) | (was_dropped - now_dropped)),
+        newly_dropped=sorted(now_dropped - was_dropped),
+        newly_kept=sorted(now_kept - was_kept),
+    )
+
+
 def shipped_labels() -> tuple[list[Item], dict[str, dict]]:
     """The 25 hand-labelled items in the test fixtures.
 
