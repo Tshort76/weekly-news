@@ -302,3 +302,60 @@ def test_the_candidate_is_scored_through_its_own_lens_file(installed, monkeypatc
                          data={"headline": "a trade-press explainer", "level": "1"})
     assert len(calls) == 2
     assert calls[0] != calls[1]
+
+
+# ------------------------------------------------- the health dashboard
+
+
+def test_the_dashboard_renders_with_no_runs_at_all(client):
+    """Week one, before anything has happened. It must not be an error page."""
+    page = client.get("/health")
+    assert page.status_code == 200
+    assert "No run recorded yet" in page.text
+
+
+def test_the_dashboard_leads_with_all_good_after_a_clean_run(installed):
+    from digest.config import paths
+    from digest.state import State
+    from digest.ui.app import create_app
+
+    with State(paths.data_dir() / "state.db") as state:
+        started = state.start_run("2026-W37")
+        state.finish_run("2026-W37", started, "ok", fetched=306, selected=60,
+                         entries=60, words=8397)
+
+    page = TestClient(create_app(Runner(paths.data_dir(), fake_pipeline()))).get("/health")
+    assert "All good" in page.text
+    assert "8,397" in page.text
+
+
+def test_the_dashboard_shows_a_killed_run_as_needing_you(installed):
+    """A row still saying running with nothing running — the case that used to
+    leave nothing behind but a log file that stopped mid-sentence."""
+    from digest.config import paths
+    from digest.state import State
+    from digest.ui.app import create_app
+
+    with State(paths.data_dir() / "state.db") as state:
+        state.start_run("2026-W37")  # never finished
+
+    page = TestClient(create_app(Runner(paths.data_dir(), fake_pipeline()))).get("/health")
+    assert "Needs you" in page.text
+    assert "never finished" in page.text
+
+
+def test_the_dashboard_lists_a_warning_without_calling_it_a_failure(installed):
+    from digest.config import paths
+    from digest.state import State
+    from digest.ui.app import create_app
+
+    with State(paths.data_dir() / "state.db") as state:
+        started = state.start_run("2026-W37")
+        state.add_event("2026-W37", started, level="WARNING", kind="call",
+                        message="TimeoutError on attempt 1/5, waiting 10s")
+        state.finish_run("2026-W37", started, "ok", fetched=306, entries=60, words=8397)
+
+    page = TestClient(create_app(Runner(paths.data_dir(), fake_pipeline()))).get("/health")
+    assert "Worth a look" in page.text
+    assert "TimeoutError" in page.text
+    assert "Needs you" not in page.text

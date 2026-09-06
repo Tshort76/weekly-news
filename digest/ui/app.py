@@ -84,6 +84,36 @@ def _real_run(**kwargs):
         return pipeline.run(cfg, state, want_html=True, **kwargs)
 
 
+def _spoken_notes(edition) -> list[str]:
+    """The mechanical spoken-text findings, computed from the .txt at page load.
+
+    Nothing is stored: the file is the record, and if it has been moved or
+    deleted the panel says so rather than showing a stale result.
+    """
+    if edition is None:
+        return []
+    path = getattr(edition, "path", None)
+    from ..config import load as load_cfg  # noqa: PLC0415
+    from ..emit import week_stem  # noqa: PLC0415
+
+    cfg = load_cfg()
+    path = cfg.run.output_dir / f"{week_stem(edition.week)}.txt"
+    if not path.exists():
+        return [f"The edition's text file is no longer at {path}."]
+    try:
+        import subprocess  # noqa: PLC0415
+        import sys  # noqa: PLC0415
+
+        found = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve().parents[2] / "scripts" / "check_spoken.py"),
+             str(path)],
+            capture_output=True, text=True, timeout=30,
+        )
+        return [ln.strip() for ln in found.stdout.splitlines() if ln.strip().startswith("[warn]")]
+    except Exception:  # noqa: BLE001 — a dashboard panel never breaks the page
+        return []
+
+
 def create_app(runner: jobs.Runner | None = None) -> FastAPI:
     app = FastAPI(title="Weekly Digest", docs_url=None, redoc_url=None)
     app.state.runner = runner or jobs.Runner(paths.data_dir(), _real_run)
@@ -486,6 +516,41 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
         store.save(*_candidate(headline, level, note))
         app.state.report = None  # the labelled set now scores differently
         return RedirectResponse("/lens?saved=1", status_code=303)
+
+    # ------------------------------------------------------------- health
+
+    @app.get("/health", response_class=HTMLResponse)
+    def health_page(request: Request):
+        """The operational dashboard. Computes everything, stores nothing."""
+        from .. import health as health_module  # noqa: PLC0415
+
+        cfg = load()
+        with State(cfg.db_path) as state:
+            run = state.last_run()
+            events = state.events(run["week"], run["started"]) if run else []
+            history = state.feed_history()
+            runs = state.recent_runs(10)
+            edition = state.load_edition(run["week"]) if run else None
+            classified = state.load_classified(run["week"]) if run else []
+
+        job = app.state.runner.job
+        running = bool(job and job.running)
+        return page(
+            request, "health.html",
+            verdict=health_module.verdict(run, events, edition, running, history),
+            run=run, runs=runs, running=running,
+            stages=health_module.stage_times(events),
+            calls=health_module.calls(events),
+            grounding=health_module.grounding(events),
+            this_run=health_module.feeds_this_run(events),
+            history=history, feeds=_feeds(),
+            funnel=health_module.funnel(
+                run or {}, classified,
+                run.get("selected") or 0 if run else 0,
+                run.get("entries") or 0 if run else 0,
+            ),
+            spoken=_spoken_notes(edition),
+        )
 
     @app.get("/about", response_class=HTMLResponse)
     def about(request: Request):

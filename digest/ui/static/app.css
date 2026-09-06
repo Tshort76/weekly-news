@@ -115,3 +115,90 @@ tr.off { opacity: .5; }
 .box .item { padding: .4rem 0; border-top: 1px dotted var(--rule); font-size: .85rem; }
 pre.diff { background: var(--code-bg); padding: 1rem; overflow-x: auto; font-size: .78rem; }
 textarea.input { min-height: 3rem; }
+
+/* ---- the health dashboard -------------------------------------------- */
+/* Semantic colours, separate from the accent, defined on bare :root first so
+   neither theme can be the only place a colour exists. */
+:root { --ok: #2f6b4f; --ok-soft: #e2efe7;
+        --warn: #9a6a1c; --warn-soft: #f6ecd9;
+        --stop: #9c3a3a; --stop-soft: #f6e6e4; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ok: #7fc6a0; --ok-soft: #1c2d24;
+    --warn: #d5a04a; --warn-soft: #2e2718;
+    --stop: #e08b84; --stop-soft: #33201e; }
+}
+:root[data-theme="dark"] {
+  --ok: #7fc6a0; --ok-soft: #1c2d24;
+  --warn: #d5a04a; --warn-soft: #2e2718;
+  --stop: #e08b84; --stop-soft: #33201e; }
+
+/* The icon spans every row and everything else is pinned to column 2, or a
+   banner with more than three paragraphs drops the rest into the icon column
+   and they wrap to one word a line. */
+.verdict { border: 1px solid; border-left-width: 6px; padding: .85rem 1.1rem .95rem;
+           margin: 0 0 2rem; display: grid; grid-template-columns: 1.6rem 1fr;
+           gap: .1rem .8rem; }
+.verdict .ico { grid-row: 1 / span 20; font-size: 1.3rem; line-height: 1.3;
+                font-style: normal; text-align: center; }
+.verdict > :not(.ico) { grid-column: 2; min-width: 0; }
+.verdict .hd { font-size: 1.32rem; line-height: 1.2; margin: 0; font-weight: 600; }
+.verdict p { margin: .3rem 0 0; font-size: .92rem; }
+.verdict .meta { font-size: .78rem; color: var(--muted); }
+/* Log lines wrap with a hanging indent rather than scrolling sideways: a
+   clipped line hides the one word that says which failure this was. */
+.verdict .ev { margin: .55rem 0 0; padding: .5rem .7rem .55rem 2.4rem;
+               text-indent: -1.7rem; font-family: ui-monospace, Menlo, monospace;
+               font-size: .76rem; line-height: 1.55; white-space: pre-wrap;
+               overflow-wrap: anywhere;
+               background: color-mix(in srgb, var(--bg) 55%, transparent); }
+.verdict.green { border-color: var(--ok); background: var(--ok-soft); }
+.verdict.green .hd, .verdict.green .ico { color: var(--ok); }
+.verdict.amber { border-color: var(--warn); background: var(--warn-soft); }
+.verdict.amber .hd, .verdict.amber .ico { color: var(--warn); }
+.verdict.red { border-color: var(--stop); background: var(--stop-soft); }
+.verdict.red .hd, .verdict.red .ico { color: var(--stop); }
+
+.finding { border: 1px solid var(--rule); border-left: 3px solid var(--rule);
+           padding: .5rem .8rem; margin: 0 0 -1px; font-size: .9rem; }
+.finding.warn { border-left-color: var(--warn); }
+.finding.stop { border-left-color: var(--stop); }
+.finding .who { font-family: ui-monospace, Menlo, monospace; font-size: .74rem;
+                color: var(--muted); margin-right: .6rem; }
+.finding .times { color: var(--faint); font-size: .78rem; margin-left: .4rem; }
+
+.stages { display: flex; border: 1px solid var(--rule); margin: 1rem 0;
+          overflow-x: auto; }
+.stages > div { flex: 1 1 0; min-width: 5.4rem; padding: .45rem .6rem;
+                border-right: 1px solid var(--rule); font-size: .78rem; }
+.stages > div:last-child { border-right: 0; }
+.stages .nm { display: block; font-size: .66rem; letter-spacing: .08em;
+              text-transform: uppercase; color: var(--muted); }
+.stages .t { display: block; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.funnel { display: grid; grid-template-columns: 7rem 1fr 4rem; gap: .3rem .7rem;
+          align-items: center; margin: 1rem 0; font-size: .88rem; }
+.funnel .lbl { text-align: right; color: var(--muted); }
+.funnel .track { height: 1.1rem; background: var(--code-bg); }
+.funnel .fill { height: 100%; background: var(--accent); }
+.funnel .n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+table.grid { border-collapse: collapse; width: 100%; font-size: .86rem;
+             font-variant-numeric: tabular-nums; }
+table.grid th, table.grid td { border: 1px solid var(--rule); padding: .35rem .6rem;
+                               text-align: left; }
+table.grid th { font-size: .68rem; letter-spacing: .07em; text-transform: uppercase;
+                color: var(--muted); }
+table.grid td.n { text-align: right; }
+.hist i { display: inline-block; width: 1.5rem; text-align: center; font-style: normal;
+          font-size: .7rem; background: var(--code-bg); margin-right: 2px; }
+.hist i.f { background: var(--stop-soft); color: var(--stop); font-weight: 700; }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.stop { background: var(--stop-soft); color: var(--stop); }
+
+@media (max-width: 34rem) {
+  .verdict { grid-template-columns: 1.2rem 1fr; }
+  .funnel { grid-template-columns: 1fr; }
+  .funnel .lbl, .funnel .n { text-align: left; }
+}

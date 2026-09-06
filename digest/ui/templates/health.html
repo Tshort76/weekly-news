@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% set active = "health" %}
+{% block title %}Health — weekly digest{% endblock %}
+{% block body %}
+
+<div class="verdict {{ verdict.state }}">
+  <i class="ico" aria-hidden="true">{{ "●" if verdict.state == "green" else "▲" if verdict.state == "amber" else "■" }}</i>
+  <p class="hd">{{ verdict.headline }}</p>
+  {% if verdict.summary %}<p>{{ verdict.summary | safe }}</p>{% endif %}
+  {% if verdict.evidence %}<p class="ev">{{ verdict.evidence }}</p>{% endif %}
+  {% if verdict.action %}<p>{{ verdict.action | safe }}</p>{% endif %}
+  {% if verdict.meta %}<p class="meta">{{ verdict.meta }}</p>{% endif %}
+</div>
+
+{% if run %}
+<h2>Last run</h2>
+<p class="sub">
+  {{ run.week }} ·
+  <span class="chip {{ 'ok' if run.status == 'ok' else 'warn' if run.status in ('partial', 'cancelled') else 'stop' }}">{{ run.status }}</span>
+  {% if run.dry %}<span class="chip">dry</span>{% endif %}
+  {% if running %}<span class="chip warn">running now</span>{% endif %}
+</p>
+<div class="two">
+  <div class="box"><div class="stat">{{ run.fetched or 0 }}</div><div class="sub">fetched</div></div>
+  <div class="box"><div class="stat">{{ run.selected or 0 }}</div><div class="sub">selected</div></div>
+  <div class="box"><div class="stat">{{ run.entries or 0 }}</div><div class="sub">entries</div></div>
+  <div class="box"><div class="stat">{{ "{:,}".format(run.words or 0) }}</div><div class="sub">words</div></div>
+</div>
+
+{% if stages %}
+<div class="stages">
+  {% for stage in stages %}
+  <div><span class="nm">{{ stage.name }}</span><span class="t">{{ (stage.ms / 1000) | round | int }} s</span></div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+
+<h2>Needs attention</h2>
+{% if verdict.findings %}
+{% for finding in verdict.findings %}
+<div class="finding {{ finding.level }}">
+  <span class="who">{{ finding.where }}</span>{{ finding.text }}
+  {% if finding.detail %}<span class="times">{{ finding.detail }}</span>{% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p class="sub">Nothing. No warnings and no errors in the last run.</p>
+{% endif %}
+
+{% if spoken %}
+<h3>Spoken-text check</h3>
+<p class="sub">Read from the edition's text file just now. Reported, never failed.</p>
+{% for note in spoken %}
+<div class="finding warn"><span class="who">spoken</span>{{ note }}</div>
+{% endfor %}
+{% endif %}
+
+<h2>Sources</h2>
+<table class="grid">
+  <thead><tr><th>Feed</th><th class="n">This run</th><th>Last runs</th><th>Verified</th><th>State</th></tr></thead>
+  <tbody>
+  {% for feed in feeds %}
+  {% set now = this_run.get(feed.name) %}
+  <tr>
+    <td>{{ feed.name }}</td>
+    <td class="n">{{ now.n if now else "—" }}</td>
+    <td class="hist">
+      {% for past in history.get(feed.name, []) %}<i class="{{ 'f' if past.failed }}">{{ "!" if past.failed else past.n | int }}</i>{% endfor %}
+    </td>
+    <td>{{ feed.verified or "—" }}</td>
+    <td>
+      {% if not feed.enabled %}<span class="chip">paused</span>
+      {% elif now and now.failed %}<span class="chip stop">failed</span>
+      {% elif now and now.n == 0 %}<span class="chip warn">quiet</span>
+      {% elif now %}<span class="chip ok">ok</span>
+      {% else %}<span class="chip">—</span>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Model calls</h2>
+{% if calls %}
+<table class="grid">
+  <thead><tr><th>Stage</th><th>Model</th><th class="n">Calls</th><th class="n">Retries</th><th class="n">Total</th></tr></thead>
+  <tbody>
+  {% for stage, row in calls.items() %}
+  <tr><td>{{ stage }}</td><td class="mono">{{ row.model }}</td>
+      <td class="n">{{ row.calls }}</td>
+      <td class="n">{{ row.retries }}</td>
+      <td class="n">{{ (row.ms / 60000) | round(1) }} min</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="sub">No model calls recorded for this run.</p>
+{% endif %}
+
+<h2>The funnel</h2>
+<div class="funnel">
+  {% for step in funnel %}
+  <span class="lbl">{{ step.label }}</span>
+  <div class="track"><div class="fill" style="width: {{ step.pct }}%"></div></div>
+  <span class="n">{{ step.n }}</span>
+  {% endfor %}
+</div>
+{% if run %}<p class="sub"><a href="/review/{{ run.week }}">Every dropped item with its reason →</a></p>{% endif %}
+
+<h2>Grounding</h2>
+<p class="sub">
+  {{ grounding.article }} from the story's own page ·
+  {{ grounding.search }} from other outlets ·
+  {{ grounding.none }} written from the headline alone
+  {% if grounding.blocked %} · {{ grounding.blocked }} left thin because searching was blocked{% endif %}
+</p>
+
+<h2>Run history</h2>
+<table class="grid">
+  <thead><tr><th>Week</th><th>Started</th><th>Mode</th><th>Status</th><th class="n">Fetched</th><th class="n">Entries</th><th class="n">Words</th><th>Note</th></tr></thead>
+  <tbody>
+  {% for past in runs %}
+  <tr>
+    <td>{{ past.week }}</td>
+    <td class="sub">{{ past.started[:16] | replace("T", " ") }}</td>
+    <td>{% if past.dry %}<span class="chip">dry</span>{% else %}<span class="chip ok">live</span>{% endif %}</td>
+    <td>
+      {% if past.status == "running" and not running %}<span class="chip stop">did not finish</span>
+      {% elif past.status == "ok" %}<span class="chip ok">ok</span>
+      {% else %}<span class="chip warn">{{ past.status }}</span>{% endif %}
+    </td>
+    <td class="n">{{ past.fetched or "—" }}</td>
+    <td class="n">{{ past.entries or "—" }}</td>
+    <td class="n">{{ "{:,}".format(past.words) if past.words else "—" }}</td>
+    <td class="sub">{{ past.note or "" }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
