@@ -269,6 +269,29 @@ details.row.i > summary { border-left: 3px solid var(--rule); }
 .legend { font-size: .78rem; color: var(--muted); margin: .5rem 0 0; }
 .legend .stamp { margin-right: .3rem; }
 
+@media (max-width: 34rem) {
+  main { padding: 1.5rem .9rem 4rem; }
+  .verdict { grid-template-columns: 1.2rem 1fr; gap: .1rem .6rem; }
+  .verdict .hd { font-size: 1.15rem; }
+  /* The summary spans are a header line and a message line, not five lines. */
+  details.row > summary { display: grid; grid-template-columns: max-content 1fr;
+                          gap: .1rem .6rem; padding-right: 2rem; }
+  details.row > summary .sev { grid-row: 1; min-width: 0; }
+  details.row > summary .mod { grid-row: 1; min-width: 0; }
+  details.row > summary .times,
+  details.row > summary .src { grid-row: 3; grid-column: 1 / -1;
+                               margin-left: 0; padding-right: 0; }
+  details.row > summary > :not(.sev):not(.mod):not(.times):not(.src) {
+    grid-row: 2; grid-column: 1 / -1; }
+  .funnel { grid-template-columns: 1fr; gap: .1rem; }
+  .funnel .lbl { text-align: left; font-size: .78rem; letter-spacing: .06em;
+                 text-transform: uppercase; }
+  .funnel .n { text-align: left; }
+  .funnel .why { grid-column: 1; }
+  .stats > div { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .bar { font-size: .68rem; }
+}
+
 @media print {
   .bar { display: none; }
   details.sec > summary h2::after { content: none; }
@@ -284,17 +307,27 @@ details.row.i > summary { border-left: 3px solid var(--rule); }
 .verdict { border: 1px solid; border-left-width: 6px; padding: .85rem 1.1rem .95rem;
            margin: 1.5rem 0; display: grid; grid-template-columns: 1.6rem 1fr;
            gap: .1rem .8rem; }
-.verdict .ico { grid-row: 1 / span 3; font-size: 1.3rem; line-height: 1.3;
+/* The icon spans every row, and every other child is pinned to column 2.
+   Without both, a banner with more than three paragraphs auto-places the
+   later ones into the 1.6rem icon column and they wrap to one word a line.
+   min-width:0 lets the monospace evidence block scroll instead of forcing
+   the column wider than the screen. */
+.verdict .ico { grid-row: 1 / span 20; font-size: 1.3rem; line-height: 1.3;
                 font-style: normal; text-align: center; }
+.verdict > :not(.ico) { grid-column: 2; min-width: 0; }
 .verdict .hd { font-family: "Iowan Old Style", Palatino, Georgia, serif;
                font-size: 1.32rem; line-height: 1.2; margin: 0; }
 .verdict .say { margin: .25rem 0 0; font-size: .92rem; }
 .verdict .act { margin: .6rem 0 0; font-size: .88rem; }
 .verdict .act b { font-weight: 700; }
-.verdict .ev { margin: .55rem 0 0; padding: .5rem .7rem; border-radius: 2px;
+/* Log lines wrap with a hanging indent rather than scrolling sideways. On a
+   wide screen they fit and nothing wraps; on a phone a clipped line hides the
+   one word that says which failure this was. */
+.verdict .ev { margin: .55rem 0 0; padding: .5rem .7rem .55rem 2.4rem;
+               border-radius: 2px; text-indent: -1.7rem;
                font-family: ui-monospace, "SF Mono", Menlo, monospace;
-               font-size: .78rem; line-height: 1.5; overflow-x: auto;
-               white-space: pre; }
+               font-size: .76rem; line-height: 1.55;
+               white-space: pre-wrap; overflow-wrap: anywhere; }
 .verdict .meta { margin: .5rem 0 0; font-size: .78rem; }
 .verdict.green { border-color: var(--ok); background: var(--ok-soft); }
 .verdict.green .hd, .verdict.green .ico { color: var(--ok); }
@@ -336,12 +369,9 @@ details.row.i > summary { border-left: 3px solid var(--rule); }
   <div class="verdict amber">
     <i class="ico" aria-hidden="true">▲</i>
     <p class="hd">Worth a look</p>
-    <p class="say">The run finished and the briefing is fine. Four things went
-      differently than usual and the pipeline handled all of them itself.</p>
-    <p class="act">Nothing to fix. <b>8 of 60 stories were written from a headline
-      and a one-line summary</b>, six of them Economist items, which is the one
-      worth knowing about — see <a href="#ground">Grounding</a>. The rest were a
-      timeout and two re-asks that all succeeded on the second try.</p>
+    <p class="say">Nothing to fix. <b>8 of 60 stories were written from a headline
+      alone</b>, six of them Economist — see <a href="#ground">Grounding</a>. The
+      other three warnings were retries that succeeded.</p>
     <p class="meta">2026-W37 · finished Fri 11 Sep 07:51 · <a href="#attention">All four, with context</a></p>
   </div>
 
@@ -357,9 +387,7 @@ details.row.i > summary { border-left: 3px solid var(--rule); }
 
     <div class="verdict green">
       <i class="ico" aria-hidden="true">●</i>
-      <p class="hd">All clear</p>
-      <p class="say">The run finished, every feed answered, every model call
-        succeeded, and nothing was written from a headline alone.</p>
+      <p class="hd">All good</p>
       <p class="meta">2026-W36 · finished Fri 4 Sep 07:48 · 60 entries · 8,397 words · <a href="/review/2026-W36">Read the week</a></p>
     </div>
 

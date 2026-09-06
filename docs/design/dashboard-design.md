@@ -166,7 +166,7 @@ whether reading them was necessary.
 
 | | When | What it says |
 |---|---|---|
-| **Green — All clear** | Neither of the below, and the last run finished | The run finished, and one line of what it produced |
+| **Green — All good** | Neither of the below, and the last run finished | Two words and the week's numbers. Nothing to read |
 | **Amber — Worth a look** | The pipeline hit something and worked around it | What happened, and explicitly that there is nothing to fix |
 | **Red — Needs you** | The pipeline could not do it, and stopped or dropped something | The error, the evidence, and the command that fixes it |
 
@@ -200,6 +200,17 @@ from a warning.** Four parts, all of them required:
 **Colour is never the only carrier.** Each state has its own word, its own
 shape, and its own icon, so the banner reads the same to someone who cannot
 distinguish the three colours, in a printout, or in either theme.
+
+**Length is part of the state.** Green is two words and a line of numbers —
+there is nothing to read, and making the reader read anyway trains them to skip
+the banner, which is the one thing it cannot afford. Amber earns two sentences.
+Only red gets the full payload.
+
+**It is read on a phone.** The evidence block wraps with a hanging indent rather
+than scrolling sideways: a clipped log line hides the one word that says which
+failure this was, and `Connection refused` truncated to `Connection` is worse
+than useless. On a narrow screen the row summaries in Needs attention become two
+lines rather than five, and the funnel stacks.
 
 ### Provenance
 
