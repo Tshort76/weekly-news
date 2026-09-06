@@ -277,6 +277,36 @@ details.row.i > summary { border-left: 3px solid var(--rule); }
   thead { display: table-header-group; }
   tr { break-inside: avoid; }
 }
+
+/* Verdict banner — the first thing on the page, and the only thing that
+   claims your attention. Colour is never the only carrier: each state has its
+   own word, its own icon and its own shape. */
+.verdict { border: 1px solid; border-left-width: 6px; padding: .85rem 1.1rem .95rem;
+           margin: 1.5rem 0; display: grid; grid-template-columns: 1.6rem 1fr;
+           gap: .1rem .8rem; }
+.verdict .ico { grid-row: 1 / span 3; font-size: 1.3rem; line-height: 1.3;
+                font-style: normal; text-align: center; }
+.verdict .hd { font-family: "Iowan Old Style", Palatino, Georgia, serif;
+               font-size: 1.32rem; line-height: 1.2; margin: 0; }
+.verdict .say { margin: .25rem 0 0; font-size: .92rem; }
+.verdict .act { margin: .6rem 0 0; font-size: .88rem; }
+.verdict .act b { font-weight: 700; }
+.verdict .ev { margin: .55rem 0 0; padding: .5rem .7rem; border-radius: 2px;
+               font-family: ui-monospace, "SF Mono", Menlo, monospace;
+               font-size: .78rem; line-height: 1.5; overflow-x: auto;
+               white-space: pre; }
+.verdict .meta { margin: .5rem 0 0; font-size: .78rem; }
+.verdict.green { border-color: var(--ok); background: var(--ok-soft); }
+.verdict.green .hd, .verdict.green .ico { color: var(--ok); }
+.verdict.amber { border-color: var(--warn); background: var(--warn-soft); }
+.verdict.amber .hd, .verdict.amber .ico { color: var(--warn); }
+.verdict.red   { border-color: var(--stop); background: var(--stop-soft); }
+.verdict.red .hd, .verdict.red .ico { color: var(--stop); }
+.verdict .ev { background: color-mix(in srgb, var(--bg) 55%, transparent); }
+.verdict .meta, .verdict .act { color: var(--muted); }
+.states { border: 1px dashed var(--rule); padding: .2rem 1.1rem 1.1rem;
+          margin: 1.5rem 0; }
+.states > p { font-size: .82rem; color: var(--faint); margin: .9rem 0 0; }
 </style>
 </head>
 <body>
@@ -302,10 +332,67 @@ details.row.i > summary { border-left: 3px solid var(--rule); }
   <h1>Digest Health</h1>
   <p class="byline">Is the thing healthy, and if not, which part is wrong · <code>GET /health</code> · numbers are illustrative, drawn from the shape of a real week</p>
 
+  <!-- 0 · The verdict --------------------------------------------------- -->
+  <div class="verdict amber">
+    <i class="ico" aria-hidden="true">▲</i>
+    <p class="hd">Worth a look</p>
+    <p class="say">The run finished and the briefing is fine. Four things went
+      differently than usual and the pipeline handled all of them itself.</p>
+    <p class="act">Nothing to fix. <b>8 of 60 stories were written from a headline
+      and a one-line summary</b>, six of them Economist items, which is the one
+      worth knowing about — see <a href="#ground">Grounding</a>. The rest were a
+      timeout and two re-asks that all succeeded on the second try.</p>
+    <p class="meta">2026-W37 · finished Fri 11 Sep 07:51 · <a href="#attention">All four, with context</a></p>
+  </div>
+
   <p class="legend">Every panel carries its provenance:
     <span class="stamp">exists</span> readable from <code>state.db</code>, <code>feeds.toml</code> or <code>config.toml</code> today ·
     <span class="stamp unwired">unwired</span> the table exists but nothing writes it — a fix, not a schema change ·
     <span class="stamp todo">requires</span> needs the <code>run_events</code> table proposed in the design.</p>
+
+  <div class="states">
+    <p style="margin-top:1rem"><b style="color:var(--fg)">Mockup only:</b> the page shows one banner, the one that
+      matches the state. The other two are here so all three can be judged
+      together.</p>
+
+    <div class="verdict green">
+      <i class="ico" aria-hidden="true">●</i>
+      <p class="hd">All clear</p>
+      <p class="say">The run finished, every feed answered, every model call
+        succeeded, and nothing was written from a headline alone.</p>
+      <p class="meta">2026-W36 · finished Fri 4 Sep 07:48 · 60 entries · 8,397 words · <a href="/review/2026-W36">Read the week</a></p>
+    </div>
+
+    <div class="verdict red">
+      <i class="ico" aria-hidden="true">■</i>
+      <p class="hd">Needs you</p>
+      <p class="say">Friday's scheduled run stopped after 41 of 53 entries and
+        published a briefing marked <code>[PARTIAL]</code>. The writing model
+        stopped answering and five retries did not bring it back.</p>
+      <p class="ev">07:38:02  WARNING  llm  TimeoutError on attempt 1/5 for gemma3:27b, waiting 10s
+07:41:19  WARNING  llm  TimeoutError on attempt 4/5 for gemma3:27b, waiting 80s
+07:43:51  ERROR    llm  gemma3:27b gave up after 5 attempts: [Errno 61] Connection refused
+07:43:51  ERROR    synthesize  entry 42/53 dropped, edition marked [PARTIAL]</p>
+      <p class="act"><b>Connection refused</b> means nothing was listening on
+        <code>http://localhost:11434</code> — Ollama was not running, rather than
+        being slow. Check it is up, then <b>re-run the week</b>: nothing was
+        marked seen, so a re-run starts from the same 306 headlines.
+        <br>If it happens again on a Friday morning, the launch agent starts
+        before Ollama does; the fix is a retry in the plist, not here.</p>
+      <p class="meta">2026-W37 · started Fri 11 Sep 07:00 · stopped 07:43 in <b>write</b>, entry 42 of 53
+        · <a href="#attention">4 warnings, 2 errors</a> · <a href="#history">History</a> · <code>logs/2026-W37.log</code></p>
+    </div>
+
+    <p><b style="color:var(--fg)">The rule.</b> Red is <em>the pipeline could not
+      do it and stopped or dropped something</em>: a run that never finished, a
+      <code>[PARTIAL]</code> edition, credentials rejected, quota exhausted, the
+      search backend blocked for the rest of a run, a feed that has failed three
+      runs running, or no run at all in a week the schedule was on. Amber is
+      <em>it worked around it</em>: a retry that succeeded, an item left thin, a
+      feed quiet once, an acronym in the spoken check. Green is neither, and the
+      last run finished. Every red state names the file and the command; that is
+      what makes it different from a warning.</p>
+  </div>
 
   <!-- 1 · Last run ------------------------------------------------------ -->
   <details class="sec" open id="run">

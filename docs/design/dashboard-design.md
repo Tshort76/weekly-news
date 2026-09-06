@@ -152,6 +152,64 @@ Retention is not designed in. At roughly 400 rows a run and 52 runs a year the
 table is under 25,000 rows; a `DELETE … WHERE week < ?` behind a "keep N
 weeks" setting can come later if it ever matters.
 
+## Panel 0 — the verdict banner
+
+Added 2026-09-06 at the owner's request: *"flag things that need me to take
+action at the top of the page."*
+
+It is the only thing on the page that claims attention, and everything below it
+is for after you have decided the answer is not "nothing". Without it the
+dashboard is seven panels of numbers that all have to be read before you know
+whether reading them was necessary.
+
+**One banner, three states, and the state is computed rather than stored.**
+
+| | When | What it says |
+|---|---|---|
+| **Green — All clear** | Neither of the below, and the last run finished | The run finished, and one line of what it produced |
+| **Amber — Worth a look** | The pipeline hit something and worked around it | What happened, and explicitly that there is nothing to fix |
+| **Red — Needs you** | The pipeline could not do it, and stopped or dropped something | The error, the evidence, and the command that fixes it |
+
+**The line between amber and red is whether the pipeline recovered**, not how
+alarming the message sounds. A timeout that succeeded on retry is amber even
+though it logged a scary word. A `[PARTIAL]` edition is red even though the
+briefing was still published, because entries were silently dropped and nobody
+was told.
+
+Red is any of: a run that never finished (`status='running'` with no live job),
+an edition marked `[PARTIAL]`, credentials rejected, quota exhausted, the search
+backend blocked for the rest of a run, a feed that has failed three consecutive
+runs, or no run at all in a week the schedule was on. Amber is any WARNING that
+resolved, an item left thin, a feed quiet once, or a spoken-check note. Green is
+the absence of both.
+
+**A red banner carries a debugging payload, and that is what distinguishes it
+from a warning.** Four parts, all of them required:
+
+1. **What stopped**, in a sentence, naming the stage and how far it got.
+2. **The evidence** — the actual log lines, in a monospace block, including the
+   warnings that led up to the error. `Connection refused` is a different
+   problem from `timed out`, and the reader should not have to open a file to
+   learn which one it was.
+3. **What to do**, concretely. Not "check the model" but "nothing was listening
+   on `http://localhost:11434` — Ollama was not running; nothing was marked
+   seen, so a re-run starts from the same 306 headlines."
+4. **Where to look** — the week, the stage, the log file path, links to the
+   panels that carry the detail.
+
+**Colour is never the only carrier.** Each state has its own word, its own
+shape, and its own icon, so the banner reads the same to someone who cannot
+distinguish the three colours, in a printout, or in either theme.
+
+### Provenance
+
+`exists` after the two wiring fixes, for everything except the run's own
+warnings. `[PARTIAL]` and `quiet` are already on `editions`; a run that did not
+finish is `runs.status` once every run writes it; the feed-failed-three-times
+rule and the WARNING/ERROR list are queries over `run_events`. The banner
+computes at page load and stores nothing — there is no banner state to go
+stale, and no acknowledgement to forget to clear.
+
 ## The panels
 
 Order on the page is the order the reader needs them: status, then what needs
