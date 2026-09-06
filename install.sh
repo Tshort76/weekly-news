@@ -27,7 +27,7 @@ else
   echo "Ollama from ollama.com first and run this again."
 fi
 
-uv tool install "weekly-news[$EXTRAS]"
+uv tool install "weekly-news[$EXTRAS] @ git+https://github.com/Tshort76/weekly-news"
 
 echo
 echo "Installed. Opening the app..."

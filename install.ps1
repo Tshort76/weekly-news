@@ -20,7 +20,7 @@ if (Get-Command ollama -ErrorAction SilentlyContinue) {
   Write-Host "install Ollama from ollama.com first and run this again."
 }
 
-uv tool install "weekly-news[$extras]"
+uv tool install "weekly-news[$extras] @ git+https://github.com/Tshort76/weekly-news"
 
 Write-Host ""
 Write-Host "Installed. Opening the app..."

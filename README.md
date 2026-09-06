@@ -41,9 +41,13 @@ That installs `uv` if it is missing, notices whether you have Ollama, installs
 the tool and opens the app. Or do it yourself:
 
 ```bash
-uv tool install "weekly-news[ollama,ui]"  # or [anthropic] / [gemini]
-digest open                               # setup and everything else, in a browser
+uv tool install "weekly-news[ollama,ui] @ git+https://github.com/Tshort76/weekly-news"   # or [anthropic] / [gemini]
+digest open                                         # setup and everything else, in a browser
 ```
+
+It installs from this repository rather than from a package index — there is no
+release yet, and the git URL is the whole distribution. `uv` handles it the same
+way either way.
 
 `digest open` serves the app on `127.0.0.1:8765` and opens it. Nothing listens
 anywhere a second machine could reach it: one person, one machine, no accounts.
@@ -54,7 +58,7 @@ progress is buffered by the job, not by the page.
 Prefer the terminal? Everything works without the browser:
 
 ```bash
-uv tool install "weekly-news[ollama]"
+uv tool install "weekly-news[ollama] @ git+https://github.com/Tshort76/weekly-news"
 digest init                               # press Enter through it if you like
 digest run --dry-run
 ```
@@ -73,6 +77,17 @@ you run two lenses out of one install.
 | `lens.toml` | The same lens as form fields, for the setup UI. |
 | `config.toml` | Plumbing: models, output, schedule. `[advanced]` holds the measured settings. |
 | `feeds.toml` | Where the headlines come from. |
+
+To update later, install it again the same way with `--reinstall`:
+
+```bash
+uv tool install --reinstall "weekly-news[ollama,ui] @ git+https://github.com/Tshort76/weekly-news"
+```
+
+`--reinstall` rather than `--force`, and it matters. Installing from git with no
+version bump lets `uv` serve a cached build, so `--force` can reinstall the copy
+you already had and tell you nothing. If you suspect that has happened, `uv cache
+clean weekly-news` first.
 
 Already running this from a checkout? `digest import` brings your `digest.toml`,
 your feeds and — importantly — your record of what you have already seen across into

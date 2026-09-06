@@ -65,10 +65,19 @@ a Mac. `schedule.Schtasks` generates the right argument list, including quoting 
 path with a space in it, and no one has run it on Windows. The plan budgeted two
 days for this and expected surprises; that budget is unspent.
 
-**No release.** Nothing is on PyPI, so the one-line installers name a package
-that does not resolve yet, and there is no Homebrew formula or winget manifest —
-both need a released tarball and its hash. `uv tool install` from a checkout
-works today.
+**Distribution is the git URL, not a package index.** The plan ended at a PyPI
+release; the owner decided on 2026-09-06 to skip it for now. The installers and
+the README install from `git+https://github.com/Tshort76/weekly-news`, which `uv`
+handles exactly as it handles an index, so nothing about the install line is
+worse for it — the repository is public and it is one command either way.
+
+Two things this costs, both accepted. There is no Homebrew formula or winget
+manifest, since both need a released tarball and its hash. And there is no
+version to bump between installs, which means `uv` can serve a cached build:
+`uv tool install --force` reinstalls what you already had and says nothing, so
+an update is `--reinstall`, and `uv cache clean weekly-news` when even that looks
+stale. That bit twice while migrating the owner's own setup, once with the
+installed app silently a commit behind.
 
 **The bundle was not built.** A signed, notarized macOS app was always
 conditional on the terminal install line being what stops people, and nobody has
