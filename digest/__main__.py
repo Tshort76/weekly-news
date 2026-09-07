@@ -126,8 +126,14 @@ def _report(result: pipeline.RunResult) -> None:
         print("  PARTIAL      some items could not be written")
     if edition.quiet:
         print("  quiet week   nothing met the bar")
+    if not result.files:
+        return
+    # The last thing on screen should be where the files are: a run whose output
+    # you cannot find is a run that did not happen.
+    folder = next(iter(result.files.values())).parent
+    print(f"\nWritten to {folder}")
     for ext, path in sorted(result.files.items()):
-        print(f"  {ext:<12} {path}")
+        print(f"  {ext:<5} {path.name}")
 
 
 def doctor(cfg) -> int:
