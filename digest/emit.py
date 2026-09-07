@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 from .config import Config
@@ -95,7 +96,20 @@ blockquote {
 
 
 def week_stem(week: str) -> str:
-    return f"digest-{week}"
+    """The filename for a week: `digest-2026-08-31`, the Monday it starts on.
+
+    The ISO key `2026-W36` stays the identity everywhere else — the state store,
+    the URLs, the run records — because it is unambiguous and sorts. It just
+    makes a poor filename: nobody reads a week number and knows what fortnight
+    they are looking at, and a folder of them cannot be scanned by eye. A
+    malformed week falls back to the key rather than raising, since a bad
+    filename is not worth losing a written edition over.
+    """
+    try:
+        monday = datetime.strptime(f"{week}-1", "%G-W%V-%u").date()
+    except ValueError:
+        return f"digest-{week}"
+    return f"digest-{monday.isoformat()}"
 
 
 def _transition(previous_region: str | None, region: str) -> str:

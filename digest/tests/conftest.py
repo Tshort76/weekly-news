@@ -36,6 +36,21 @@ def no_network(monkeypatch):
     monkeypatch.setattr(socket.socket, "connect", refuse)
 
 
+@pytest.fixture(autouse=True)
+def no_real_output_dir(tmp_path, monkeypatch):
+    """A test can never write an edition into the real ~/digests.
+
+    RunCfg.output_dir defaults to ~/digests, so a test that builds a bare
+    Config() to isolate something else — the state store, say — silently keeps
+    the real folder and emits into it. That is what happened: the run-recording
+    tests isolated state_dir, one of them ran the pipeline to completion, and
+    every suite run dropped a quiet-week edition in the author's own digests
+    folder. Same reasoning as no_network above: make it a property rather than
+    a thing every new test has to remember.
+    """
+    monkeypatch.setattr(RunCfg, "output_dir", tmp_path / "default-out")
+
+
 @pytest.fixture
 def digest_home(tmp_path, monkeypatch):
     """An install of one's own: config and data under tmp_path."""

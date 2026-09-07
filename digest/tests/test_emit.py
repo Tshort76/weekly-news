@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 
-from digest.emit import DIVIDER, emit, render_md, render_txt, spoken_part
+from digest.emit import DIVIDER, emit, render_md, render_txt, spoken_part, week_stem
 from digest.models import Edition, Entry
 
 
@@ -123,3 +123,20 @@ def test_a_plain_title_keeps_its_comma():
     edition = _edition()
     edition.title = "The weekly digest"
     assert "The weekly digest, week" in render_txt(edition)
+
+
+def test_the_filename_is_the_monday_the_week_starts_on():
+    # The ISO key stays the identity; only the filename changes.
+    assert week_stem("2026-W36") == "digest-2026-08-31"
+    assert week_stem("2026-W37") == "digest-2026-09-07"
+
+
+def test_a_week_that_straddles_new_year_takes_the_december_monday():
+    # 2026-W01 starts on 29 December 2025, which is the point of using the date.
+    assert week_stem("2026-W01") == "digest-2025-12-29"
+
+
+def test_an_unparseable_week_keeps_the_key_rather_than_raising():
+    # Week 53 does not exist in 2027. A bad filename must not lose an edition.
+    assert week_stem("2027-W53") == "digest-2027-W53"
+    assert week_stem("nonsense") == "digest-nonsense"

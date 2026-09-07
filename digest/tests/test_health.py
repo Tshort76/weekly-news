@@ -192,9 +192,9 @@ def test_a_dry_run_is_marked_as_one(digest_home, tmp_path, monkeypatch):
 
 def test_a_run_that_finishes_says_ok_and_carries_its_counts(digest_home, tmp_path, monkeypatch):
     from digest import pipeline
-    from digest.config import Config
+    from digest.config import Config, RunCfg
 
-    cfg = Config(state_dir=tmp_path)
+    cfg = Config(run=RunCfg(output_dir=tmp_path / "out"), state_dir=tmp_path)
     with State(cfg.db_path) as state:
         pipeline.run(cfg, state, week="2026-W37")
         run = state.recent_runs()[0]
