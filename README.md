@@ -74,7 +74,7 @@ you run two lenses out of one install.
 | File | What it is |
 | --- | --- |
 | `lens.md` | The editorial lens. **This is the product.** Edit it. |
-| `lens.toml` | The same lens as form fields, for the setup UI. |
+| `lens.toml` | The same lens as form fields, for the setup UI — and the only place a `[gate]` can live. |
 | `config.toml` | Plumbing: models, output, schedule. `[advanced]` holds the measured settings. |
 | `feeds.toml` | Where the headlines come from. |
 
@@ -126,6 +126,36 @@ disagreement into an example with one button.
 If you would rather write it than fill in a form, `lens.md` is a plain markdown
 file and the app notices when you have edited it by hand — it shows you the diff
 before the form would overwrite anything.
+
+#### When prose in the lens will not stick
+
+Some rules a local model reads, agrees with, and then ignores. A rule of the
+shape "never anything from *there*, unless *this*" is the reliable example: it
+was written into the lens three different ways and measured each time — as a
+bias note, in the never-list, and as a gate above the fit scale — and every
+version let every targeted story through. The model even said in its own
+`reason` field that the rule applied. Saying it louder does not help; the model
+is not filling in a sentence, it is filling in fields.
+
+So a lens may instead ask one **yes/no question as a field**, in `lens.toml`:
+
+```toml
+[gate]
+question = "Is a great power — the US, China, Russia, the EU, India — a party to what changed?"
+regions = ["africa", "latam"]
+```
+
+The question is shown to the classifier verbatim and answered as a required
+boolean alongside `fit` and `region`. It is decisive only for the regions listed:
+an item from one of them answered `false` is dropped. Everywhere else the answer
+is collected and ignored, deliberately — a gate that fires everywhere is a second
+fit scale in disguise.
+
+**No preset ships one, and none ever will.** Which parts of the world are worth
+your attention is exactly the sort of position that should not arrive as somebody
+else's default, so a gate is something you add to your own lens and nobody
+inherits. A missing answer never drops an item either: `audit` re-runs selection
+over stored rows, and only an explicit `false` excludes anything.
 
 ### The commands
 
