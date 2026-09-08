@@ -151,15 +151,24 @@ an item from one of them answered `false` is dropped. Everywhere else the answer
 is collected and ignored, deliberately — a gate that fires everywhere is a second
 fit scale in disguise.
 
-**Measured on 2026-09-08, and the measurement did not settle anything.** On the
-author's lens and labels, adding the boolean moved exact fit from 47/100 to
-44/100 and turned 18 wrongly-dropped stories into 22 — but that baseline lens was
-itself under-scoring everything, so the stories the gate was written to catch had
-already fallen below the fit threshold and it was never asked about them. The one
-time it did fire was on a story the labels say to keep. Both numbers are on a
-broken baseline and neither is the gate's real cost or its real benefit. It is in
-the app because the mechanism is cheap to carry and is the right shape; it is not
-in anyone's lens, including the author's.
+**The premise above is weaker than it looked, and the honest version is this.**
+Two of the three "prose does not bind" runs returned statistics byte-identical to
+a run with no rule in the prompt at all — every figure, including the list of
+titles. Three different prompts do not produce one identical output; those two
+runs almost certainly never had the rule in them. The prompt directory they used
+is gone, so it cannot be checked, only inferred.
+
+Re-measured properly, **prose binds about halfway**. The same rule placed once in
+the never-list, in the measured bytes, took wrongly-let-in from 28 to 18 for one
+extra wrongly-dropped story (three runs, identical each time). What it does not
+catch is a precise residual: African *business and commodity* stories — a telecoms
+firm seeking banking licences, a platinum miner courting bidders, cocoa and El
+Niño. The clause names "economy, business" and the model applies it to politics,
+epidemics and aid only.
+
+That residual is what a gate is shaped for, since it keys on region rather than on
+the model agreeing about what counts as business. It has not yet been measured
+against it. No preset ships one either way.
 
 **No preset ships one, and none ever will.** Which parts of the world are worth
 your attention is exactly the sort of position that should not arrive as somebody
@@ -551,6 +560,22 @@ cannot check.
 `scripts/eval_rubric.py` is the other half of testing, and the half that matters for
 output quality: the unit tests prove the machinery works, the rubric eval proves the
 model applies the lens. Re-run it whenever you edit the rubric or change models.
+
+**Run it more than once before you believe a small difference.** `seed` and
+`temperature` are pinned and most repeats come back byte-identical, but not all
+of them: on 2026-09-08 two runs of the *same* lens — verified byte-identical
+prompt and response schema — differed by 7 items on wrongly-let-in, and the odd
+one out was the run that happened to follow a different lens in the same session.
+A 30B mixture-of-experts model under a server that batches and reuses cache
+across requests is not reproducible from the caller's side, whatever the seed
+says. Three repeats settled it there. Treat a delta of a few points from a single
+pair of runs as unproven, and be most suspicious of a comparison where each arm
+ran once, back to back.
+
+The corollary bites harder in the other direction. Two prompts that produce
+*identical* statistics — every count, every title — are almost certainly the same
+prompt. If a rubric edit changes nothing at all, suspect the edit never reached
+the model before concluding the model ignored it. That mistake cost a day here.
 
 The provider layer is tested against fake SDK clients that record what would have gone
 on the wire, so the request shape, the pacing, and the rate-limit handling are all
