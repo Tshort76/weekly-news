@@ -353,9 +353,20 @@ def snapshot(cfg, state) -> dict:
 
     files = _files_for(cfg, emit_stage.week_stem(run["week"] if run else this_week))
 
+    classified = state.load_classified(run["week"]) if run else []
     return {
         "verdict": {"state": found.state, "headline": found.headline,
                     "summary": found.summary, "meta": found.meta},
+        "funnel": funnel(run or {}, classified,
+                         (run or {}).get("selected") or 0,
+                         (run or {}).get("entries") or 0) if run else [],
+        "stages": stage_times(events),
+        "calls": calls(events),
+        "grounding": grounding(events),
+        "feeds_this_run": feeds_this_run(events),
+        "recent": [{"week": r["week"], "status": r["status"],
+                    "entries": r.get("entries"), "finished": r.get("finished")}
+                   for r in state.recent_runs(6)],
         "findings": [{"text": f.text, "detail": f.detail} for f in found.findings][:6],
         "run": {
             "week": run["week"], "status": run["status"],
