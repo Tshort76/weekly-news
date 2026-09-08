@@ -250,7 +250,7 @@ def test_ordinary_chatter_is_not_recorded(digest_home, tmp_path):
 
 
 def _snapshot(tmp_path, monkeypatch):
-    from digest import health
+    from digest import health, pipeline
     from digest.config import Config, RunCfg
 
     out = tmp_path / "out"
@@ -286,7 +286,7 @@ def test_a_snapshot_finds_the_newest_edition_when_the_week_has_none(
     digest_home, tmp_path, monkeypatch
 ):
     """A fresh install has editions written before it began recording runs."""
-    from digest import health
+    from digest import health, pipeline
     from digest.config import Config, RunCfg
 
     out = tmp_path / "out"
@@ -305,9 +305,33 @@ def test_a_snapshot_survives_a_config_with_no_schedule_section(
     digest_home, tmp_path, monkeypatch
 ):
     """A status display that cannot read a schedule says Friday and carries on."""
-    from digest import health
+    from digest import health, pipeline
     from digest.config import Config, RunCfg
 
     cfg = Config(run=RunCfg(output_dir=tmp_path / "out"), state_dir=tmp_path)
     with State(cfg.db_path) as state:
         assert health.snapshot(cfg, state)["schedule"] == {"day": "friday", "hour": 7}
+
+
+def test_a_dry_run_does_not_count_as_having_done_the_week(tmp_path):
+    """The plugin reads this to decide whether to fire.
+
+    `digest run --dry-run` deliberately leaves the state store alone, but it
+    still records a run — so counting it here would mean rehearsing a week on a
+    Tuesday silently cancels Friday's real briefing, with nothing in the menu or
+    the logs to say why.
+    """
+    from digest import health, pipeline
+    from digest.config import Config
+    from digest.state import State
+
+    cfg = Config(state_dir=tmp_path)
+    with State(tmp_path / "state.db") as state:
+        week = pipeline.iso_week()
+        started = state.start_run(week, dry=True)
+        state.finish_run(week, started, "ok", fetched=10, entries=3)
+        assert health.snapshot(cfg, state)["completed_this_week"] is False
+
+        started = state.start_run(week)
+        state.finish_run(week, started, "ok", fetched=10, entries=3)
+        assert health.snapshot(cfg, state)["completed_this_week"] is True

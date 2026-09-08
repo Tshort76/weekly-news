@@ -348,8 +348,13 @@ def snapshot(cfg, state) -> dict:
     found = verdict(run, events, edition, running, history)
 
     this_week = pipeline.iso_week()
+    # A dry run does not count as having done the week. The SwiftBar plugin is
+    # the scheduler now and reads this field to decide whether to fire, so
+    # counting one would mean `digest run --dry-run` on a Tuesday silently
+    # cancels Friday's briefing — and nothing anywhere would say why.
     done = next((r for r in state.recent_runs(20)
-                 if r["week"] == this_week and r["status"] in ("ok", "partial")), None)
+                 if r["week"] == this_week and r["status"] in ("ok", "partial")
+                 and not r.get("dry")), None)
 
     files = _files_for(cfg, emit_stage.week_stem(run["week"] if run else this_week))
 
