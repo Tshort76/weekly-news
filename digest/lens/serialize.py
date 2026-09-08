@@ -60,6 +60,16 @@ def to_toml(spec: LensSpec) -> str:
         f"extra = {_scalar(spec.bias_extra)}",
         "",
     ]
+    if spec.gate:
+        # Without this the first form save silently deletes a gate the user
+        # added by hand — the form round-trips through here, and what it does
+        # not know about it does not write back.
+        lines += [
+            "[gate]",
+            f"question = {_scalar(spec.gate.question)}",
+            f"regions = {_scalar(list(spec.gate.regions))}",
+            "",
+        ]
     if spec.feeds:
         for feed in spec.feeds:
             lines.append("[[feeds]]")

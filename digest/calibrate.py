@@ -54,7 +54,18 @@ class Report:
         return self.total - len(self.false_keeps) - len(self.false_drops)
 
 
-def score(results: list[Classified], labels: dict[str, dict]) -> Report:
+def score(results: list[Classified], labels: dict[str, dict], lens=None) -> Report:
+    """`lens` is only needed when it carries a gate.
+
+    Without it the keep/drop call here would be the fit threshold alone, while
+    the real pipeline also runs the gate — so a lens whose rule works would
+    still be reported as letting those items in. The labels themselves need no
+    equivalent: a person who does not want a story labels it a drop, and how
+    they arrived at that is not the model's business.
+    """
+    from .selection import gated_out  # noqa: PLC0415
+
+    gate = getattr(lens, "gate", None)
     report = Report(total=len(results))
     for c in results:
         label = labels.get(c.id)
@@ -71,7 +82,7 @@ def score(results: list[Classified], labels: dict[str, dict]) -> Report:
             report.novelty_ok += c.novelty == label["novelty"]
 
         want = kept(label["fit"], label.get("novelty", 0))
-        got = kept(c.fit, c.novelty)
+        got = kept(c.fit, c.novelty) and not gated_out(c, gate)
         report.wanted += want
         if got and not want:
             report.false_keeps.append(c.item.title)
@@ -183,7 +194,7 @@ def compare(items, labels: dict[str, dict], models: list[tuple[str, str]], cfg) 
         except Exception as exc:
             rows.append({"model": model, "provider": provider, "error": str(exc)[:200]})
             continue
-        report = score(results, labels)
+        report = score(results, labels, trial.lens)
         report.seconds = time.time() - started
         rows.append({"model": model, "provider": provider, "report": report})
     return rows

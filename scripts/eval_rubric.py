@@ -26,6 +26,7 @@ from digest import config as cfgmod  # noqa: E402
 from digest.classify import classify  # noqa: E402
 from digest.llm import Client  # noqa: E402
 from digest.models import Item  # noqa: E402
+from digest.selection import gated_out  # noqa: E402
 
 FIXTURES = ROOT / "digest" / "tests" / "fixtures"
 
@@ -70,6 +71,10 @@ def main() -> int:
     parser.add_argument("--config", default=str(ROOT / "digest.toml"))
     parser.add_argument("--prompts-dir",
                         help="score a different rubric.md — a compiled lens, say")
+    parser.add_argument("--lens-dir",
+                        help="a config directory holding lens.md and lens.toml — the "
+                             "installed lens, say. Needed for a lens with a gate: the "
+                             "question lives in the spec, which --prompts-dir cannot reach")
     parser.add_argument("--show", action="store_true", help="print every item, not just the misses")
     args = parser.parse_args()
 
@@ -85,9 +90,17 @@ def main() -> int:
         cfg.prompts_dir = Path(args.prompts_dir)
     if args.no_think:
         cfg.models.ollama_think = False
+    if args.lens_dir:
+        where = Path(args.lens_dir).expanduser()
+        cfg.lens_path = where / "lens.md"
+        cfg.lens_spec_path = where / "lens.toml"
+        cfg._lens_cache = None
 
     items, labels = load_labelled(args.labels)
-    print(f"provider {cfg.models.provider}  model {cfg.models.classify}  items {len(items)}\n")
+    gate = cfg.lens.gate
+    print(f"provider {cfg.models.provider}  model {cfg.models.classify}  items {len(items)}")
+    print(f"lens     {cfg.lens.name}" + ("  (gated)" if gate else ""))
+    print()
 
     started = time.time()
     results = classify(items, cfg, Client(cfg))
@@ -109,7 +122,7 @@ def main() -> int:
         novelty_ok += c.novelty == label["novelty"]
 
         want = kept(label["fit"], label["novelty"])
-        got = kept(c.fit, c.novelty)
+        got = kept(c.fit, c.novelty) and not gated_out(c, gate)
         if got and not want:
             false_keeps.append(c.item.title)
         if want and not got:
@@ -130,6 +143,13 @@ def main() -> int:
     print(f"let in wrongly    {len(false_keeps)}  <- these would appear in the digest")
     for title in false_keeps:
         print(f"    {title[:70]}")
+    if gate:
+        fired = [c.item.title for c in results
+                 if kept(c.fit, c.novelty) and gated_out(c, gate)]
+        print(f"gate dropped      {len(fired)}  <- would have been let in without it")
+        for title in fired:
+            print(f"    {title[:70]}")
+        print()
     print(f"dropped wrongly   {len(false_drops)}")
     for title in false_drops:
         print(f"    {title[:70]}")

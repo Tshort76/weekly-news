@@ -93,6 +93,31 @@ class Kinds:
 
 
 @dataclass(frozen=True)
+class Gate:
+    """One yes/no question the classifier must answer, and where it is decisive.
+
+    Prose in the rubric was measured three times and never bound: qwen3 read
+    "unless a great power is a party to it", agreed with it in its own `reason`
+    field, and kept the item anyway. A structured field is filled reliably where
+    a sentence in a thirty-line rubric is not, which is the same reason `region`
+    works — so a lens that needs a rule to actually hold asks for a boolean
+    rather than saying it louder.
+
+    `question` is shown to the model verbatim. `regions` names the regions the
+    answer is decisive for: an item in one of them answering `false` is dropped
+    at selection. Everywhere else the boolean is collected and ignored, which is
+    deliberate — a gate that fires globally is a second fit scale.
+
+    No preset ships one. It is an opt-in a person adds to their own lens.toml,
+    because "which parts of the world are worth my attention" is exactly the
+    kind of editorial position that must not arrive as somebody else's default.
+    """
+
+    question: str
+    regions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class LensSpec:
     name: str
     about: str
@@ -111,6 +136,10 @@ class LensSpec:
     regions: tuple[str, ...] = ()
     domains: tuple[str, ...] = ()
     feeds: tuple[dict, ...] = field(default_factory=tuple)
+    # Absent in every shipped preset. When None the prompt, the response
+    # schema and selection are byte-for-byte what they were before gates
+    # existed, which is what keeps a preset's measured score its own.
+    gate: Gate | None = None
 
     @staticmethod
     def from_toml(path: str | Path) -> "LensSpec":
@@ -129,6 +158,21 @@ class LensSpec:
                 unless=row.get("unless", ""),
             )
 
+        regions = tuple(raw.get("regions", ()))
+        gate = None
+        if raw.get("gate"):
+            gate = Gate(
+                question=raw["gate"]["question"],
+                regions=tuple(raw["gate"]["regions"]),
+            )
+            # A typo here would gate nothing at all, silently — the item's
+            # region simply never matches and every rule quietly passes.
+            unknown = [r for r in gate.regions if r not in regions]
+            if unknown:
+                raise ValueError(
+                    f"gate names regions this lens does not have: {unknown}"
+                )
+
         return LensSpec(
             name=raw["name"],
             about=raw["about"],
@@ -141,7 +185,8 @@ class LensSpec:
             mechanism_examples=tuple(raw.get("mechanism_examples", ())),
             high_interest=tuple(raw.get("bias", {}).get("high_interest", ())),
             bias_extra=raw.get("bias", {}).get("extra", ""),
-            regions=tuple(raw.get("regions", ())),
+            regions=regions,
             domains=tuple(raw.get("domains", ())),
             feeds=tuple(raw.get("feeds", ())),
+            gate=gate,
         )

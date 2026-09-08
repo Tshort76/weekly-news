@@ -93,3 +93,58 @@ def _cfg(contest_share: float = 0.20, max_items: int = 60):
     from digest.config import Config, RunCfg
 
     return Config(run=RunCfg(contest_share=contest_share, max_items=max_items))
+
+
+# --------------------------------------------------------------------- gate
+
+
+def _gated_cfg():
+    """A config whose lens carries a gate, as an opt-in lens.toml would."""
+    import dataclasses
+
+    from digest.lens import presets
+    from digest.lens.schema import Gate
+
+    cfg = _cfg()
+    spec = dataclasses.replace(
+        presets.load(presets.DEFAULT),
+        gate=Gate(question="Is a great power a party to it?", regions=("africa", "latam")),
+    )
+    cfg._lens_cache = spec
+    return cfg
+
+
+def test_the_gate_drops_a_gated_region_answered_no():
+    c = make_classified(fit=3, region="africa", gate=False)
+    kept, dropped = select([c], _gated_cfg())
+    assert kept == []
+    assert "gate (africa)" in dropped[0].reason
+
+
+def test_the_gate_keeps_a_gated_region_answered_yes():
+    """The Belt and Road case — the whole reason the rule is a gate, not a ban."""
+    kept, _ = select([make_classified(fit=3, region="africa", gate=True)], _gated_cfg())
+    assert len(kept) == 1
+
+
+def test_the_gate_ignores_a_region_it_does_not_name():
+    kept, _ = select([make_classified(fit=3, region="us", gate=False)], _gated_cfg())
+    assert len(kept) == 1
+
+
+def test_an_unanswered_gate_keeps_the_item():
+    """`audit` re-runs selection over rows stored before the field existed.
+
+    Dropping on a missing answer would retroactively empty every past edition,
+    which is a far worse failure than one story getting through.
+    """
+    kept, _ = select([make_classified(fit=3, region="africa", gate=None)], _gated_cfg())
+    assert len(kept) == 1
+
+
+def test_a_lens_with_no_gate_drops_nothing_for_one():
+    """Every item here would be gated out if the shipped lens had a gate."""
+    items = [make_classified(fit=3, region="africa", gate=False, item={"url": f"https://e.com/{n}"})
+             for n in range(3)]
+    kept, _ = select(items, _cfg())
+    assert len(kept) == 3

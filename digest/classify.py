@@ -17,6 +17,11 @@ log = logging.getLogger("digest.classify")
 # on, so the balance rule keeps working whatever a lens calls its own subject.
 KIND_SLOTS = ("core", "adjacent", "neither")
 
+# The response key a lens's gate question is answered in. Fixed, like the kind
+# slots: the lens supplies the question, never the field name, so nothing
+# downstream has to look up what this lens decided to call its own boolean.
+GATE_KEY = "gate"
+
 
 def enum_line(words) -> str:
     """The literal the prompt shows: \"a\" | \"b\" | \"c\"."""
@@ -33,25 +38,43 @@ def batch_schema(count: int, lens=None) -> dict:
     from .lens.presets import default_lens  # noqa: PLC0415
 
     lens = lens or default_lens()
+    required = ["id", "fit", "kind", "novelty", "region", "domain", "mechanism", "reason"]
+    properties = {
+        "id": {"type": "string"},
+        "fit": {"type": "integer", "minimum": 0, "maximum": 3},
+        "novelty": {"type": "integer", "minimum": 0, "maximum": 3},
+        "kind": {"type": "string", "enum": sorted(lens.kinds.words())},
+        "region": {"type": "string", "enum": sorted(lens.regions)},
+        "domain": {"type": "string", "enum": sorted(lens.domains)},
+        "mechanism": {"type": ["string", "null"]},
+        "reason": {"type": "string"},
+    }
+    if lens.gate:
+        # Required, not optional: an optional boolean is one a constrained
+        # backend is free to omit, and an omitted gate is a gate that never
+        # fires. Ungated lenses get the schema unchanged, byte for byte.
+        properties[GATE_KEY] = {"type": "boolean", "description": lens.gate.question}
+        required.append(GATE_KEY)
     return {
         "type": "array",
         "minItems": count,
         "maxItems": count,
-        "items": {
-            "type": "object",
-            "required": ["id", "fit", "kind", "novelty", "region", "domain", "mechanism", "reason"],
-            "properties": {
-                "id": {"type": "string"},
-                "fit": {"type": "integer", "minimum": 0, "maximum": 3},
-                "novelty": {"type": "integer", "minimum": 0, "maximum": 3},
-                "kind": {"type": "string", "enum": sorted(lens.kinds.words())},
-                "region": {"type": "string", "enum": sorted(lens.regions)},
-                "domain": {"type": "string", "enum": sorted(lens.domains)},
-                "mechanism": {"type": ["string", "null"]},
-                "reason": {"type": "string"},
-            },
-        },
+        "items": {"type": "object", "required": required, "properties": properties},
     }
+
+
+def gate_lines(lens) -> tuple[str, str]:
+    """The two fragments `classify.md` splices in for a lens that has a gate.
+
+    Both are empty for a lens without one, and both carry their own leading
+    newline or comma so the rendered prompt is then identical to what it was
+    before gates existed. That is what a preset's measured score depends on.
+    """
+    if not lens.gate:
+        return "", ""
+    field = f',\n  "{GATE_KEY}": <true or false>'
+    rule = f"\n- `{GATE_KEY}`: {lens.gate.question} Answer true or false."
+    return field, rule
 
 
 def _batches(items: list[Item], size: int) -> list[list[Item]]:
@@ -88,6 +111,8 @@ def _coerce(raw: dict, item: Item, lens=None) -> Classified:
     kind = str(raw.get("kind", "neither")).strip().lower()
     region = str(raw.get("region", "global")).strip().lower()
     domain = str(raw.get("domain", "other")).strip().lower()
+    gate = raw.get(GATE_KEY)
+    gate = gate if isinstance(gate, bool) else None
     mechanism = raw.get("mechanism")
     if isinstance(mechanism, str):
         mechanism = mechanism.strip() or None
@@ -104,6 +129,7 @@ def _coerce(raw: dict, item: Item, lens=None) -> Classified:
         domain=domain if domain in lens.domains else lens.domains[-1],
         mechanism=mechanism,
         reason=str(raw.get("reason", ""))[:200],
+        gate=gate,
     )
 
 
@@ -120,6 +146,7 @@ def _unjudged(item: Item, why: str, lens=None) -> Classified:
 
 def classify_batch(batch: list[Item], cfg: Config, client: Client) -> list[Classified]:
     lens = cfg.lens
+    gate_field, gate_rule = gate_lines(lens)
     prompt = cfg.prompt("classify.md").format(
         rubric=cfg.lens_text,
         count=len(batch),
@@ -127,6 +154,8 @@ def classify_batch(batch: list[Item], cfg: Config, client: Client) -> list[Class
         kinds=enum_line(lens.kinds.words()),
         regions=enum_line(lens.regions),
         domains=enum_line(lens.domains),
+        gate_field=gate_field,
+        gate_rule=gate_rule,
     )
     try:
         payload = client.complete_json(

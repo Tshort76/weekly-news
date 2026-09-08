@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import tomllib
 
 import pytest
 
-from digest.classify import classify_batch, enum_line
+from digest.classify import batch_schema, classify_batch, enum_line
 from digest.config import Config
 from digest.lens import presets, store
+from digest.lens.schema import LensSpec
 from digest.lens.compile import compile_lens
 from digest.state import SCHEMA_VERSION, State
 
@@ -292,3 +294,76 @@ def test_the_shipped_preset_text_carries_no_geography_rule():
     text = presets.markdown(presets.DEFAULT).lower()
     assert "great power" not in text
     assert "developing country" not in text
+
+
+# ------------------------------------------------------------------- the gate
+
+
+def tomllib_load(path):
+    return tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def gated(**over):
+    """The shipped preset with a gate bolted on, for the tests below."""
+    import dataclasses
+
+    from digest.lens.schema import Gate
+
+    spec = presets.load(presets.DEFAULT)
+    gate = Gate(question="Is a great power a party to it?", regions=("africa", "latam"))
+    return dataclasses.replace(spec, gate=gate, **over)
+
+
+def test_no_shipped_preset_carries_a_gate():
+    """A gate is an editorial position, and nobody's default position.
+
+    This is the same rule as the geography-rule test above, one layer down: the
+    prose is not in the preset's text AND the structured field that would make
+    it bind is not in the preset's spec either.
+    """
+    assert [n for n in presets.available() if presets.load(n).gate] == []
+
+
+def test_an_ungated_lens_is_offered_the_schema_it_always_was():
+    """Every preset's measured score depends on this being byte-identical."""
+    schema = batch_schema(3, presets.load(presets.DEFAULT))["items"]
+    assert "gate" not in schema["properties"]
+    assert "gate" not in schema["required"]
+
+
+def test_an_ungated_lens_renders_the_prompt_it_always_did():
+    client = Recorder()
+    classify_batch([make_item()], Config(), client)
+    assert "gate" not in client.prompt
+
+
+def test_a_gated_lens_asks_the_question_and_requires_the_answer(tmp_path, monkeypatch):
+    spec = gated()
+    monkeypatch.setattr(Config, "lens", property(lambda self: spec))
+    client = Recorder()
+    classify_batch([make_item()], Config(), client)
+    assert "Is a great power a party to it?" in client.prompt
+    assert '"gate"' in client.prompt
+    # Required, not merely offered: a backend free to omit the field would
+    # produce a gate that silently never fires.
+    assert "gate" in client.schema["items"]["required"]
+    assert client.schema["items"]["properties"]["gate"] == {
+        "type": "boolean", "description": spec.gate.question,
+    }
+
+
+def test_a_gate_naming_a_region_the_lens_does_not_have_is_refused():
+    """Otherwise the typo gates nothing and the failure is completely silent."""
+    raw = tomllib_load(presets.spec_path(presets.DEFAULT))
+    raw["gate"] = {"question": "?", "regions": ["afirca"]}
+    with pytest.raises(ValueError, match="afirca"):
+        LensSpec.from_dict(raw)
+
+
+def test_a_gate_survives_the_form_saving_over_it():
+    """The form round-trips through `to_toml`; what it cannot write, it deletes."""
+    from digest.lens.serialize import to_toml
+
+    spec = gated()
+    again = LensSpec.from_dict(tomllib.loads(to_toml(spec)))
+    assert again.gate == spec.gate

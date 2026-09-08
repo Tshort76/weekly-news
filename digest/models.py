@@ -89,6 +89,11 @@ class Classified:
     domain: str
     mechanism: str | None
     reason: str
+    # The lens's gate question, when it has one. None means "not asked" — a
+    # lens without a gate, or a row stored before this field existed. Selection
+    # drops on False alone, never on None, so re-running it over old rows
+    # cannot retroactively gut a past edition.
+    gate: bool | None = None
     # Gathered after selection, for the items actually being written up. Empty
     # when the feed entry already said enough.
     evidence: list[Evidence] = field(default_factory=list)
@@ -112,6 +117,7 @@ class Classified:
             "domain": self.domain,
             "mechanism": self.mechanism,
             "reason": self.reason,
+            "gate": self.gate,
             "evidence": [e.to_dict() for e in self.evidence],
         }
 
@@ -126,6 +132,7 @@ class Classified:
             domain=d.get("domain", "other"),
             mechanism=d.get("mechanism"),
             reason=d.get("reason", ""),
+            gate=d.get("gate"),
             evidence=[Evidence.from_dict(e) for e in d.get("evidence", [])],
         )
 

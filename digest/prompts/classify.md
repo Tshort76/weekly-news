@@ -26,11 +26,11 @@ Each object:
   "region": {regions},
   "mechanism": "<=12 words naming the causal mechanism, or null",
   "domain": {domains},
-  "reason": "<=20 words"
+  "reason": "<=20 words"{gate_field}
 }}
 
 Rules:
 - `fit` and `novelty` are integers 0–3.
 - `mechanism` is null when the item names no causal machinery. Do not invent one.
 - Judge only what the title and blurb actually claim.
-- A source's own section or prominence carries no weight.
+- A source's own section or prominence carries no weight.{gate_rule}

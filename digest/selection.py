@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterable
 
 from rapidfuzz import fuzz
@@ -11,6 +12,28 @@ from .config import Config
 from .models import Classified, Dropped
 
 MECHANISM_THRESHOLD = 88
+
+log = logging.getLogger("digest.selection")
+
+
+def gated_out(c: Classified, gate) -> bool:
+    """Does this lens's gate exclude this item?
+
+    Only `False` drops. `None` — a lens with no gate, a backend that ignored the
+    response schema, a row classified before the field existed — always passes,
+    because `audit` re-runs this whole function over stored rows and a
+    strict-on-missing rule would retroactively empty every past edition.
+    """
+    if not gate or c.region not in gate.regions:
+        return False
+    if c.gate is None:
+        # Visible rather than silent: the rule the user asked for is not being
+        # applied, and nothing else in the output would say so.
+        log.warning(
+            "gate unanswered for %s (region %s) — the rule cannot apply", c.id, c.region
+        )
+        return False
+    return c.gate is False
 
 
 def _mechanism_seen(mechanism: str | None, prior: Iterable[str]) -> str | None:
@@ -46,7 +69,21 @@ def select(
         else:
             drop(c, f"below threshold (fit={c.fit}, novelty={c.novelty})")
 
-    # 3: saga rule. A low-novelty item repeating a mechanism we have already
+    # 3: the lens's gate, when it has one. A structural boolean rather than a
+    # sentence in the rubric, because three measured placements of the same
+    # sentence changed nothing at all — the model agreed with the rule in its
+    # own `reason` field and kept the item regardless.
+    gate = cfg.lens.gate
+    if gate:
+        survivors = []
+        for c in kept:
+            if gated_out(c, gate):
+                drop(c, f"gate ({c.region}): answered no to {gate.question!r}")
+            else:
+                survivors.append(c)
+        kept = survivors
+
+    # 4: saga rule. A low-novelty item repeating a mechanism we have already
     # covered is another episode, not news — unless it scores fit 3.
     survivors: list[Classified] = []
     for c in kept:
@@ -57,7 +94,7 @@ def select(
             survivors.append(c)
     kept = survivors
 
-    # 4: balance rule. Items in the ADJACENT slot — whatever this lens calls it,
+    # 5: balance rule. Items in the ADJACENT slot — whatever this lens calls it,
     # "contest" in the original — may not exceed cfg.contest_share of the
     # selected set. Dropping one shrinks the denominator too, so this iterates.
     #
@@ -76,7 +113,7 @@ def select(
             f"balance rule: {word} items capped at {cfg.run.contest_share:.0%} of the set",
         )
 
-    # 5: hard cap before clustering, best first.
+    # 6: hard cap before clustering, best first.
     kept.sort(key=lambda c: (-c.rank, -c.novelty, c.id))
     if len(kept) > cfg.run.max_items:
         for c in kept[cfg.run.max_items :]:
