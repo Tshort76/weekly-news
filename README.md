@@ -166,9 +166,21 @@ firm seeking banking licences, a platinum miner courting bidders, cocoa and El
 Niño. The clause names "economy, business" and the model applies it to politics,
 epidemics and aid only.
 
-That residual is what a gate is shaped for, since it keys on region rather than on
-the model agreeing about what counts as business. It has not yet been measured
-against it. No preset ships one either way.
+**A gate catches that residual exactly, and still is not worth installing.** Three
+runs, identical each time: the gate drops MTN, Northam, the cocoa story and
+Museveni — every story prose leaves behind — and its own decisions are four right
+out of five. But asking for the extra boolean moves the fit scale for everything
+else. Exact fit falls from 62 to 53, and wrongly-dropped goes from 5 to 9: besides
+the one African story it takes out in error, three unrelated stories vanish — a US
+tariff on drones, an Australian property collapse, an India-Japan labour swap —
+none of them in a gated region, none of them touched by the gate's logic. Overall
+agreement with the labels goes from 77 to 73.
+
+So the mechanism is sound and the price is somewhere else entirely: this model
+gets worse at the seven fields it already had when you ask it for an eighth. The
+gate stays in the app for a lens where that trade works out. It is in no lens
+here, and the three African business stories are cheaper to skim past than the
+three unrelated ones are to lose.
 
 **No preset ships one, and none ever will.** Which parts of the world are worth
 your attention is exactly the sort of position that should not arrive as somebody
