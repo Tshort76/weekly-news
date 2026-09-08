@@ -30,22 +30,14 @@ from digest.models import Item  # noqa: E402
 FIXTURES = ROOT / "digest" / "tests" / "fixtures"
 
 
-def _plain(text: str) -> str:
-    """Feeds mix curly and straight apostrophes; labels should not have to care."""
-    return text.replace("\u2019", "'").replace("\u2018", "'")
-
-
 def load_labelled() -> tuple[list[Item], dict[str, dict]]:
+    """Labels are keyed by item id — see calibrate.shipped_labels for why."""
     items = [Item.from_dict(d) for d in json.loads((FIXTURES / "eval_items.json").read_text())]
     labels = json.loads((FIXTURES / "eval_labels.json").read_text())["labels"]
-    by_id: dict[str, dict] = {}
-    for label in labels:
-        match = next(
-            (i for i in items if _plain(i.title).startswith(_plain(label["title"]))), None
-        )
-        if match is None:
-            raise SystemExit(f"no item matches label {label['title']!r}")
-        by_id[match.id] = label
+    by_id = {label["id"]: label for label in labels}
+    missing = set(by_id) - {i.id for i in items}
+    if missing:
+        raise SystemExit(f"{len(missing)} labels match no item: {sorted(missing)[:3]}")
     return [i for i in items if i.id in by_id], by_id
 
 

@@ -321,22 +321,35 @@ is the ceiling.
 
 ### What the local models actually score
 
-Measured against the labelled set on 2026-09-02, batches of 25, temperature 0. Of
-those 25 items the rubric keeps 11:
+Measured against the 100-item labelled set on 2026-09-08, batches of 25,
+temperature 0. Of those 100 items the rubric keeps 41:
 
-| | qwen3:30b | qwen3-coder |
+| qwen3:30b | 100 items | the first 25 |
 |---|---|---|
-| exact fit | 19/25 (76%) | 13/25 (52%) |
-| within one | 25/25 | 25/25 |
-| kind correct | 13/25 (52%) | 22/25 (88%) |
-| wrongly let in | 3 | 2 |
-| **wrongly dropped** | **0** | **1** |
-| time for 25 items | 43s | 43s |
+| exact fit | 67/100 (67%) | 19/25 (76%) |
+| within one | 99/100 (99%) | 25/25 |
+| kind correct | 61/100 (61%) | 13/25 (52%) |
+| wrongly let in | 23 | 3 |
+| **wrongly dropped** | **7** | **0** |
+| selection agreement | 70/100 (70%) | 22/25 (88%) |
+| time | 440s (4.4s/item) | 43s |
+
+**The second column is why the set was enlarged.** Those are the same 25 items
+scored the same way, and they reproduce the old numbers exactly — so nothing in
+the harness moved. They were simply a flattering sample. On four times as many
+headlines the model lets in 23 items that do not belong rather than 3, and drops
+7 that do rather than none. The 88% agreement the small set reported was noise
+dressed as a measurement, and the honest number is 70%.
+
+Both columns are a reading of the rubric by Claude, not by the lens's owner. See
+the note at the top of `digest/tests/fixtures/eval_labels.json`.
 
 `qwen3:30b` is the better classifier despite the worse `kind` score, because fit is
-what drives selection and its errors all point the safe way: it lets a few extra
-items through rather than dropping one that belonged. An extra entry is something
-you skim past; a missing one you never know about.
+what drives selection and its errors mostly point the safe way: it lets extra items
+through more often than it drops one that belonged. An extra entry is something you
+skim past; a missing one you never know about. At 100 items that asymmetry is
+narrower than the 25-item sample suggested — 7 genuine drops, not zero — and those
+seven are the number to watch when anything about the prompt changes.
 
 Its `kind` weakness is specific and worth watching. It *rarely* returns `neither` —
 none at all on the 25-item sample, and 25 out of 286 on a full week against 135

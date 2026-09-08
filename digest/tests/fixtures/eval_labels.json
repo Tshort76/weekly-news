@@ -1,21 +1,24 @@
 {
- "_note": "Ground truth for the rubric, hand-labelled 2026-09-02 (fit, novelty and kind) from digest/prompts/rubric.md against the items in eval_items.json. Keyed by the opening words of each title. These are a considered reading of the rubric, not gospel: the owner should correct any they disagree with, and every model score in scripts/eval_rubric.py moves when they do.",
+ "_note": "Ground truth for the rubric. The first 25 were labelled 2026-09-02 and the next 75 on 2026-09-08, both from digest/prompts/rubric.md, both by Claude rather than by the lens's owner: they are a considered reading of the rubric, not the owner's own judgement, and every model score in scripts/eval_rubric.py moves when a label is corrected. Items are drawn from real runs over 2026-08-25 to 2026-09-04 across 19 feeds, sampled at random with a per-source cap so no one feed dominates — deliberately NOT sampled by the classifier's own fit score, which would bias the set toward the model's uncertainties. `kind` is the internal slot (core/adjacent/neither), not the lens's display word; a label keyed to a display word silently scores zero. Labels are keyed by item id; `title` is for reading.",
  "labels": [
   {
+   "id": "a5a5ab86348e1f1f0602fbe73f3c05d2f6a6d804",
    "title": "Graham wins South Carolina",
    "fit": 1,
    "novelty": 2,
-   "kind": "contest",
+   "kind": "adjacent",
    "why": "election result, no structural consequence given"
   },
   {
+   "id": "7065d978e9aaebc6a4f4b14122c8c2d4dc2861f8",
    "title": "Saudi revamps derivatives",
    "fit": 3,
    "novelty": 3,
-   "kind": "architecture",
+   "kind": "core",
    "why": "market plumbing: a new instrument class to admit foreign capital"
   },
   {
+   "id": "e62f3f0934d29f43e0ec28ba31d589025e92e468",
    "title": "'This is crazy",
    "fit": 0,
    "novelty": 1,
@@ -23,27 +26,31 @@
    "why": "opinion piece, no mechanism"
   },
   {
+   "id": "022d62418b132b502c6117573739b8243a144128",
    "title": "Vance supporters dismiss",
    "fit": 0,
    "novelty": 0,
-   "kind": "contest",
+   "kind": "adjacent",
    "why": "tactical manoeuvring three years out"
   },
   {
+   "id": "2ba0804e67f345d5bd7d3158b12243521e6f9212",
    "title": "Court decision boosts Democrats",
    "fit": 2,
    "novelty": 3,
-   "kind": "architecture",
+   "kind": "core",
    "why": "court decision changing what an institution may spend"
   },
   {
+   "id": "686e3c6fd27987f210457b3c5175b8ef2bf7ad16",
    "title": "Lawyers see imminent decision",
    "fit": 2,
    "novelty": 1,
-   "kind": "architecture",
+   "kind": "core",
    "why": "ruling would change deportation capacity"
   },
   {
+   "id": "abd353bd2bfc857952c9cb90b90ed90ebdd19eb3",
    "title": "Four in 10 Americans believe UFOs",
    "fit": 0,
    "novelty": 1,
@@ -51,6 +58,7 @@
    "why": "poll"
   },
   {
+   "id": "4940d395a0fa77eeffa4cf6f1f1904c2aea775fc",
    "title": "IMF says AI is helping",
    "fit": 1,
    "novelty": 1,
@@ -58,6 +66,7 @@
    "why": "assessment, not a change in arrangement"
   },
   {
+   "id": "7c9c2978da8019e2cc119d9dd2ae70d450322a8f",
    "title": "Markets eye Nvidia earnings",
    "fit": 0,
    "novelty": 0,
@@ -65,20 +74,23 @@
    "why": "market anticipation"
   },
   {
+   "id": "59aaf05ae3023c38ef62f36e729d684cd675ad73",
    "title": "Global trade tensions grow",
    "fit": 1,
    "novelty": 0,
-   "kind": "contest",
+   "kind": "adjacent",
    "why": "saga update, nothing structurally new stated"
   },
   {
+   "id": "5b4a597f6b9ca02fa569a68181cbe155fb715971",
    "title": "Beijing looks to cutting-edge",
    "fit": 2,
    "novelty": 1,
-   "kind": "architecture",
+   "kind": "core",
    "why": "industrial policy direction with state money behind it"
   },
   {
+   "id": "edff6ca700cbc3c2079d3d10b986ae1ec571d9b3",
    "title": "Ebola spreading",
    "fit": 1,
    "novelty": 2,
@@ -86,6 +98,7 @@
    "why": "crisis report; funding and infrastructure named but not changed"
   },
   {
+   "id": "0f7de0022ba654585734ede6611e203e559dced3",
    "title": "Pennsylvania records first measles",
    "fit": 1,
    "novelty": 3,
@@ -93,13 +106,15 @@
    "why": "an event, not a rule change"
   },
   {
+   "id": "6f4b1b8c5376fd27c8d1f45dbc04a8cbd2db494d",
    "title": "DR Congo president warns",
    "fit": 2,
    "novelty": 2,
-   "kind": "architecture",
+   "kind": "core",
    "why": "administrative capacity failure with named cause"
   },
   {
+   "id": "85c4d3049ae1d34f4329f7a6b8d857206c46a6de",
    "title": "Why smugglers are stealing",
    "fit": 0,
    "novelty": 3,
@@ -107,34 +122,39 @@
    "why": "curiosity piece"
   },
   {
+   "id": "8f5fc3e57845372af2cee403d2aeadc9687b90e6",
    "title": "American diplomats return",
    "fit": 1,
    "novelty": 2,
-   "kind": "contest",
+   "kind": "adjacent",
    "why": "diplomatic posture; restaffing is thin as capacity"
   },
   {
+   "id": "8d6931c8da61b2157bf38622aa6e9501d043b157",
    "title": "Telecoms giant MTN",
    "fit": 3,
    "novelty": 3,
-   "kind": "architecture",
+   "kind": "core",
    "why": "a telco acquiring banking capacity reorganises financial access"
   },
   {
+   "id": "3efbcfa4535a267a7b15792c9291a778e4e69a9e",
    "title": "South African platinum miner",
    "fit": 2,
    "novelty": 2,
-   "kind": "architecture",
+   "kind": "core",
    "why": "sector consolidation with real money"
   },
   {
+   "id": "f1006c2fa458b6f14cfe80582e41f7c1d7368353",
    "title": "Abu Dhabi's M42",
    "fit": 2,
    "novelty": 3,
-   "kind": "architecture",
+   "kind": "core",
    "why": "state health capacity contracted out for ten years"
   },
   {
+   "id": "ef7250271c2237ff653cf08e9a9f4c0828d0aba9",
    "title": "AI billionaires could drive",
    "fit": 1,
    "novelty": 1,
@@ -142,6 +162,7 @@
    "why": "speculative, conditional"
   },
   {
+   "id": "1ff5289b07ebb7e5587ad9a970814efcd5ed11ba",
    "title": "Remembering America's queen",
    "fit": 0,
    "novelty": 0,
@@ -149,20 +170,23 @@
    "why": "culture, no structural shift"
   },
   {
+   "id": "5dbaeca13f9396358df6294be67b7e81a5bf668c",
    "title": "Trump's new affordability push",
    "fit": 2,
    "novelty": 2,
-   "kind": "architecture",
+   "kind": "core",
    "why": "industrial policy with money attached"
   },
   {
+   "id": "13566cdd6ccaab0ca47d87e85c05f9b44e83540c",
    "title": "SpaceX plans to build",
    "fit": 2,
    "novelty": 3,
-   "kind": "architecture",
+   "kind": "core",
    "why": "a durable capacity change in launch"
   },
   {
+   "id": "398655fea8e04c8c5ae48510ae5aa5b2ea53ad11",
    "title": "How salmon evolved",
    "fit": 0,
    "novelty": 3,
@@ -170,11 +194,612 @@
    "why": "natural history"
   },
   {
+   "id": "d1b94931d2623005c6b8f1c0eb2f018e15e8b336",
    "title": "A former Democratic operative",
    "fit": 0,
    "novelty": 1,
-   "kind": "contest",
+   "kind": "adjacent",
    "why": "party positioning interview"
+  },
+  {
+   "id": "3e1d59cf64edd25e0813e0b5579948822989a4b2",
+   "title": "France is love-bombing Britain",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "warmer Franco-British mood, no rule or capacity changes"
+  },
+  {
+   "id": "65b06ebbfae16e1070277e6dbd0ebc7fcd02fbb6",
+   "title": "I rented a car, and within hours, my driver's license was for sale",
+   "fit": 2,
+   "novelty": 3,
+   "kind": "core",
+   "why": "rental ID scans feeding a dark-web identity market at 153m scale"
+  },
+  {
+   "id": "d03c98773cc6126b131315ea9cb79611aa94f25c",
+   "title": "How a tree in Hanoi points to flowering of dissent among Vietnam’s Gen Z",
+   "fit": 1,
+   "novelty": 2,
+   "kind": "adjacent",
+   "why": "dissent as mood; no change to what the state can do"
+  },
+  {
+   "id": "39a275889b1a4fd86eb2d74bd2daa878723646dd",
+   "title": "Farage to address Reform conference",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "party conference and a funding allegation"
+  },
+  {
+   "id": "161873f856d483da178de2b13887bc4a91c03320",
+   "title": "UAE AI firm pitches video compression for Saudi security",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "cheap video retention lowers the cost of running a camera network"
+  },
+  {
+   "id": "2969b8d04d0594193e941a1dd929258dddd135e2",
+   "title": "El Niño threatens West Africa's cocoa producers",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "weather cutting a fifth from the top producer's cocoa capacity"
+  },
+  {
+   "id": "f69ab805291ce8fa096ad6c9506e504babae3a47",
+   "title": "Cartoon: Putin cornered",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "neither",
+   "why": "a cartoon"
+  },
+  {
+   "id": "cbf233440b50cf881b08afbe750fe3ddc670def1",
+   "title": "Yoweri Museveni’s decline is putting Uganda on a terrifying path",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "succession struggle, structural consequence only gestured at"
+  },
+  {
+   "id": "5dbdc3093f7be39d9865fe9ee40693e2228e670c",
+   "title": "AI agents may raise conflict-of-interest risks, study finds",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "advertising money entering the recommendation layer of a chatbot"
+  },
+  {
+   "id": "d39a7ef98f854e2ff05663d2bd84e24c72dbd1c8",
+   "title": "Yen surges as traders bet on Japan interest rate rises",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "core",
+   "why": "a currency move on a rate expectation, not a framework change"
+  },
+  {
+   "id": "a65c94c348f3359881d21b24bd795710adbbd9da",
+   "title": "OPEC’s new threat comes from within",
+   "fit": 3,
+   "novelty": 3,
+   "kind": "core",
+   "why": "discounting to defend share strains the cartel's pricing discipline"
+  },
+  {
+   "id": "ca2980465003bc78cffcb248ba4b801fbee3ac14",
+   "title": "Google releases Gemini 3.8 Flash, its third Flash model in six weeks",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "a model release; the strategy note is the only structural hint"
+  },
+  {
+   "id": "219b66ea365b4a37661dafa0d0c3a4bb82fe58ac",
+   "title": "Rival cities vie to ‘poach’ international organisations from Geneva",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "aid cuts erode Geneva's host subsidy and open a bidding contest"
+  },
+  {
+   "id": "c6af0eb62d5dc382130b28f6167d87813b730a07",
+   "title": "In film and in life, China pursues dragon-restaurant diplomacy",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "soft power as an alternative pole, no mechanism given"
+  },
+  {
+   "id": "2047fc5e8ed86569c2f00d27bc41142e98573ae4",
+   "title": "Renewables investment stagnates, but solar boom continues",
+   "fit": 2,
+   "novelty": 3,
+   "kind": "core",
+   "why": "offshore wind contraction against solar's continued build-out"
+  },
+  {
+   "id": "96ed90acb647b40fe56e31d98e1995f5559dd7c5",
+   "title": "Just like a fruit fly, a new algorithm never forgets old scents",
+   "fit": 0,
+   "novelty": 2,
+   "kind": "neither",
+   "why": "a neuroscience result with no bearing on how anything is ruled"
+  },
+  {
+   "id": "063e9a5ed237817a0a6408f675109b5ca7bf563c",
+   "title": "Shrimpers are the latest group seeking protection from Washington",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "core",
+   "why": "a protection request, not yet a protection regime"
+  },
+  {
+   "id": "dfc5b20e1dc5bf6e0de7c59dc3088764de3b296e",
+   "title": "Iran war rebuild boosts world’s biggest air cargo handler",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "reconstruction demand rerouting air cargo into the Gulf"
+  },
+  {
+   "id": "ac173d1c74c33b7ae060cdf9cd34addc616507a5",
+   "title": "Russia warns of ‘massive strikes’ on Ukrainian energy",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "both sides now targeting the energy systems that sustain the war"
+  },
+  {
+   "id": "76efda05508204e50f1dd5f22e75841858655a34",
+   "title": "IPO booms can spell trouble for the markets",
+   "fit": 1,
+   "novelty": 0,
+   "kind": "core",
+   "why": "a market-cycle observation without a specific change"
+  },
+  {
+   "id": "68dd8c882579eeb867745dd575e4c0e0a32b4a4a",
+   "title": "Hackers use SpaceX's Cursor AI agent in cyber break-ins",
+   "fit": 3,
+   "novelty": 3,
+   "kind": "core",
+   "why": "an agent circumventing guardrails cuts the cost of intrusion by half"
+  },
+  {
+   "id": "b901e7a8efa119a7ff16347fdd91ee8c0458bc41",
+   "title": "Will anybody use AI as much as coders do?",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "speculation about adoption, framed for investors"
+  },
+  {
+   "id": "5b3f5da8a9daaeacebdd33b657bdaff673f7c5da",
+   "title": "Poll: Pappas holds commanding lead in N.H. Democratic primary",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "adjacent",
+   "why": "a campaign's own primary poll"
+  },
+  {
+   "id": "dc6c0a11b5f7d17cb486e4c4b508dd902af15c9a",
+   "title": "Companies confront ‘trade down’ economy",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "core",
+   "why": "consumer trade-down as a demand signal, no structural claim"
+  },
+  {
+   "id": "20c2dcbb6629278d599a46067de704d2123b4c81",
+   "title": "NASA’s latest mission to map the cosmos takes off",
+   "fit": 0,
+   "novelty": 2,
+   "kind": "neither",
+   "why": "a space science mission"
+  },
+  {
+   "id": "827c2cacc0adb509f6d4b11c9b16add19861ca08",
+   "title": "US President Donald Trump imposes 100% tariff on drones",
+   "fit": 3,
+   "novelty": 3,
+   "kind": "core",
+   "why": "a 100% tariff on 70% of world drone supply forces a reroute"
+  },
+  {
+   "id": "bfeb7e5e06ecbfa03f14501c93003c0ba8101ce0",
+   "title": "Congress rejected Pentagon office’s equity power",
+   "fit": 3,
+   "novelty": 3,
+   "kind": "core",
+   "why": "Congress withholding statutory authority caps state equity investment"
+  },
+  {
+   "id": "b07f16294f13871cdf8e85a5e8a0a8d358b595ef",
+   "title": "Hedges and Bets: The Future of Prediction Markets",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "neither",
+   "why": "an event promotion"
+  },
+  {
+   "id": "cca1ff32a6a1fe17319e9e4f733371814570a037",
+   "title": "Gallivanting EU politicians reveal where power really lies",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "where influence sits inside the EU, told as travel"
+  },
+  {
+   "id": "37a0ff56bd31c0a80ffc7da36b37c89ba74dc0ab",
+   "title": "India’s payments system is ten. It must start paying for itself",
+   "fit": 3,
+   "novelty": 2,
+   "kind": "core",
+   "why": "a zero-fee payments rail at 24bn transactions needs a revenue model"
+  },
+  {
+   "id": "5b079050e8ad529d0589dd8faa5ae44fa75091b0",
+   "title": "NASA’s Cargo-Moving Robotic Arm Named 300th IEEE Milestone",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "neither",
+   "why": "an engineering award"
+  },
+  {
+   "id": "f6d0b6e3cbe43aa9519794edfe8d2ed4e2cca9b7",
+   "title": "Iran, Oman hammer out Hormuz revenue-sharing deal",
+   "fit": 2,
+   "novelty": 3,
+   "kind": "core",
+   "why": "revenue-sharing over transit at a chokepoint"
+  },
+  {
+   "id": "707cbd72b504efd1609b804e400b7647d8fbcad4",
+   "title": "The moral panic over data centres is foolish",
+   "fit": 1,
+   "novelty": 0,
+   "kind": "neither",
+   "why": "a leader arguing against a mood"
+  },
+  {
+   "id": "f7ff308044a4519f5c7d851f0dbaa26578f2415e",
+   "title": "Russia-Ukraine war enters deadlier phase",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "interceptor stocks running dry as an air-defence capacity loss"
+  },
+  {
+   "id": "ce69bc00bc64fc4367177e658ec648c2b005db2a",
+   "title": "OpenAI's Hugging Face hack reveals questions about AI predictability",
+   "fit": 2,
+   "novelty": 3,
+   "kind": "core",
+   "why": "agents improvising a channel reveals unpredictability in deployed models"
+  },
+  {
+   "id": "1987faf3eced54c98cb236155db2ce66117a0548",
+   "title": "Foreign investors shun Australia after property developer collapses",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "one collapse repricing foreign credit exposure to a whole market"
+  },
+  {
+   "id": "004efd5384880c3b8a7787e0b249006e5111db4f",
+   "title": "No busking, no drinking: councils hire private groups to enforce growing list of rules",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "enforcement of local rules contracted out to private firms"
+  },
+  {
+   "id": "022df4dbbc30ef0d006d853cd74ab6288df785e8",
+   "title": "Hostility to Reform UK leaves Farage with a dilemma",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "adjacent",
+   "why": "positioning dilemma for a party leader"
+  },
+  {
+   "id": "99117db93f3f1052ddd01e3d9c454450bc2fa00b",
+   "title": "Vulnerable Republicans urge Trump to unleash Maga Inc’s $400mn cash pile",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "whether a super PAC spends its money"
+  },
+  {
+   "id": "800413f1cbd29a864a676f1238438b6ff6257b64",
+   "title": "UAE investigates Egyptian bank targeted by US sanctions",
+   "fit": 3,
+   "novelty": 3,
+   "kind": "core",
+   "why": "dollar-clearing access revoked as the sanctions transmission"
+  },
+  {
+   "id": "fc3570a6ced27ce3208bac14e2a17f4e7c4cc656",
+   "title": "'Creatures of expedience'",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "neither",
+   "why": "a book about personalities"
+  },
+  {
+   "id": "2908ccb04671453ec5af29e865297077f7e9db3c",
+   "title": "US court rules Google will not have to sell ad exchange after losing antitrust case",
+   "fit": 2,
+   "novelty": 3,
+   "kind": "core",
+   "why": "a remedy denied, leaving the ad exchange integrated"
+  },
+  {
+   "id": "2e658d0484d4ed1a338d00aaeb23afcf5622118d",
+   "title": "Noodling on Nuclear Engines",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "neither",
+   "why": "napkin-sketch history"
+  },
+  {
+   "id": "567c94e9b80cf6e639a7a1b9b47b98aeca7af768",
+   "title": "US and Iran exchange fire for the first time in over a month",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "another exchange of fire in an ongoing war"
+  },
+  {
+   "id": "82688bc6f3d4c96f8f7a7ab144486793f1480a7c",
+   "title": "Nvidia posts blowout quarter amid sustained chip demand",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "a quarterly earnings beat"
+  },
+  {
+   "id": "afe26a843700f0d56cc00e9efb970a1564b7aca9",
+   "title": "Quantifying anger in American politics",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "measuring a national mood"
+  },
+  {
+   "id": "fa9b370cfbb23af4aa9d1c036635053176bc210e",
+   "title": "Asian leaders gather amid China's efforts to expand influence",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "a summit, reported as influence-seeking"
+  },
+  {
+   "id": "5d87828ec8ff7f4cddf370bf0c32bc1490d53b6a",
+   "title": "BoE chief warns of AI cyber risks",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "shared technology dependence as a systemic single point of failure"
+  },
+  {
+   "id": "f75f3b07c289b63e30a2e570aa453e72f205e3e3",
+   "title": "US charges ICE agent with lying about shooting of Venezuelan immigrant",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "a criminal charge against one officer"
+  },
+  {
+   "id": "4a5756072ee309a8c2a27f952058ed1bb36fd533",
+   "title": "Ukrainian ex-defense minister launches Palantir-backed military tech firm",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "a defence-tech firm realigning Kyiv's supplier base toward US capital"
+  },
+  {
+   "id": "76b03246ec57ef9627e27565b28526321a02ee57",
+   "title": "India and Japan swap young workers for expertise to meet each other’s needs",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "labour for know-how between two complementary demographics"
+  },
+  {
+   "id": "84d68f30de26290820266286f0a6940fc5d41644",
+   "title": "Struggling Republicans urge Trump to open Maga Inc’s $400mn war chest",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "adjacent",
+   "why": "whether a super PAC spends its money"
+  },
+  {
+   "id": "6e58b18bc2812cb17b130e051045bff724a4e9ac",
+   "title": "Business",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "neither",
+   "why": "a section masthead with no item"
+  },
+  {
+   "id": "2f25bfd38119a4232fe31847ee544545ca1a4607",
+   "title": "New Zealand ‘must never be seen as a proxy’, former PM Helen Clark warns",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "a former leader's warning about alignment"
+  },
+  {
+   "id": "d6c754fa9f3ecbb35aa1eb7a7e34a55cca2c7d91",
+   "title": "Bullying mayor ousted as Japan’s voters reject political abuse",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "a resignation over conduct"
+  },
+  {
+   "id": "e8ff03185c5a48294d673187f3d18351142b1b3c",
+   "title": "Pig kidneys successfully transplanted into humans",
+   "fit": 2,
+   "novelty": 3,
+   "kind": "core",
+   "why": "a transplant route that would lift a hard supply constraint"
+  },
+  {
+   "id": "eb826d86b5a0609f58a10fd5f032d20863944927",
+   "title": "Can Andy Burnham extend his winning streak in London?",
+   "fit": 1,
+   "novelty": 0,
+   "kind": "adjacent",
+   "why": "a by-election preview"
+  },
+  {
+   "id": "6d9bc6666dd3ad55e6c53a2895997438828746b6",
+   "title": "Iceland’s ‘no’ exposes EU complacency",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "a rejection straining the EEA-style arrangements around the union"
+  },
+  {
+   "id": "608ae71bb09ef74516e38c6f24858c708bcfd381",
+   "title": "Indian diaspora comes through with dollars",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "core",
+   "why": "remittance inflows noted without a structural claim"
+  },
+  {
+   "id": "7d85fa33d726c2fe1ae1e98b19e0ca28ab94bdf1",
+   "title": "Scott Bessent takes on the bond market",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "Treasury issuance strategy pressing on the central bank"
+  },
+  {
+   "id": "f1493b3b17e3209f40ebabe174dc948adf1cad41",
+   "title": "US diesel prices soar to record high",
+   "fit": 1,
+   "novelty": 2,
+   "kind": "core",
+   "why": "a fuel price record, consequence not yet drawn"
+  },
+  {
+   "id": "bdafc00e492aa0aec901969ba89356d918ddd7e2",
+   "title": "VMware migration reduces Tottenham Hotspur's licensing fees by 85 percent",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "one club's vendor migration"
+  },
+  {
+   "id": "9581b3728824b0d4355626ec7ae826a7c74294f0",
+   "title": "Central banking has a forbidding future",
+   "fit": 2,
+   "novelty": 1,
+   "kind": "core",
+   "why": "the operating framework of a central bank under question"
+  },
+  {
+   "id": "e2cf1dc9391be4950d04a12cd406e4f2db436efd",
+   "title": "Can music festivals save the melting Alps?",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "resort adaptation as human interest"
+  },
+  {
+   "id": "d5eb90b45a6d13c2079b4c980a6f80dca193c92f",
+   "title": "Pentagon chaos deepens after Driscoll quits in clash with Hegseth",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "a resignation and a leadership gap"
+  },
+  {
+   "id": "a005227f01ed0c366b90fa3c54daa5dcfc0b3dac",
+   "title": "Tiny Montenegro still hopes it will be the EU’s next member",
+   "fit": 1,
+   "novelty": 0,
+   "kind": "adjacent",
+   "why": "enlargement hopes, no change in the queue"
+  },
+  {
+   "id": "239967dba69a2d7e413c0353e8c2732fa03ec5cc",
+   "title": "A ratings board wouldn't let Valve release a trailer. It \"leaked\" it instead.",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "a seventeen-year-old marketing anecdote"
+  },
+  {
+   "id": "d05f2a7e1b36104dc98c29bcfde154f96b332aa1",
+   "title": "Japan’s mainstream political opposition is a shambles",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "an opposition alliance breaking down"
+  },
+  {
+   "id": "b5fe78fd1b1e5879b4f1f76e5eec74eb49efef88",
+   "title": "Blighty newsletter: Winston Churchill has spoiled Andy Burnham’s week",
+   "fit": 0,
+   "novelty": 0,
+   "kind": "adjacent",
+   "why": "parliamentary theatre"
+  },
+  {
+   "id": "8690b60f8d608cbfeb496db61dcbc497abfd5bb3",
+   "title": "Why India baffles China",
+   "fit": 0,
+   "novelty": 1,
+   "kind": "neither",
+   "why": "the state of one country's area studies"
+  },
+  {
+   "id": "2751b171383d29f6d0d7d689380dd8fdb5686995",
+   "title": "US base dispute hangs over Japan’s Okinawa governor election",
+   "fit": 1,
+   "novelty": 1,
+   "kind": "adjacent",
+   "why": "an election that carries a basing dispute"
+  },
+  {
+   "id": "e6acc21cff29616cd4de341d660130da4203310e",
+   "title": "Trump admin fights ABC lawsuit as watchdogs worry Disney will settle with FCC",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "a regulator's licence-renewal power aimed at a broadcaster"
+  },
+  {
+   "id": "c65f2ec3b84467a844e2f5c9ac0e294995894507",
+   "title": "The IRS is going after America Inc’s overseas profits",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "transfer-pricing enforcement reclaiming offshore profit"
+  },
+  {
+   "id": "536cd6b84c3b64e96d120388cbf746c364ea40c6",
+   "title": "Fantasy M&A: the recipe for a European champion",
+   "fit": 1,
+   "novelty": 0,
+   "kind": "core",
+   "why": "hypothetical tie-ups, named as blocked by regulators"
+  },
+  {
+   "id": "593211e3b34438e6a1b0ee01080207ab38fcfa60",
+   "title": "More stock ownership, weaker monetary policy?",
+   "fit": 2,
+   "novelty": 2,
+   "kind": "core",
+   "why": "household equity holdings damping monetary transmission"
   }
  ]
 }

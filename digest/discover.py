@@ -49,9 +49,10 @@ class KnownModel:
 KNOWN_MODELS: tuple[KnownModel, ...] = (
     KnownModel(
         "qwen3:30b", ("classify",), "large", 20.0, True,
-        "Measured on 25 labelled headlines: dropped nothing that belonged, let in "
-        "three or four. Thinking is switched off automatically — with it on this "
-        "model returned empty answers and dropped every item that belonged.",
+        "Measured on 100 labelled headlines: agrees with the rubric on 70 of them, "
+        "and errs toward letting an item in rather than dropping one. Thinking is "
+        "switched off automatically — with it on this model returned empty answers "
+        "and dropped every item that belonged.",
         recommended=True,
     ),
     KnownModel(

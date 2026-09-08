@@ -25,11 +25,6 @@ from .models import Classified, Item
 FIXTURES = Path(__file__).resolve().parent / "tests" / "fixtures"
 
 
-def plain(text: str) -> str:
-    """Feeds mix curly and straight apostrophes; labels should not have to care."""
-    return text.replace("’", "'").replace("‘", "'")
-
-
 def kept(fit: int, novelty: int) -> bool:
     """The selection rule, minus the saga and balance passes, which need history.
 
@@ -131,23 +126,26 @@ def impact(before: Report, after: Report) -> Impact:
 
 
 def shipped_labels() -> tuple[list[Item], dict[str, dict]]:
-    """The 25 hand-labelled items in the test fixtures.
+    """The 100 labelled items in the test fixtures.
 
-    Small enough that it calibrates rather than proves: phase 0 measured a
-    ten-point swing on rubric formatting alone, which at 25 items is two or
-    three stories. Good for a conversation about what someone means, weak as an
-    acceptance gate.
+    Labels are keyed by item id. They used to be matched by title prefix, which
+    was fine at 25 headlines and stopped being fine on the way to 100: prefix
+    matching silently accepts the first of two items that both start "Saudi
+    ...", so a label lands on the wrong story and the score moves for a reason
+    nobody can see. An id either matches or it does not.
+
+    A hundred items still calibrates more than it proves — phase 0 measured a
+    ten-point swing on rubric formatting alone, which is ten stories here rather
+    than three — but the difference between a real regression and noise is now
+    visible, which at 25 it was not.
     """
     items = [Item.from_dict(d) for d in json.loads((FIXTURES / "eval_items.json").read_text())]
     labels = json.loads((FIXTURES / "eval_labels.json").read_text())["labels"]
-    by_id: dict[str, dict] = {}
-    for label in labels:
-        match = next(
-            (i for i in items if plain(i.title).startswith(plain(label["title"]))), None
-        )
-        if match is None:
-            raise LookupError(f"no item matches label {label['title']!r}")
-        by_id[match.id] = label
+    by_id = {label["id"]: label for label in labels}
+    known = {i.id for i in items}
+    missing = set(by_id) - known
+    if missing:
+        raise LookupError(f"{len(missing)} labels match no item: {sorted(missing)[:3]}")
     return [i for i in items if i.id in by_id], by_id
 
 

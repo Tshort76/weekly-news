@@ -217,3 +217,46 @@ def test_every_calibrated_preset_can_show_the_labels_it_was_scored_against():
         else:
             assert name == presets.DEFAULT
             assert shipped_labels()[1]
+
+
+# ---------------------------------------------- the labelled set stays honest
+
+
+def test_every_label_names_an_item_and_every_item_has_a_label():
+    from digest.calibrate import shipped_labels
+
+    items, labels = shipped_labels()
+    assert len(items) == len(labels) == 100
+    assert {i.id for i in items} == set(labels)
+
+
+def test_a_label_kind_is_an_internal_slot_not_a_lens_display_word():
+    """The bug this exists to prevent scored silently for a week.
+
+    The rubric shows the model the lens's own words — "architecture", "contest"
+    — and `slot_for` maps the answer back to a slot before it is stored. The
+    labels were written in those display words, so `c.kind == label["kind"]`
+    compared "core" against "architecture" and could only ever match on
+    "neither". `kind correct` was capped at 40% and reported as a measurement.
+    """
+    from digest.calibrate import shipped_labels
+
+    _, labels = shipped_labels()
+    kinds = {label["kind"] for label in labels.values()}
+    assert kinds <= {"core", "adjacent", "neither"}, f"display words leaked in: {kinds}"
+
+
+def test_the_labelled_set_is_not_all_keeps_or_all_drops():
+    """A set that agrees with everything measures nothing."""
+    from digest.calibrate import kept, shipped_labels
+
+    _, labels = shipped_labels()
+    keeps = sum(kept(v["fit"], v["novelty"]) for v in labels.values())
+    assert 25 <= keeps <= 75, f"{keeps}/100 kept is too lopsided to score against"
+
+
+def test_every_label_carries_its_reasoning_so_the_set_can_be_reviewed():
+    from digest.calibrate import shipped_labels
+
+    _, labels = shipped_labels()
+    assert all(v.get("why") for v in labels.values())

@@ -17,3 +17,6 @@ __pycache__/
 .idea/
 .vscode/
 .DS_Store
+
+# setuptools build artifacts — a stale copy of the package that confuses grep
+build/
