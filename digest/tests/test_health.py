@@ -244,3 +244,70 @@ def test_ordinary_chatter_is_not_recorded(digest_home, tmp_path):
 
     with State(db) as state:
         assert state.events("2026-W37", started) == []
+
+
+# ------------------------------------------------ the snapshot a display reads
+
+
+def _snapshot(tmp_path, monkeypatch):
+    from digest import health
+    from digest.config import Config, RunCfg
+
+    out = tmp_path / "out"
+    out.mkdir()
+    cfg = Config(run=RunCfg(output_dir=out), state_dir=tmp_path)
+    with State(cfg.db_path) as state:
+        return health.snapshot(cfg, state), cfg, out
+
+
+def test_a_snapshot_with_no_runs_is_amber_and_says_so(digest_home, tmp_path, monkeypatch):
+    snap, _, _ = _snapshot(tmp_path, monkeypatch)
+    assert snap["verdict"]["state"] == "amber"
+    assert snap["run"] is None
+    assert snap["completed_this_week"] is False
+
+
+def test_a_snapshot_reports_this_week_as_done_only_when_a_run_finished(
+    digest_home, tmp_path, monkeypatch
+):
+    from digest import health, pipeline
+    from digest.config import Config, RunCfg
+
+    cfg = Config(run=RunCfg(output_dir=tmp_path / "out"), state_dir=tmp_path)
+    week = pipeline.iso_week()
+    with State(cfg.db_path) as state:
+        started = state.start_run(week)
+        assert health.snapshot(cfg, state)["completed_this_week"] is False
+        state.finish_run(week, started, "ok")
+        assert health.snapshot(cfg, state)["completed_this_week"] is True
+
+
+def test_a_snapshot_finds_the_newest_edition_when_the_week_has_none(
+    digest_home, tmp_path, monkeypatch
+):
+    """A fresh install has editions written before it began recording runs."""
+    from digest import health
+    from digest.config import Config, RunCfg
+
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "digest-2026-08-31.md").write_text("older")
+    (out / "digest-2026-09-07.md").write_text("newer")
+    (out / "digest-2026-09-07.mp3").write_bytes(b"audio")
+    cfg = Config(run=RunCfg(output_dir=out), state_dir=tmp_path)
+    with State(cfg.db_path) as state:
+        files = health.snapshot(cfg, state)["files"]
+    assert files["md"].endswith("digest-2026-09-07.md")
+    assert files["mp3"].endswith("digest-2026-09-07.mp3")
+
+
+def test_a_snapshot_survives_a_config_with_no_schedule_section(
+    digest_home, tmp_path, monkeypatch
+):
+    """A status display that cannot read a schedule says Friday and carries on."""
+    from digest import health
+    from digest.config import Config, RunCfg
+
+    cfg = Config(run=RunCfg(output_dir=tmp_path / "out"), state_dir=tmp_path)
+    with State(cfg.db_path) as state:
+        assert health.snapshot(cfg, state)["schedule"] == {"day": "friday", "hour": 7}

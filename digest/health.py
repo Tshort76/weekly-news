@@ -321,3 +321,98 @@ def feeds_this_run(events: list[dict]) -> dict[str, dict]:
                 "ms": event["ms"] or 0,
             }
     return out
+
+
+# ------------------------------------------------------- the machine-readable one
+
+
+def snapshot(cfg, state) -> dict:
+    """Everything a status display needs, in one JSON-able dict.
+
+    This exists so a menu-bar plugin — or anything else outside the app — can
+    show how the digest is doing without reimplementing `verdict`. A second
+    implementation of "is this healthy" drifts from this one, and the drift
+    shows up as two things that disagree about the same run for no reason a
+    reader can see.
+    """
+    from . import emit as emit_stage  # noqa: PLC0415
+    from . import pipeline  # noqa: PLC0415
+
+    run = state.last_run()
+    events = state.events(run["week"], run["started"]) if run else []
+    history = state.feed_history()
+    edition = state.load_edition(run["week"]) if run else None
+    # A run marked `running` whose process is gone reads as running from here.
+    # `verdict` already calls that out via did_not_finish, so it stays its job.
+    running = bool(run and run.get("status") == "running")
+    found = verdict(run, events, edition, running, history)
+
+    this_week = pipeline.iso_week()
+    done = next((r for r in state.recent_runs(20)
+                 if r["week"] == this_week and r["status"] in ("ok", "partial")), None)
+
+    files = _files_for(cfg, emit_stage.week_stem(run["week"] if run else this_week))
+
+    return {
+        "verdict": {"state": found.state, "headline": found.headline,
+                    "summary": found.summary, "meta": found.meta},
+        "findings": [{"text": f.text, "detail": f.detail} for f in found.findings][:6],
+        "run": {
+            "week": run["week"], "status": run["status"],
+            "started": run.get("started"), "finished": run.get("finished"),
+            "entries": run.get("entries"), "fetched": run.get("fetched"),
+            "note": run.get("note") or "",
+        } if run else None,
+        "running": running,
+        "this_week": this_week,
+        "completed_this_week": done is not None,
+        "failing_feeds": failing_feeds(history),
+        "files": files,
+        "folder": str(cfg.run.output_dir),
+        "schedule": _scheduled_at(cfg),
+    }
+
+
+def _scheduled_at(cfg) -> dict:
+    """When the weekly run is meant to happen, from the config file.
+
+    Day and hour live in config.toml's [schedule] and never made it onto
+    Config, because until now only `digest schedule` read them and it read the
+    file itself. Read rather than raise: a status display that cannot find a
+    schedule should say Friday at seven and carry on.
+    """
+    import tomllib  # noqa: PLC0415
+
+    section: dict = {}
+    if cfg.config_path:  # a Config built in code carries no file at all
+        try:
+            with open(cfg.config_path, "rb") as handle:
+                section = tomllib.load(handle).get("schedule", {})
+        except (OSError, ValueError, TypeError):
+            section = {}
+    try:
+        hour = int(section.get("hour", 7))
+    except (TypeError, ValueError):
+        hour = 7
+    return {"day": str(section.get("day", "friday")), "hour": hour}
+
+
+def _files_for(cfg, stem: str) -> dict[str, str]:
+    """The edition's files, falling back to the most recent one on disk.
+
+    The run store and the output folder can disagree: a fresh install has
+    editions written before it started recording runs, and a week can be
+    written and then re-run. Showing the newest thing that actually exists
+    beats showing nothing and being technically right about which week.
+    """
+    folder = cfg.run.output_dir
+    suffixes = ("md", "txt", "html", "mp3", "pdf")
+    found = {s: str(folder / f"{stem}.{s}") for s in suffixes
+             if (folder / f"{stem}.{s}").exists()}
+    if found:
+        return found
+    latest = max(folder.glob("digest-*.md"), key=lambda p: p.name, default=None)
+    if latest is None:
+        return {}
+    return {s: str(latest.with_suffix(f".{s}")) for s in suffixes
+            if latest.with_suffix(f".{s}").exists()}

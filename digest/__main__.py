@@ -80,6 +80,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("doctor", help="check credentials, feeds and local models")
 
+    status = sub.add_parser("status", help="how the last run went, for a status display")
+    status.add_argument("--json", action="store_true", help="machine-readable")
+
     open_cmd = sub.add_parser("open", help="open the app in your browser")
     open_cmd.add_argument("--port", type=int, default=8765)
     open_cmd.add_argument("--no-browser", action="store_true")
@@ -261,6 +264,26 @@ def main(argv: list[str] | None = None) -> int:
                 elif cfg.drive.enabled:
                     print(f"  drive        {'uploaded' if result.uploaded else 'FAILED, will retry next run'}")
             print(f"  log          {log_path}")
+            return 0
+
+        if args.command == "status":
+            from . import health as health_module  # noqa: PLC0415
+
+            snap = health_module.snapshot(cfg, state)
+            if args.json:
+                import json as json_module  # noqa: PLC0415
+
+                print(json_module.dumps(snap, indent=1))
+            else:
+                v = snap["verdict"]
+                print(f"\n{v['headline']}  ({v['state']})")
+                if v["summary"]:
+                    print(f"  {v['summary']}")
+                for finding in snap["findings"]:
+                    print(f"  - {finding['text']}"
+                          + (f" {finding['detail']}" if finding["detail"] else ""))
+                if snap["files"]:
+                    print(f"\n  files  {snap['folder']}")
             return 0
 
         if args.command == "doctor":
