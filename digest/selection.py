@@ -16,6 +16,11 @@ MECHANISM_THRESHOLD = 88
 log = logging.getLogger("digest.selection")
 
 
+def gate_applies(c: Classified, gate) -> bool:
+    """Is this lens's gate decisive for this item at all?"""
+    return bool(gate) and c.region in gate.regions
+
+
 def gated_out(c: Classified, gate) -> bool:
     """Does this lens's gate exclude this item?
 
@@ -24,16 +29,7 @@ def gated_out(c: Classified, gate) -> bool:
     because `audit` re-runs this whole function over stored rows and a
     strict-on-missing rule would retroactively empty every past edition.
     """
-    if not gate or c.region not in gate.regions:
-        return False
-    if c.gate is None:
-        # Visible rather than silent: the rule the user asked for is not being
-        # applied, and nothing else in the output would say so.
-        log.warning(
-            "gate unanswered for %s (region %s) — the rule cannot apply", c.id, c.region
-        )
-        return False
-    return c.gate is False
+    return gate_applies(c, gate) and c.gate is False
 
 
 def _mechanism_seen(mechanism: str | None, prior: Iterable[str]) -> str | None:
@@ -75,13 +71,22 @@ def select(
     # own `reason` field and kept the item regardless.
     gate = cfg.lens.gate
     if gate:
-        survivors = []
+        survivors, unanswered = [], 0
         for c in kept:
             if gated_out(c, gate):
                 drop(c, f"gate ({c.region}): answered no to {gate.question!r}")
-            else:
-                survivors.append(c)
+                continue
+            unanswered += gate_applies(c, gate) and c.gate is None
+            survivors.append(c)
         kept = survivors
+        if unanswered:
+            # One line, not one per item: every `log.warning` becomes a row in
+            # the health screen, and `audit` over a week stored before gates
+            # existed would otherwise fill it with the same finding forty times.
+            log.warning(
+                "%d item(s) in %s were not asked the gate question — the rule "
+                "could not apply to them", unanswered, ", ".join(gate.regions),
+            )
 
     # 4: saga rule. A low-novelty item repeating a mechanism we have already
     # covered is another episode, not news — unless it scores fit 3.

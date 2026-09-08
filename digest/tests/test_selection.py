@@ -148,3 +148,19 @@ def test_a_lens_with_no_gate_drops_nothing_for_one():
              for n in range(3)]
     kept, _ = select(items, _cfg())
     assert len(kept) == 3
+
+
+def test_an_unanswered_gate_is_reported_once_not_once_per_item(caplog):
+    """Every `log.warning` becomes a row on the health screen.
+
+    `audit` re-runs selection over a week stored before gates existed, where
+    every item's answer is missing — one line per item would bury the screen in
+    forty copies of the same finding.
+    """
+    items = [make_classified(fit=3, region="africa", gate=None, item={"url": f"https://e.com/{n}"})
+             for n in range(5)]
+    with caplog.at_level("WARNING", logger="digest.selection"):
+        kept, _ = select(items, _gated_cfg())
+    assert len(kept) == 5
+    assert len(caplog.records) == 1
+    assert "5 item(s)" in caplog.records[0].getMessage()
