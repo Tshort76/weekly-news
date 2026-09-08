@@ -136,6 +136,27 @@ def _report(result: pipeline.RunResult) -> None:
         print(f"  {ext:<5} {path.name}")
 
 
+def _notify_finished(result, week: str, error: Exception | None) -> None:
+    """Put the outcome of a scheduled run on screen, because nothing else will.
+
+    Nothing uploads the edition anywhere, so a run that finishes in the middle
+    of a Friday morning leaves no trace outside a log file. The body answers the
+    only two questions worth waking someone for: did it work, and where is it.
+    """
+    from .schedule import notify  # noqa: PLC0415
+
+    if error is not None:
+        notify("Weekly digest failed", f"{type(error).__name__}: {error}")
+        return
+    if not result.files:
+        notify("Weekly digest", f"{week}: nothing met the bar, so no briefing")
+        return
+    folder = next(iter(result.files.values())).parent
+    stem = next(iter(result.files.values())).stem
+    entries = len(result.edition.entries)
+    notify("Weekly digest ready", f"{stem} — {entries} items, in {folder}")
+
+
 def doctor(cfg) -> int:
     """Check everything a run needs, without spending anything or printing a key."""
     from .credentials import resolve  # noqa: PLC0415
@@ -208,17 +229,26 @@ def main(argv: list[str] | None = None) -> int:
 
     with State(cfg.db_path) as state:
         if args.command in {"run", "classify-only"}:
-            result = pipeline.run(
-                cfg,
-                state,
-                week=week,
-                want_html=getattr(args, "html", False),
-                want_pdf=getattr(args, "pdf", False),
-                want_audio=getattr(args, "audio", False),
-                dry_run=getattr(args, "dry_run", False),
-                no_drive=getattr(args, "no_drive", False),
-                classify_only=args.command == "classify-only",
-            )
+            scheduled = getattr(args, "scheduled", False)
+            try:
+                result = pipeline.run(
+                    cfg,
+                    state,
+                    week=week,
+                    want_html=getattr(args, "html", False),
+                    want_pdf=getattr(args, "pdf", False),
+                    want_audio=getattr(args, "audio", False),
+                    dry_run=getattr(args, "dry_run", False),
+                    no_drive=getattr(args, "no_drive", False),
+                    classify_only=args.command == "classify-only",
+                )
+            except Exception as exc:
+                # A scheduled run has nobody watching the terminal it failed in.
+                if scheduled:
+                    _notify_finished(None, week, exc)
+                raise
+            if scheduled:
+                _notify_finished(result, week, None)
             if args.command == "classify-only":
                 print(
                     f"\nWeek {week}: classified {result.kept_after_dedupe} items "
