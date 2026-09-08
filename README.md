@@ -322,7 +322,14 @@ is the ceiling.
 ### What the local models actually score
 
 Measured against the 100-item labelled set on 2026-09-08, batches of 25,
-temperature 0. Of those 100 items the rubric keeps 37:
+temperature 0. Of those 100 items the rubric keeps 37.
+
+These numbers are for the **shipped `architecture-of-rule` preset**, scored
+against `eval_labels.json`, which matches that preset's text. The author's own
+installed lens carries an extra editorial rule the preset deliberately does not,
+and has its own ground truth in `eval_labels.owner.json`; score it with
+`--labels owner`. Scoring one lens against the other's labels measures the gap
+between two editorial positions and reports it as model error.
 
 | qwen3:30b | 100 items | the first 25 |
 |---|---|---|

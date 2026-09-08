@@ -260,3 +260,35 @@ def test_every_label_carries_its_reasoning_so_the_set_can_be_reviewed():
 
     _, labels = shipped_labels()
     assert all(v.get("why") for v in labels.values())
+
+
+def test_the_shipped_labels_are_not_the_owners_labels():
+    """Two lenses, two ground truths, and they must not silently converge.
+
+    The shipped `architecture-of-rule` preset does NOT carry the geography rule
+    in Thomas's own lens — a rule that is right for one reader is not a sensible
+    default for everyone. If someone reconciles these two files into agreement,
+    one of the two lenses is being scored against the other's editorial
+    position, and the resulting number is a measure of that disagreement wearing
+    the costume of model error.
+    """
+    import json
+
+    from digest.calibrate import FIXTURES, kept
+
+    def keeps(name):
+        labels = json.loads((FIXTURES / name).read_text())["labels"]
+        return {l["id"] for l in labels if kept(l["fit"], l["novelty"])}
+
+    shipped, owner = keeps("eval_labels.json"), keeps("eval_labels.owner.json")
+    assert owner < shipped, "the owner's lens is the stricter of the two"
+    assert len(shipped - owner) == 4, "four items the geography rule takes out"
+
+
+def test_the_shipped_preset_text_carries_no_geography_rule():
+    """The preset's calibration claim is only true while this holds."""
+    from digest.lens import presets
+
+    text = presets.markdown(presets.DEFAULT).lower()
+    assert "great power" not in text
+    assert "developing country" not in text

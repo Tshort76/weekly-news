@@ -30,10 +30,18 @@ from digest.models import Item  # noqa: E402
 FIXTURES = ROOT / "digest" / "tests" / "fixtures"
 
 
-def load_labelled() -> tuple[list[Item], dict[str, dict]]:
-    """Labels are keyed by item id — see calibrate.shipped_labels for why."""
+def load_labelled(which: str = "shipped") -> tuple[list[Item], dict[str, dict]]:
+    """Labels are keyed by item id — see calibrate.shipped_labels for why.
+
+    Two ground truths, because there are two lenses. `shipped` matches the
+    `architecture-of-rule` preset the project ships. `owner` is Thomas's own
+    installed lens, which carries a geography rule the preset deliberately does
+    not. Scoring one lens against the other's labels measures the difference
+    between two editorial positions and calls it model error.
+    """
+    name = "eval_labels.owner.json" if which == "owner" else "eval_labels.json"
     items = [Item.from_dict(d) for d in json.loads((FIXTURES / "eval_items.json").read_text())]
-    labels = json.loads((FIXTURES / "eval_labels.json").read_text())["labels"]
+    labels = json.loads((FIXTURES / name).read_text())["labels"]
     by_id = {label["id"]: label for label in labels}
     missing = set(by_id) - {i.id for i in items}
     if missing:
@@ -52,6 +60,8 @@ def kept(fit: int, novelty: int) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--labels", choices=("shipped", "owner"), default="shipped",
+                        help="which ground truth: the shipped preset's, or the owner's lens")
     parser.add_argument("--provider")
     parser.add_argument("--model")
     parser.add_argument("--batch-size", type=int)
@@ -76,7 +86,7 @@ def main() -> int:
     if args.no_think:
         cfg.models.ollama_think = False
 
-    items, labels = load_labelled()
+    items, labels = load_labelled(args.labels)
     print(f"provider {cfg.models.provider}  model {cfg.models.classify}  items {len(items)}\n")
 
     started = time.time()

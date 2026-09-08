@@ -1,5 +1,5 @@
 {
- "_note": "Ground truth for the rubric. The first 25 were labelled 2026-09-02 and the next 75 on 2026-09-08, both from digest/prompts/rubric.md, both by Claude rather than by the lens's owner: they are a considered reading of the rubric, not the owner's own judgement, and every model score in scripts/eval_rubric.py moves when a label is corrected. Items are drawn from real runs over 2026-08-25 to 2026-09-04 across 19 feeds, sampled at random with a per-source cap so no one feed dominates — deliberately NOT sampled by the classifier's own fit score, which would bias the set toward the model's uncertainties. `kind` is the internal slot (core/adjacent/neither), not the lens's display word; a label keyed to a display word silently scores zero. Labels are keyed by item id; `title` is for reading. Thomas ruled on four boundary questions on 2026-09-08, after a second independent labelling by Fable disagreed on 16 items, always in the same direction. His answers: (1) something announced but not enacted — a pitch, a plan, a warning, an imminent ruling — DOES reach fit 2. (2) an analysis piece that names a mechanism but reports no event does NOT. (3) an event whose structural consequence is real but unstated DOES; the piece need not draw the consequence itself. (4) a first-in-35-years threshold is novelty, not fit. These are the owner's calls and outrank either rater's reading. This file is the ground truth for the SHIPPED `architecture-of-rule` preset and matches its text. Thomas's own lens carries a geography rule the preset deliberately does not, and its labels are eval_labels.owner.json — a rule that is right for one reader is not a sensible default for everyone.",
+ "_note": "THE OWNER'S ground truth, not the shipped default's. Identical to eval_labels.json except for the geography rule Thomas added on 2026-09-08 (Africa and developing countries are off-lens unless a great power is a party to what changed), which eight items are relabelled to fit 0 under. That rule is deliberately NOT in the shipped `architecture-of-rule` preset, so the two sets exist separately: this one scores Thomas's installed lens, eval_labels.json scores the preset the project ships. Ground truth for the rubric. The first 25 were labelled 2026-09-02 and the next 75 on 2026-09-08, both from digest/prompts/rubric.md, both by Claude rather than by the lens's owner: they are a considered reading of the rubric, not the owner's own judgement, and every model score in scripts/eval_rubric.py moves when a label is corrected. Items are drawn from real runs over 2026-08-25 to 2026-09-04 across 19 feeds, sampled at random with a per-source cap so no one feed dominates — deliberately NOT sampled by the classifier's own fit score, which would bias the set toward the model's uncertainties. `kind` is the internal slot (core/adjacent/neither), not the lens's display word; a label keyed to a display word silently scores zero. Labels are keyed by item id; `title` is for reading. Thomas ruled on four boundary questions on 2026-09-08, after a second independent labelling by Fable disagreed on 16 items, always in the same direction. His answers: (1) something announced but not enacted — a pitch, a plan, a warning, an imminent ruling — DOES reach fit 2. (2) an analysis piece that names a mechanism but reports no event does NOT. (3) an event whose structural consequence is real but unstated DOES; the piece need not draw the consequence itself. (4) a first-in-35-years threshold is novelty, not fit. These are the owner's calls and outrank either rater's reading. On 2026-09-08 Thomas added a geography rule to the lens: Africa and low-income and developing countries generally are off-lens on their own, and score normally only when a great power is a party to what changed (the Belt and Road being the exemplary case). Eight items were relabelled to fit 0 under it. Two nearby items were deliberately NOT relabelled and are the judgement calls to check: Abu Dhabi's M42 in Botswana, which is Gulf capital and so has a great power as a party, and the Iran-Oman Hormuz deal, which is a chokepoint regime rather than a domestic story.",
  "labels": [
   {
    "id": "a5a5ab86348e1f1f0602fbe73f3c05d2f6a6d804",
@@ -92,10 +92,10 @@
   {
    "id": "edff6ca700cbc3c2079d3d10b986ae1ec571d9b3",
    "title": "Ebola spreading",
-   "fit": 1,
+   "fit": 0,
    "novelty": 2,
    "kind": "neither",
-   "why": "crisis report; funding and infrastructure named but not changed"
+   "why": "an epidemic in a developing country, no great power a party to it"
   },
   {
    "id": "0f7de0022ba654585734ede6611e203e559dced3",
@@ -108,10 +108,10 @@
   {
    "id": "6f4b1b8c5376fd27c8d1f45dbc04a8cbd2db494d",
    "title": "DR Congo president warns",
-   "fit": 2,
+   "fit": 0,
    "novelty": 2,
    "kind": "core",
-   "why": "administrative capacity failure with named cause"
+   "why": "a developing state's own administrative capacity"
   },
   {
    "id": "85c4d3049ae1d34f4329f7a6b8d857206c46a6de",
@@ -132,18 +132,18 @@
   {
    "id": "8d6931c8da61b2157bf38622aa6e9501d043b157",
    "title": "Telecoms giant MTN",
-   "fit": 3,
+   "fit": 0,
    "novelty": 3,
    "kind": "core",
-   "why": "a telco acquiring banking capacity reorganises financial access"
+   "why": "pan-African banking expansion, no great power a party to it"
   },
   {
    "id": "3efbcfa4535a267a7b15792c9291a778e4e69a9e",
    "title": "South African platinum miner",
-   "fit": 2,
+   "fit": 0,
    "novelty": 2,
    "kind": "core",
-   "why": "sector consolidation with real money"
+   "why": "a South African miner's own consolidation"
   },
   {
    "id": "f1006c2fa458b6f14cfe80582e41f7c1d7368353",
@@ -156,10 +156,10 @@
   {
    "id": "ef7250271c2237ff653cf08e9a9f4c0828d0aba9",
    "title": "AI billionaires could drive",
-   "fit": 1,
+   "fit": 0,
    "novelty": 1,
    "kind": "neither",
-   "why": "speculative, conditional"
+   "why": "aid to Africa, and speculative besides"
   },
   {
    "id": "1ff5289b07ebb7e5587ad9a970814efcd5ed11ba",
@@ -220,10 +220,10 @@
   {
    "id": "d03c98773cc6126b131315ea9cb79611aa94f25c",
    "title": "How a tree in Hanoi points to flowering of dissent among Vietnam’s Gen Z",
-   "fit": 1,
+   "fit": 0,
    "novelty": 2,
    "kind": "adjacent",
-   "why": "dissent as mood; no change to what the state can do"
+   "why": "domestic dissent in a developing country"
   },
   {
    "id": "39a275889b1a4fd86eb2d74bd2daa878723646dd",
@@ -244,10 +244,10 @@
   {
    "id": "2969b8d04d0594193e941a1dd929258dddd135e2",
    "title": "El Niño threatens West Africa's cocoa producers",
-   "fit": 2,
+   "fit": 0,
    "novelty": 2,
    "kind": "core",
-   "why": "weather cutting a fifth from the top producer's cocoa capacity"
+   "why": "west African crop output, no great power a party to it"
   },
   {
    "id": "f69ab805291ce8fa096ad6c9506e504babae3a47",
@@ -260,10 +260,10 @@
   {
    "id": "cbf233440b50cf881b08afbe750fe3ddc670def1",
    "title": "Yoweri Museveni’s decline is putting Uganda on a terrifying path",
-   "fit": 1,
+   "fit": 0,
    "novelty": 1,
    "kind": "adjacent",
-   "why": "succession struggle, structural consequence only gestured at"
+   "why": "a developing state's own succession"
   },
   {
    "id": "5dbdc3093f7be39d9865fe9ee40693e2228e670c",
