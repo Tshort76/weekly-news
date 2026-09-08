@@ -322,17 +322,17 @@ is the ceiling.
 ### What the local models actually score
 
 Measured against the 100-item labelled set on 2026-09-08, batches of 25,
-temperature 0. Of those 100 items the rubric keeps 41:
+temperature 0. Of those 100 items the rubric keeps 37:
 
 | qwen3:30b | 100 items | the first 25 |
 |---|---|---|
-| exact fit | 67/100 (67%) | 19/25 (76%) |
+| exact fit | 69/100 (69%) | 19/25 (76%) |
 | within one | 99/100 (99%) | 25/25 |
 | kind correct | 61/100 (61%) | 13/25 (52%) |
-| wrongly let in | 23 | 3 |
-| **wrongly dropped** | **7** | **0** |
-| selection agreement | 70/100 (70%) | 22/25 (88%) |
-| time | 440s (4.4s/item) | 43s |
+| wrongly let in | 24 | 3 |
+| **wrongly dropped** | **4** | **0** |
+| selection agreement | 72/100 (72%) | 22/25 (88%) |
+| time | 465s (4.6s/item) | 43s |
 
 **The second column is why the set was enlarged.** Those are the same 25 items
 scored the same way, and they reproduce the old numbers exactly — so nothing in
@@ -348,8 +348,8 @@ the note at the top of `digest/tests/fixtures/eval_labels.json`.
 what drives selection and its errors mostly point the safe way: it lets extra items
 through more often than it drops one that belonged. An extra entry is something you
 skim past; a missing one you never know about. At 100 items that asymmetry is
-narrower than the 25-item sample suggested — 7 genuine drops, not zero — and those
-seven are the number to watch when anything about the prompt changes.
+narrower than the 25-item sample suggested — 4 genuine drops, not zero — and those
+four are the number to watch when anything about the prompt changes.
 
 Its `kind` weakness is specific and worth watching. It *rarely* returns `neither` —
 none at all on the 25-item sample, and 25 out of 286 on a full week against 135

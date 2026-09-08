@@ -1,5 +1,5 @@
 {
- "_note": "Ground truth for the rubric. The first 25 were labelled 2026-09-02 and the next 75 on 2026-09-08, both from digest/prompts/rubric.md, both by Claude rather than by the lens's owner: they are a considered reading of the rubric, not the owner's own judgement, and every model score in scripts/eval_rubric.py moves when a label is corrected. Items are drawn from real runs over 2026-08-25 to 2026-09-04 across 19 feeds, sampled at random with a per-source cap so no one feed dominates — deliberately NOT sampled by the classifier's own fit score, which would bias the set toward the model's uncertainties. `kind` is the internal slot (core/adjacent/neither), not the lens's display word; a label keyed to a display word silently scores zero. Labels are keyed by item id; `title` is for reading.",
+ "_note": "Ground truth for the rubric. The first 25 were labelled 2026-09-02 and the next 75 on 2026-09-08, both from digest/prompts/rubric.md, both by Claude rather than by the lens's owner: they are a considered reading of the rubric, not the owner's own judgement, and every model score in scripts/eval_rubric.py moves when a label is corrected. Items are drawn from real runs over 2026-08-25 to 2026-09-04 across 19 feeds, sampled at random with a per-source cap so no one feed dominates — deliberately NOT sampled by the classifier's own fit score, which would bias the set toward the model's uncertainties. `kind` is the internal slot (core/adjacent/neither), not the lens's display word; a label keyed to a display word silently scores zero. Labels are keyed by item id; `title` is for reading. Thomas ruled on four boundary questions on 2026-09-08, after a second independent labelling by Fable disagreed on 16 items, always in the same direction. His answers: (1) something announced but not enacted — a pitch, a plan, a warning, an imminent ruling — DOES reach fit 2. (2) an analysis piece that names a mechanism but reports no event does NOT. (3) an event whose structural consequence is real but unstated DOES; the piece need not draw the consequence itself. (4) a first-in-35-years threshold is novelty, not fit. These are the owner's calls and outrank either rater's reading.",
  "labels": [
   {
    "id": "a5a5ab86348e1f1f0602fbe73f3c05d2f6a6d804",
@@ -476,10 +476,10 @@
   {
    "id": "ce69bc00bc64fc4367177e658ec648c2b005db2a",
    "title": "OpenAI's Hugging Face hack reveals questions about AI predictability",
-   "fit": 2,
-   "novelty": 3,
+   "fit": 1,
+   "novelty": 2,
    "kind": "core",
-   "why": "agents improvising a channel reveals unpredictability in deployed models"
+   "why": "a column on a summer hack, not a report of a new one"
   },
   {
    "id": "1987faf3eced54c98cb236155db2ce66117a0548",
@@ -660,10 +660,10 @@
   {
    "id": "6d9bc6666dd3ad55e6c53a2895997438828746b6",
    "title": "Iceland’s ‘no’ exposes EU complacency",
-   "fit": 2,
+   "fit": 1,
    "novelty": 2,
    "kind": "core",
-   "why": "a rejection straining the EEA-style arrangements around the union"
+   "why": "a comment piece on a referendum result"
   },
   {
    "id": "608ae71bb09ef74516e38c6f24858c708bcfd381",
@@ -700,10 +700,10 @@
   {
    "id": "9581b3728824b0d4355626ec7ae826a7c74294f0",
    "title": "Central banking has a forbidding future",
-   "fit": 2,
+   "fit": 1,
    "novelty": 1,
    "kind": "core",
-   "why": "the operating framework of a central bank under question"
+   "why": "an analysis of central banking with no framework change"
   },
   {
    "id": "e2cf1dc9391be4950d04a12cd406e4f2db436efd",
@@ -796,10 +796,10 @@
   {
    "id": "593211e3b34438e6a1b0ee01080207ab38fcfa60",
    "title": "More stock ownership, weaker monetary policy?",
-   "fit": 2,
+   "fit": 1,
    "novelty": 2,
    "kind": "core",
-   "why": "household equity holdings damping monetary transmission"
+   "why": "a newsletter on wealth effects, no event behind it"
   }
  ]
 }
