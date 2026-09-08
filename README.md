@@ -151,6 +151,13 @@ an item from one of them answered `false` is dropped. Everywhere else the answer
 is collected and ignored, deliberately — a gate that fires everywhere is a second
 fit scale in disguise.
 
+**Measured on 2026-09-08, and it did not pay for itself.** On the owner's lens
+and labels, adding the boolean moved exact fit from 47/100 to 44/100 and turned
+18 wrongly-dropped stories into 22. The gate fired exactly once in a hundred
+items, on a story the labels say to keep — Gulf money in Botswana, which is
+foreign capital but not a great power. It is in the app because the mechanism is
+sound and cheap to carry; it is not in anyone's lens, including the author's.
+
 **No preset ships one, and none ever will.** Which parts of the world are worth
 your attention is exactly the sort of position that should not arrive as somebody
 else's default, so a gate is something you add to your own lens and nobody
