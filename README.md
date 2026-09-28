@@ -624,7 +624,8 @@ Model providers, any one of which can run the whole thing:
 and [Ollama](https://ollama.com) for local models. Built with
 [feedparser](https://github.com/kurtmckee/feedparser),
 [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz) and
-[edge-tts](https://github.com/rany2/edge-tts).
+[echo](https://github.com/Tshort76/echo) for speech, which uses
+[edge-tts](https://github.com/rany2/edge-tts) and [Piper](https://github.com/rhasspy/piper).
 
 ## Licence
 

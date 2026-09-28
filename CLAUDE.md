@@ -42,7 +42,7 @@ ingest → normalize → dedupe → classify → select → ground → partition
 
 **The model edge** is `digest/llm.py`. Stages ask for `"classify"` or `"synthesize"`; config maps that to a provider and model. Nothing upstream knows which model ran. Prompts live in `digest/prompts/*.md`; a `{writer_notes}` slot carries rules that fill in only for local models.
 
-**`Edition` (`digest/models.py`) is the single in-memory artifact** every output format derives from (`digest/emit.py`). The `.txt` is the contract: everything above the dashed `DIVIDER` is spoken prose (no URLs, no markdown, acronyms spelled out), and below it is a sources appendix. Audio is made only from the spoken part (`digest/audio.py`: edge-tts, piper fallback, chunks joined frame by frame with no ffmpeg).
+**`Edition` (`digest/models.py`) is the single in-memory artifact** every output format derives from (`digest/emit.py`). The `.txt` is the contract: everything above the dashed `DIVIDER` is spoken prose (no URLs, no markdown, acronyms spelled out), and below it is a sources appendix. Audio is made only from the spoken part. `digest/audio.py` turns `emit.spoken_segments()` into chapters and hands them to the echo library (`echo-tts`, pinned by git tag in the `audio` extra), trying edge-tts first and piper second. How speech is made, joined and chapter-tagged is echo's concern; `docs/design/echo-as-library.md` is the contract between the two.
 
 **Lenses** (`digest/lens/`, presets in `digest/lenses/`): each lens is a `lens.md` (the rubric a person edits) plus `lens.toml` (the form's structured spec). `lens/compile.py` turns the form back into a rubric of the *shape* that `classify.md`, `selection.py` and `cluster.md` expect. `*.labels.json` are hand-labelled headlines used by the rubric eval.
 

@@ -22,7 +22,10 @@ anthropic = ["anthropic>=0.40"]
 # Ollama speaks plain HTTP and needs no client library. The extra exists so the
 # install line reads the same whichever provider you picked.
 ollama = []
-audio = ["edge-tts>=6.1"]  # no ffmpeg: chunks are joined frame by frame
+# Speech is echo's job: engines, joining, chapter marks, and a bundled ffmpeg so
+# nothing else needs installing. `piper` adds the offline voice (~180 MB, CPU).
+audio = ["echo-tts @ git+https://github.com/Tshort76/echo@v0.3.0"]
+piper = ["echo-tts[piper] @ git+https://github.com/Tshort76/echo@v0.3.0"]
 drive = ["google-api-python-client>=2.140", "google-auth-oauthlib>=1.2"]
 pdf = ["weasyprint>=62"]
 # The browser is the renderer and the pages are server-rendered HTML, so this is

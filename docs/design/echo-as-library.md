@@ -1,6 +1,8 @@
 # Using echo as the text-to-speech library
 
-weekly-news makes its own audio today (`digest/audio.py`: edge-tts, piper as fallback, chapter marks written by hand). echo (`~/dev/echo`) already has the better design for this: engines behind one interface, a script made of titled chapters, retries and resumable synthesis. This document lists what echo needs to provide so weekly-news can hand it the spoken text and get back a chaptered audio file, with no knowledge of how the audio is made.
+**Status:** echo v0.3.0 meets all eleven requirements, and weekly-news uses it (the `audio` extra). The "Today" column below records where echo stood when this was written.
+
+weekly-news made its own audio when this was written (`digest/audio.py`: edge-tts, piper as fallback, chapter marks written by hand). echo (`~/dev/echo`) already has the better design for this: engines behind one interface, a script made of titled chapters, retries and resumable synthesis. This document lists what echo needs to provide so weekly-news can hand it the spoken text and get back a chaptered audio file, with no knowledge of how the audio is made.
 
 The dividing line: **weekly-news decides what is said and where the chapters fall. echo decides how it is spoken and how the file is built**, including which system tools it needs to do that.
 

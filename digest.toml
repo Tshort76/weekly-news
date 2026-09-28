@@ -121,7 +121,8 @@ max_backoff_seconds = 120
 
 [tts]
 enabled = false
-engine = "edge"          # edge | piper
+engine = "edge"          # edge | piper (needs the `piper` extra; also the fallback)
+# piper_model = "en_GB-alan-medium"   # a voice id from rhasspy/piper-voices
 voice = "en-GB-RyanNeural"
 offline = false
 chunk_chars = 3000

@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import types
-import wave
 
 import pytest
 
 from digest import schedule
-from digest.audio import _concat, _strip_id3
 
 
 class Recorder:
@@ -165,41 +163,6 @@ def test_a_path_with_a_space_in_it_is_quoted_for_task_scheduler(monkeypatch):
 )
 def test_the_right_backend_for_the_platform(platform, expected):
     assert schedule.backend(Recorder(), platform).name == expected
-
-
-# ------------------------------------------------------------------- audio
-
-
-def test_joining_mp3_chunks_keeps_one_tag_at_the_front(tmp_path):
-    """A second ID3 tag mid-stream makes some players label the whole file wrong."""
-    tag = b"ID3\x04\x00\x00\x00\x00\x00\x03abc"
-    first, second = tmp_path / "a.mp3", tmp_path / "b.mp3"
-    first.write_bytes(tag + b"FRAME-ONE")
-    second.write_bytes(tag + b"FRAME-TWO")
-    out = tmp_path / "out.mp3"
-    _concat([first, second], out)
-    assert out.read_bytes() == tag + b"FRAME-ONE" + b"FRAME-TWO"
-
-
-def test_an_untagged_chunk_is_passed_through_whole():
-    assert _strip_id3(b"\xff\xfbFRAME") == b"\xff\xfbFRAME"
-
-
-def test_wav_chunks_are_joined_through_the_header_not_appended(tmp_path):
-    """Piper writes WAV, and two WAV files appended is one WAV file plus noise."""
-    parts = []
-    for name in ("a", "b"):
-        path = tmp_path / f"{name}.wav"
-        with wave.open(str(path), "wb") as handle:
-            handle.setnchannels(1)
-            handle.setsampwidth(2)
-            handle.setframerate(22050)
-            handle.writeframes(b"\x00\x01" * 100)
-        parts.append(path)
-    out = tmp_path / "out.wav"
-    _concat(parts, out)
-    with wave.open(str(out), "rb") as handle:
-        assert handle.getnframes() == 200
 
 
 # ------------------------------------------------ telling you it is finished
