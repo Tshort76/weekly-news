@@ -176,7 +176,7 @@ def _run(
 
         mp3 = cfg.run.output_dir / f"{emit_stage.week_stem(week)}.mp3"
         try:
-            files["mp3"] = speak(files["txt"], mp3, cfg)
+            files["mp3"] = speak(files["txt"], mp3, cfg, edition)
         except Exception as exc:  # audio never blocks the edition
             log.error("audio generation failed: %s", exc)
 

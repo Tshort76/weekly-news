@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -122,56 +123,75 @@ def _transition(previous_region: str | None, region: str) -> str:
     return f"Next, {name}."
 
 
-def render_txt(edition: Edition) -> str:
-    """Spoken prose above the divider, an appendix of sources below it."""
-    lines: list[str] = []
+@dataclass
+class Segment:
+    """One stretch of the spoken track, and the chapter it becomes in the MP3."""
+
+    title: str
+    text: str
+
+
+def _chapter_label(region: str) -> str:
+    """"the United States" reads well mid-sentence; a chapter list wants "United States"."""
+    name = region_name(region)
+    return name.removeprefix("the ")[:1].upper() + name.removeprefix("the ")[1:]
+
+
+def spoken_segments(edition: Edition) -> list[Segment]:
+    """The spoken prose, cut where a listener would want to skip to.
+
+    An opening, one segment per entry, and the closing questions. The region
+    bridge ("Next, Europe.") opens the first entry of its region, so jumping to
+    that chapter still hears where the briefing has moved to. Joined with a
+    blank line between them, these are exactly the .txt above the divider.
+    """
+    segments: list[Segment] = []
+    paras: list[str] = []
     if edition.partial:
-        lines.append("[PARTIAL] This edition is incomplete. Some items could not be written.")
-        lines.append("")
+        paras.append("[PARTIAL] This edition is incomplete. Some items could not be written.")
 
     # A lens name often contains a comma ("the architecture of rule, not the
     # contest for it"), and a second one before the week reads as a stumble
     # out loud. A dash separates the two clauses cleanly either way.
     separator = " — " if "," in edition.title else ", "
-    lines.append(f"{edition.title}{separator}week {edition.week}.")
-    lines.append("")
+    paras.append(f"{edition.title}{separator}week {edition.week}.")
     if edition.opening:
-        lines.append(edition.opening)
-        lines.append("")
+        paras.append(edition.opening)
+    segments.append(Segment("Opening", "\n\n".join(paras)))
 
     previous_region: str | None = None
     for entry in edition.entries:
+        paras = []
         bridge = _transition(previous_region, entry.region)
         previous_region = entry.region
         if bridge:
-            lines.append(bridge)
-            lines.append("")
-        lines.append(entry.headline.rstrip("."))
-        lines.append("")
+            paras.append(bridge)
+        headline = entry.headline.rstrip(".")
+        paras.append(headline)
         if entry.provenance == "source" and entry.attribution:
-            lines.append(f"In {entry.attribution}'s own words.")
-            lines.append("")
+            paras.append(f"In {entry.attribution}'s own words.")
         if entry.body:
-            lines.append(entry.body)
-            lines.append("")
+            paras.append(entry.body)
         # A carried entry's hook is its own opening sentence, so reading it
         # again would just repeat the paragraph the listener just heard.
         if entry.hook and entry.provenance != "source":
-            lines.append(entry.hook)
-            lines.append("")
-        for question in entry.questions:
-            lines.append(question)
-            lines.append("")
+            paras.append(entry.hook)
+        paras.extend(entry.questions)
+        title = f"{_chapter_label(entry.region)}: {headline}"
+        segments.append(Segment(title, "\n\n".join(paras)))
 
+    closing = "End of the digest."
     if edition.closing_questions:
-        lines.append("Three questions to chew on.")
-        lines.append("")
-        for question in edition.closing_questions:
-            lines.append(question)
-            lines.append("")
+        paras = ["Three questions to chew on.", *edition.closing_questions, closing]
+        segments.append(Segment("Three questions to chew on", "\n\n".join(paras)))
+    else:
+        segments[-1].text += f"\n\n{closing}"
+    return segments
 
-    lines.append("End of the digest.")
-    lines.append("")
+
+def render_txt(edition: Edition) -> str:
+    """Spoken prose above the divider, an appendix of sources below it."""
+    lines = ["\n\n".join(s.text for s in spoken_segments(edition)), ""]
     lines.append(DIVIDER)
     lines.append("Sources")
     lines.append("")

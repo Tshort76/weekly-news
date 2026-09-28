@@ -310,7 +310,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"no digest text at {txt}", file=sys.stderr)
                 return 1
             out = Path(str(txt).removesuffix(".txt") + ".mp3")
-            speak(txt, out, cfg)
+            speak(txt, out, cfg, state.load_edition(week))
             print(f"  mp3   {out}")
             return 0
 
