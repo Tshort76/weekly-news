@@ -26,8 +26,8 @@ Return a single JSON object and nothing else — no prose, no markdown fence:
 
 Ordering rules:
 - If a theme-of-the-week cluster is named above, its entries come first.
-- Then by fit, highest first.
-- Then interleave so no region appears in more than three entries in a row.
+- Then by fit, highest first. Entries are grouped by region afterwards, so do
+  not interleave or group them yourself.
 - Every cluster_id given above appears exactly once in `order`.
 
 The opening describes the shape of the week: what these items have in common, or

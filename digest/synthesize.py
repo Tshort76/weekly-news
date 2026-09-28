@@ -563,6 +563,21 @@ def govern_length(entries: list[Entry], max_words: int, theme_id: str | None) ->
     return kept
 
 
+def group_by_region(ordered: list[Entry], theme_id: str | None = None) -> list[Entry]:
+    """Keep each region's entries together, so the listener hears one region at a time.
+
+    Regions come in the order their first entry appears, which puts the region
+    of the strongest story first. Within a region the given order stands. The
+    theme-of-the-week entry stays first, so its region leads. Done here rather
+    than asked of the model, so it holds for the fit-order fallback too, and
+    for a local model that does not follow ordering rules closely.
+    """
+    lead = [e for e in ordered if e.cluster_id == theme_id]
+    rest = [e for e in ordered if e.cluster_id != theme_id]
+    regions = list(dict.fromkeys(e.region for e in lead + rest))
+    return lead + [e for region in regions for e in rest if e.region == region]
+
+
 def _fallback_frame(entries: list[Entry]) -> tuple[str, list[str], list[Entry]]:
     ordered = sorted(entries, key=lambda e: (-e.fit, e.cluster_id))
     opening = (
@@ -685,6 +700,7 @@ def synthesize(
     opening, closing, ordered, theme_name, frame_degraded = write_frame(
         entries, cfg, client, theme
     )
+    ordered = group_by_region(ordered, theme.cluster_id if theme else None)
 
     return Edition(
         week=week,

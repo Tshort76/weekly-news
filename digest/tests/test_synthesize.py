@@ -9,7 +9,7 @@ import pytest
 from digest.config import Config, RunCfg
 from digest.llm import extract_json
 from digest.models import Cluster, Entry
-from digest.synthesize import govern_length, synthesize, write_entry, write_frame
+from digest.synthesize import govern_length, group_by_region, synthesize, write_entry, write_frame
 
 from .conftest import load_fixture, make_classified
 
@@ -406,3 +406,21 @@ def test_carried_clusters_cannot_collide_with_the_models_ids():
 
     ids = [c.cluster_id for c in carried_clusters(_reported().items)]
     assert ids == ["s1"] and not any(i.startswith("c") for i in ids)
+
+
+@pytest.mark.parametrize(
+    "given, theme, expected",
+    [
+        ("us:a eu:b us:c asia:d eu:e", None, "us:a us:c eu:b eu:e asia:d"),
+        ("us:a eu:b us:c asia:d eu:e", "e", "eu:e eu:b us:a us:c asia:d"),
+        ("eu:a eu:b", None, "eu:a eu:b"),
+        ("", None, ""),
+    ],
+)
+def test_entries_are_grouped_by_region_in_order_of_first_appearance(given, theme, expected):
+    entries = [
+        Entry(cluster_id=cid, headline=cid, body="", hook="", region=region)
+        for region, cid in (pair.split(":") for pair in given.split())
+    ]
+    got = group_by_region(entries, theme)
+    assert [f"{e.region}:{e.cluster_id}" for e in got] == expected.split()
