@@ -37,15 +37,11 @@ def _segments(text: str, edition: Edition | None, fallback_title: str) -> list[S
 
 
 def _piper_voice(model: str) -> str | None:
-    """`piper_model` names a piper voice, e.g. en_GB-alan-medium.
-
-    It used to be the path to a model file for the piper command line. A path
-    still works as far as naming the voice goes — echo fetches that voice into
-    its own cache — but the file itself is not read.
-    """
+    """`piper_model` is a piper voice id (en_GB-alan-medium), which echo downloads
+    once, or a path to a local .onnx model with its .onnx.json beside it."""
     if not model:
         return None  # echo's default voice
-    return Path(model).name.removesuffix(".onnx") if model.endswith(".onnx") else model
+    return str(Path(model).expanduser()) if model.endswith(".onnx") else model
 
 
 def engine_plan(cfg: Config) -> list[tuple[str, str | None]]:

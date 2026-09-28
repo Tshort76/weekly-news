@@ -27,7 +27,7 @@ def test_edge_first_then_piper_unless_offline():
     assert engine_plan(cfg) == [("piper", None)]
 
 
-def test_an_old_piper_model_path_still_names_its_voice():
-    assert _piper_voice("/models/en_GB-alan-medium.onnx") == "en_GB-alan-medium"
+def test_piper_model_is_a_voice_id_or_a_local_model_path():
+    assert _piper_voice("/models/en_GB-alan-medium.onnx") == "/models/en_GB-alan-medium.onnx"
     assert _piper_voice("en_US-lessac-high") == "en_US-lessac-high"
     assert _piper_voice("") is None
