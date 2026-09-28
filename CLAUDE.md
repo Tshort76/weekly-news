@@ -56,7 +56,7 @@ ingest → normalize → dedupe → classify → select → ground → partition
 
 ## Conventions that matter here
 
-- **Commit straight to `main`.** No worktrees, no feature branches, no pull requests in this repository. Commit on `main` and push it.
+- **No pull requests.** Worktrees are fine, but finished work is merged into `main` directly (fast-forward) and pushed, and the worktree's branch is then deleted.
 
 - **Keep dependencies minimal.** Core deps are deliberately short; anything only one provider or output needs is an extra. The installers (`install.sh`, `install.ps1`) target non-technical users on macOS, Linux and Windows, so don't add system requirements such as ffmpeg.
 - **Output filenames use the Monday's date** (`digest-2026-09-21.txt`, via `emit.week_stem`); the ISO week (`2026-W39`) stays the key everywhere else.
