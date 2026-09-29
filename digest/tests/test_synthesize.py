@@ -174,6 +174,29 @@ def test_a_possessive_is_the_same_name_wearing_an_apostrophe():
     assert novel_names("The Bank of Japan’s decision held.", "Bank of Japan holds rates") == []
 
 
+def test_an_acronym_written_as_a_word_licenses_its_expansion():
+    """SCMP writes "Asean". The writer spelled it out as told, and W40 dropped
+    the entry for it."""
+    from digest.synthesize import novel_names
+
+    assert novel_names(
+        "The Association of Southeast Asian Nations may follow.",
+        "Brussels could lock in an Asean-wide pact",
+    ) == []
+
+
+def test_a_headline_does_not_run_into_the_body():
+    """A headline has no full stop. Joined to the body with a space, W40 read
+    "…with Russia" and "The European Union…" as one invented name."""
+    from digest.synthesize import _spoken_text, novel_names
+
+    text = _spoken_text({
+        "headline": "Sanctions talks stall with Russia",
+        "body": "The European Union delayed its package.",
+    })
+    assert novel_names(text, "EU delays sanctions on Russia") == []
+
+
 def test_geography_the_stories_imply_is_left_alone():
     """Saying Egypt is in North Africa is reasoning, not invention, and a guard
     that needs a gazetteer to tell the difference rots."""

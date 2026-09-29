@@ -180,7 +180,10 @@ MANDATED_EXPANSIONS = frozenset(
 )
 
 _WORD = re.compile(r"[A-Za-z][A-Za-z.'’-]*")
-_SENTENCE = re.compile(r"(?<=[.!?])\s+")
+# A line break ends a name too. A headline carries no full stop, and reading it
+# straight into the body turned "…with Russia" and "The European Union…" into
+# one invented name in W40.
+_SENTENCE = re.compile(r"(?<=[.!?])\s+|\n+")
 _POSSESSIVE = re.compile(r"[’']s$")
 
 
@@ -210,7 +213,9 @@ def _capitalised_spans(text: str) -> list[str]:
                 run.extend(pending)
                 pending = []
                 run.append(tok)
-            elif run and tok.lower() in NAME_JOINERS:
+            # Only the lowercase form joins: a capitalised "The" starts something
+            # new rather than continuing the name before it.
+            elif run and tok in NAME_JOINERS:
                 pending.append(tok)
             else:
                 if len(run) > 1:
@@ -239,8 +244,11 @@ INSTITUTION_WORDS = frozenset(
 )
 
 # Abbreviations whose expansion the prompt actively demands, where the initials
-# of the expansion do not spell the abbreviation back.
+# of the expansion do not spell the abbreviation back. They are looked for in the
+# source in any case, because some outlets write them as words: SCMP's "Asean"
+# got a correctly spelled-out entry dropped in W40.
 ACRONYM_EXPANSIONS = {
+    "ASEAN": "association of southeast asian nations",
     "G20": "group of twenty",
     "G7": "group of seven",
     "G8": "group of eight",
@@ -263,7 +271,10 @@ def novel_names(text: str, source: str) -> list[str]:
     """
     src = source.lower().replace("_", " ")
     src_acronyms = set(re.findall(r"\b[A-Z][A-Z0-9]{1,4}\b", source))
-    allowed = {ACRONYM_EXPANSIONS[a] for a in src_acronyms if a in ACRONYM_EXPANSIONS}
+    allowed = {
+        full for abbr, full in ACRONYM_EXPANSIONS.items()
+        if re.search(rf"\b{abbr}\b", source, re.IGNORECASE)
+    }
     found: dict[str, None] = {}
 
     for span in _capitalised_spans(text):
@@ -343,7 +354,7 @@ INVENTION_NOTE = (
 
 
 def _spoken_text(payload: dict) -> str:
-    return " ".join(
+    return "\n".join(
         str(x) for x in [
             payload.get("headline", ""), payload.get("body", ""),
             payload.get("hook", ""), *(payload.get("questions") or []),
