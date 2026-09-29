@@ -1,11 +1,12 @@
 """Run the digest once a week without anyone remembering to.
 
-Three platforms, three schedulers, one idea: write the operating system's own
-file, hand it to the operating system's own command, and never invent a daemon
-of our own.
+On Linux and Windows: write the operating system's own file, hand it to the
+operating system's own command, and never invent a daemon of our own. On a Mac
+the SwiftBar menu-bar plugin is the scheduler, and nothing is written (see
+`MenuBar`).
 
 Every backend takes a `runner` for the command it would execute, so the tests
-assert on the plist, the unit file and the argument list without any of them
+assert on the unit file and the argument list without any of them
 being run. That is the whole reason this is testable on a Mac.
 
 Two behaviours are carried over from the launchd plist that was in the
@@ -35,8 +36,6 @@ log = logging.getLogger("digest.schedule")
 LABEL = "io.digest.weekly"
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
-# launchd numbers Sunday 0; systemd and Task Scheduler want names.
-LAUNCHD_WEEKDAY = {name: n for n, name in enumerate(WEEKDAYS, start=1)}
 SCHTASKS_WEEKDAY = {name: name[:3].upper() for name in WEEKDAYS}
 
 PATH_HINT = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
@@ -90,86 +89,45 @@ class Backend:
 # ------------------------------------------------------------------ macOS
 
 
-PLIST = """<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key><string>{label}</string>
-  <key>ProgramArguments</key>
-  <array>
-{arguments}
-  </array>
-  <key>StartCalendarInterval</key>
-  <dict>
-    <key>Weekday</key><integer>{weekday}</integer>
-    <key>Hour</key><integer>{hour}</integer>
-    <key>Minute</key><integer>0</integer>
-  </dict>
-  <!-- No API key here on purpose: this file gets copied around, and a key
-       written into it is a key that leaks. The run reads it from the system
-       credential store instead.
+class MenuBar(Backend):
+    """On a Mac the SwiftBar plugin is the scheduler, so there is no file to write.
 
-       PATH is set because launchd starts with a bare environment and reads no
-       shell profile. Without it the browser used for PDFs is not found and
-       that part of the run fails quietly. -->
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>PATH</key><string>{path}</string>
-{home}  </dict>
-  <key>StandardOutPath</key><string>{log_out}</string>
-  <key>StandardErrorPath</key><string>{log_err}</string>
-</dict>
-</plist>
-"""
+    A launch agent ran the digest and told nobody: a run that finished at 07:55
+    on a Friday was noticed, if at all, the following week. The plugin replaced
+    it on 2026-09-08, reading the day and hour from config.toml's [schedule]
+    through `digest status --json`. This app went on writing a launch agent every
+    time the Schedule page was saved, and one came back on 2026-09-25 and ran
+    W39 beside the plugin. So saving a schedule here now only retires that old
+    agent; recording the day and hour is the caller's job, as it always was.
+    """
 
+    name = "menu bar"
 
-class Launchd(Backend):
-    name = "launchd"
-
-    def __init__(self, runner=None, agents: Path | None = None, logs: Path | None = None):
+    def __init__(self, runner=None, agents: Path | None = None):
         super().__init__(runner)
         self.agents = agents or Path.home() / "Library" / "LaunchAgents"
-        self.logs = logs or Path.home() / "Library" / "Logs"
 
     @property
-    def path(self) -> Path:
+    def leftover(self) -> Path:
         return self.agents / f"{LABEL}.plist"
 
-    def render(self, day: str, hour: int) -> str:
-        arguments = "\n".join(f"    <string>{a}</string>" for a in command())
-        digest_home = os.environ.get("DIGEST_HOME", "")
-        home = (
-            f"    <key>DIGEST_HOME</key><string>{digest_home}</string>\n"
-            if digest_home else ""
-        )
-        return PLIST.format(
-            label=LABEL, arguments=arguments, weekday=LAUNCHD_WEEKDAY[day], hour=hour,
-            path=f"{Path.home()}/.local/bin:{PATH_HINT}", home=home,
-            log_out=self.logs / "digest.out.log", log_err=self.logs / "digest.err.log",
-        )
-
     def install(self, day: str, hour: int) -> str:
-        self.agents.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(self.render(day, hour), encoding="utf-8")
-        self.run(["launchctl", "unload", str(self.path)])
-        self.run(["launchctl", "load", str(self.path)])
-        return str(self.path)
+        self.remove()
+        return "the SwiftBar plugin runs it, reading the day and hour from config.toml"
 
     def remove(self) -> bool:
-        if not self.path.exists():
+        """Retire a launch agent left by an older version. The plugin is untouched."""
+        if not self.leftover.exists():
             return False
-        self.run(["launchctl", "unload", str(self.path)])
-        self.path.unlink()
+        self.run(["launchctl", "unload", str(self.leftover)])
+        self.leftover.unlink()
         return True
 
     def status(self) -> Status:
-        if not self.path.exists():
-            return Status(False, "no launch agent installed")
-        found = self.run(["launchctl", "list", LABEL])
-        loaded = getattr(found, "returncode", 1) == 0
-        return Status(True, "loaded" if loaded else "installed but not loaded",
-                      str(self.path))
+        if self.leftover.exists():
+            return Status(True, "an old launch agent is still installed beside the "
+                          "menu-bar plugin; save the schedule to remove it", str(self.leftover))
+        return Status(True, "run by the SwiftBar menu-bar plugin")
 
 
 # ------------------------------------------------------------------ Linux
@@ -307,10 +265,35 @@ class Schtasks(Backend):
         return Status(True, (getattr(found, "stdout", "") or "").strip().splitlines()[-1])
 
 
+def record(enabled: bool, day: str | None = None, hour: int | None = None) -> None:
+    """Write the schedule into config.toml, where the menu-bar plugin reads it.
+
+    Both the Schedule page and `digest schedule` call this, so the Settings page,
+    the plugin and any OS scheduler cannot drift apart. A checkout with no
+    installed config has nowhere to put it and is left alone.
+    """
+    import tomllib  # noqa: PLC0415
+
+    from .config import paths  # noqa: PLC0415
+    from .config.schema import validate_config  # noqa: PLC0415
+    from .config.write import dumps, write  # noqa: PLC0415
+
+    target = paths.config_file()
+    if not target.exists():
+        return
+    raw = tomllib.loads(target.read_text(encoding="utf-8"))
+    given = {"day": day, "hour": hour}
+    raw.setdefault("schedule", {}).update(
+        {"enabled": enabled, **{k: v for k, v in given.items() if v is not None}}
+    )
+    validate_config(raw)
+    write(target, dumps(raw))
+
+
 def backend(runner=None, platform: str | None = None) -> Backend:
     platform = platform or sys.platform
     if platform == "darwin":
-        return Launchd(runner)
+        return MenuBar(runner)
     if platform.startswith("win"):
         return Schtasks(runner)
     if shutil.which("systemctl"):

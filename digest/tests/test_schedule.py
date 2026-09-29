@@ -24,49 +24,38 @@ class Recorder:
 # ------------------------------------------------------------------- macOS
 
 
-def test_the_launch_agent_fires_on_the_day_and_hour_asked_for(tmp_path):
-    plist = schedule.Launchd(Recorder(), tmp_path, tmp_path).render("friday", 7)
-    assert "<key>Weekday</key><integer>5</integer>" in plist
-    assert "<key>Hour</key><integer>7</integer>" in plist
-
-
-@pytest.mark.parametrize("day, number", [("monday", 1), ("friday", 5), ("sunday", 7)])
-def test_launchd_weekday_numbers(day, number, tmp_path):
-    plist = schedule.Launchd(Recorder(), tmp_path, tmp_path).render(day, 7)
-    assert f"<key>Weekday</key><integer>{number}</integer>" in plist
-
-
-def test_the_launch_agent_carries_no_api_key(tmp_path):
-    """The file gets copied around; a key written into it is a key that leaks."""
-    plist = schedule.Launchd(Recorder(), tmp_path, tmp_path).render("friday", 7)
-    for word in ("API_KEY", "sk-", "token", "secret"):
-        assert word not in plist
-
-
-def test_the_launch_agent_sets_path_because_launchd_has_none(tmp_path):
-    """Without it the browser is not found and the PDF fails quietly."""
-    plist = schedule.Launchd(Recorder(), tmp_path, tmp_path).render("friday", 7)
-    assert "<key>PATH</key>" in plist and "/usr/bin" in plist
-
-
-def test_installing_writes_the_plist_and_loads_it(tmp_path):
+def test_a_mac_writes_no_launch_agent(tmp_path):
+    """The menu-bar plugin is the scheduler. A launch agent beside it ran W39
+    that nobody was told about."""
     runner = Recorder()
-    backend = schedule.Launchd(runner, tmp_path, tmp_path)
+    schedule.MenuBar(runner, tmp_path).install("friday", 7)
+    assert list(tmp_path.iterdir()) == []
+    assert runner.calls == []
+
+
+def test_saving_a_schedule_retires_an_old_launch_agent(tmp_path):
+    runner = Recorder()
+    backend = schedule.MenuBar(runner, tmp_path)
+    backend.leftover.write_text("<plist/>", encoding="utf-8")
+    assert "old launch agent" in backend.status().detail
     backend.install("friday", 7)
-    assert backend.path.exists()
-    assert ["launchctl", "load", str(backend.path)] in [c[0] for c in runner.calls]
+    assert not backend.leftover.exists()
+    assert ["launchctl", "unload", str(backend.leftover)] in [c[0] for c in runner.calls]
+    assert backend.status().detail == "run by the SwiftBar menu-bar plugin"
 
 
-def test_removing_unloads_and_deletes(tmp_path):
-    backend = schedule.Launchd(Recorder(), tmp_path, tmp_path)
-    backend.install("friday", 7)
-    assert backend.remove() is True
-    assert not backend.path.exists()
-    assert backend.remove() is False
+def test_the_schedule_is_recorded_where_the_plugin_reads_it(digest_home):
+    """The plugin reads [schedule] from config.toml; turning it off keeps the hour."""
+    import tomllib
 
+    from digest.config import paths
 
-def test_status_before_anything_is_installed(tmp_path):
-    assert schedule.Launchd(Recorder(), tmp_path, tmp_path).status().installed is False
+    paths.config_file().parent.mkdir(parents=True, exist_ok=True)
+    paths.config_file().write_text("", encoding="utf-8")
+    schedule.record(True, "sunday", 18)
+    schedule.record(False)
+    saved = tomllib.loads(paths.config_file().read_text(encoding="utf-8"))["schedule"]
+    assert saved == {"enabled": False, "day": "sunday", "hour": 18}
 
 
 def test_a_run_from_a_scheduler_records_itself(tmp_path):
@@ -159,7 +148,7 @@ def test_a_path_with_a_space_in_it_is_quoted_for_task_scheduler(monkeypatch):
 
 @pytest.mark.parametrize(
     "platform, expected",
-    [("darwin", "launchd"), ("win32", "schtasks")],
+    [("darwin", "menu bar"), ("win32", "schtasks")],
 )
 def test_the_right_backend_for_the_platform(platform, expected):
     assert schedule.backend(Recorder(), platform).name == expected

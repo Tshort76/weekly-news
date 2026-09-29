@@ -358,8 +358,8 @@ def _schedule_command(args, cfg) -> int:
     hour = args.hour if args.hour is not None else 7
 
     if args.action == "show":
-        if isinstance(backend, scheduler.Launchd):
-            print(backend.render(day, hour))
+        if isinstance(backend, scheduler.MenuBar):
+            print("nothing to write: the SwiftBar menu-bar plugin runs it")
         elif isinstance(backend, scheduler.Systemd):
             service, timer = backend.render(day, hour)
             print(service + "\n" + timer)
@@ -369,12 +369,14 @@ def _schedule_command(args, cfg) -> int:
 
     if args.action == "on":
         where = backend.install(day, hour)
+        scheduler.record(True, day, hour)
         print(f"scheduled for {day} at {hour:02d}:00 via {backend.name}")
         print(f"  {where}")
         return 0
 
     if args.action == "off":
         print("removed" if backend.remove() else "nothing was scheduled")
+        scheduler.record(False)
         return 0
 
     status = backend.status()

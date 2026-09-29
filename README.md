@@ -199,7 +199,7 @@ over stored rows, and only an explicit `false` excludes anything.
 | `digest key set <provider>` | Put an API key in the system credential store. |
 | `digest doctor` | Check keys, backends, feeds and paths without spending anything. |
 | `digest open` | The web app, on 127.0.0.1. Needs the `ui` extra. |
-| `digest schedule on\|off\|status` | Run it every week by itself. Uses launchd, a systemd timer or Task Scheduler. |
+| `digest schedule on\|off\|status` | Run it every week by itself. The SwiftBar menu-bar plugin on macOS, a systemd timer or Task Scheduler elsewhere. |
 | `digest where` | Print the config and data directories. |
 
 ### Where the API key goes
@@ -237,8 +237,8 @@ Same four for `anthropic`, with `ANTHROPIC_API_KEY`, `anthropic_key`, and
 `digest-anthropic`. A local Ollama provider needs no key at all, so a fully local
 configuration never touches any of this.
 
-**Do not put the key in the launchd plist.** That file is committed. It is also why
-a key exported in `~/.zshrc` is not enough on its own: launchd starts with a bare
+**Do not put the key in a scheduler file.** That file gets copied around. It is also why
+a key exported in `~/.zshrc` is not enough on its own: a scheduled job starts with a bare
 environment and never reads a shell profile, so an exported key works when you run
 the command yourself and silently fails every Friday morning. All four options above
 are read identically from both.
@@ -284,9 +284,14 @@ digest schedule show     # print the file it would write, without installing it
 digest schedule status
 ```
 
-It writes the operating system's own scheduler file — a launch agent on macOS, a
-systemd user timer (or a crontab line) on Linux, a scheduled task on Windows —
-and hands it to the operating system's own command. Two things it always does:
+On macOS it writes no scheduler file. The SwiftBar menu-bar plugin
+(`weekly-digest.1h.py`) is the scheduler there: it reads the day and hour this
+saves to `config.toml` and starts the run itself. A launch agent ran the digest
+and told nobody, so saving a schedule also removes one left by an older version.
+
+On Linux and Windows it writes the operating system's own scheduler file — a
+systemd user timer (or a crontab line), or a scheduled task — and hands it to
+the operating system's own command. Two things it always does:
 it puts no API key in the file, because a scheduler file is a file that gets
 copied around; and it sets `PATH` explicitly, because a scheduled job starts
 with a bare environment and would otherwise fail to find the browser used for

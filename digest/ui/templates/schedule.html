@@ -17,5 +17,6 @@
   </div>
 </form>
 
+{% if backend == "menu bar" %}<p class="sub">On this Mac the SwiftBar menu-bar plugin starts the run: saving here records the day and hour it reads, and writes no launch agent.</p>{% endif %}
 <p class="sub">The scheduled run writes the week's files while nothing is open. It carries no API key — the key is read from the system credential store when the run starts — and it sets PATH explicitly, because a scheduled job starts with a bare environment and would otherwise fail to find the browser used for PDFs.</p>
 {% endblock %}

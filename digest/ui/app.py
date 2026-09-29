@@ -274,16 +274,10 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
         backend = scheduler.backend()
         if off:
             backend.remove()
+            scheduler.record(False)
         else:
             backend.install(day, hour)
-        # The config keeps the same answer, so the Settings page and the actual
-        # scheduler cannot drift apart.
-        raw = tomllib.loads(paths.config_file().read_text(encoding="utf-8"))
-        raw.setdefault("schedule", {}).update(
-            {"enabled": not off, "day": day, "hour": hour}
-        )
-        validate_config(raw)
-        write(paths.config_file(), dumps(raw))
+            scheduler.record(True, day, hour)
         return RedirectResponse("/schedule", status_code=303)
 
     @app.post("/open-folder")
