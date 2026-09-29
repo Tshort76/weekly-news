@@ -2,21 +2,17 @@
 {% set active = "schedule" %}
 {% block body %}
 <h1>Schedule</h1>
-<p class="sub">Currently <b>{{ "on" if status.installed else "off" }}</b> — {{ status.detail }}. This machine uses <span class="mono">{{ backend }}</span>.</p>
+<p class="sub">The SwiftBar menu-bar plugin starts the week's run on <b>{{ when.day }}</b> from <b>{{ "%02d"|format(when.hour) }}:00</b>, and on any later refresh that week if the Mac was asleep.</p>
 
 <form method="post" action="/schedule">
   <label>Day
     <select name="day">
-      {% for day in days %}<option value="{{ day }}" {{ "selected" if cfg.run.weekday == day }}>{{ day }}</option>{% endfor %}
+      {% for day in days %}<option value="{{ day }}" {{ "selected" if when.day == day }}>{{ day }}</option>{% endfor %}
     </select>
   </label>
-  <label>Hour <input class="input" type="number" name="hour" min="0" max="23" value="7"></label>
+  <label>Hour <input class="input" type="number" name="hour" min="0" max="23" value="{{ when.hour }}"></label>
   <div class="actions">
-    <button class="primary">Schedule it</button>
-    <button class="quiet" name="off" value="1">Turn it off</button>
+    <button class="primary">Save</button>
   </div>
 </form>
-
-{% if backend == "menu bar" %}<p class="sub">On this Mac the SwiftBar menu-bar plugin starts the run: saving here records the day and hour it reads, and writes no launch agent.</p>{% endif %}
-<p class="sub">The scheduled run writes the week's files while nothing is open. It carries no API key — the key is read from the system credential store when the run starts — and it sets PATH explicitly, because a scheduled job starts with a bare environment and would otherwise fail to find the browser used for PDFs.</p>
 {% endblock %}

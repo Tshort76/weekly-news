@@ -23,86 +23,39 @@ bodies, never behind a paywall. See [Attribution](#attribution).
 **What it does not do:** breaking news, daily cadence, full-text scraping of paywalled
 articles, opinion, forecasting, horse-race politics, celebrity, or sport.
 
-## Install
+## Setup
 
-Two ways in, depending on whether you want to run this or work on it.
-
-### As an app
-
-```bash
-# macOS and Linux
-curl -LsSf https://raw.githubusercontent.com/Tshort76/weekly-news/main/install.sh | sh
-
-# Windows
-irm https://raw.githubusercontent.com/Tshort76/weekly-news/main/install.ps1 | iex
-```
-
-That installs `uv` if it is missing, notices whether you have Ollama, installs
-the tool and opens the app. Or do it yourself:
-
-```bash
-uv tool install "weekly-news[ollama,ui] @ git+https://github.com/Tshort76/weekly-news"   # or [anthropic] / [gemini]
-digest open                                         # setup and everything else, in a browser
-```
-
-It installs from this repository rather than from a package index — there is no
-release yet, and the git URL is the whole distribution. `uv` handles it the same
-way either way.
-
-`digest open` serves the app on `127.0.0.1:8765` and opens it. Nothing listens
-anywhere a second machine could reach it: one person, one machine, no accounts.
-It is where you do setup, watch a run, read a week beside its audit, and manage
-feeds. A run takes about twenty minutes and survives the tab being closed —
-progress is buffered by the job, not by the page.
-
-Prefer the terminal? Everything works without the browser:
-
-```bash
-uv tool install "weekly-news[ollama] @ git+https://github.com/Tshort76/weekly-news"
-digest init                               # press Enter through it if you like
-digest run --dry-run
-```
-
-`digest init` looks for a local Ollama, says what it found and what it recommends,
-and writes a config you can read. Every question has a default, so answering none of
-them still produces something that runs.
-
-Config and data live outside any checkout, in the conventional place for your
-platform — `digest where` prints both. `DIGEST_HOME` overrides them, which is how
-you run two lenses out of one install.
-
-| File | What it is |
-| --- | --- |
-| `lens.md` | The editorial lens. **This is the product.** Edit it. |
-| `lens.toml` | The same lens as form fields, for the setup UI — and the only place a `[gate]` can live. |
-| `config.toml` | Plumbing: models, output, schedule. `[advanced]` holds the measured settings. |
-| `feeds.toml` | Where the headlines come from. |
-
-To update later, install it again the same way with `--reinstall`:
-
-```bash
-uv tool install --reinstall "weekly-news[ollama,ui] @ git+https://github.com/Tshort76/weekly-news"
-```
-
-`--reinstall` rather than `--force`, and it matters. Installing from git with no
-version bump lets `uv` serve a cached build, so `--force` can reinstall the copy
-you already had and tell you nothing. If you suspect that has happened, `uv cache
-clean weekly-news` first.
-
-Already running this from a checkout? `digest import` brings your `digest.toml`,
-your feeds and — importantly — your record of what you have already seen across into
-the app. It copies rather than moves, and never deletes anything.
-
-### As a checkout
+This is a local project, run from its checkout. Nothing is installed anywhere else.
 
 ```bash
 uv venv --python 3.12
-uv pip install -e ".[dev]"          # add ",audio" / ",drive" as needed
-python -m digest run --dry-run      # reads digest.toml from the working directory
+uv pip install -e ".[dev,audio,ui]"     # add ",drive" / ",pdf" as needed
+.venv/bin/digest doctor                 # keys, backends, feeds and paths; spends nothing
+.venv/bin/digest run --dry-run          # a full week that writes files but records nothing
 ```
 
-A checkout keeps working exactly as it did: `digest.toml` in the working directory is
-still found and still read, with no import step.
+`.venv/bin/digest` is the same as `python -m digest` with the venv active. The
+editable install means a change on `main` is live the moment it is merged.
+
+Config is versioned in `config/`, so a worktree runs with its own branch's lens and
+settings:
+
+| File | What it is |
+| --- | --- |
+| `config/lens.md` | The editorial lens. **This is the product.** Edit it. |
+| `config/lens.toml` | The same lens as form fields, for the web app — and the only place a `[gate]` can live. |
+| `config/config.toml` | Plumbing: models, output, schedule. `[advanced]` holds the measured settings. |
+| `config/feeds.toml` | Where the headlines come from. |
+| `config/NOTES.md` | Why the measured settings are what they are. |
+
+Data — `state.db` and the logs — lives at `~/Library/Application Support/Digest`,
+outside every checkout, so a run from any worktree sees the same record of what has
+already been published. `digest where` prints both. `DIGEST_HOME` overrides both,
+which is what every test does.
+
+`digest open` serves the web app on `127.0.0.1:8765`: watch a run, read a week beside
+its audit, edit the lens, manage feeds. Nothing listens anywhere a second machine
+could reach it.
 
 ### Lenses
 
@@ -196,10 +149,8 @@ over stored rows, and only an explicit `false` excludes anything.
 | `digest audit --week …` | What got dropped, and why. |
 | `digest lens show \| use \| list` | The editorial lens. |
 | `digest feeds list \| add \| check` | Feeds. `check` fetches once and reports what a feed would contribute. |
-| `digest key set <provider>` | Put an API key in the system credential store. |
 | `digest doctor` | Check keys, backends, feeds and paths without spending anything. |
 | `digest open` | The web app, on 127.0.0.1. Needs the `ui` extra. |
-| `digest schedule on\|off\|status` | Run it every week by itself. The SwiftBar menu-bar plugin on macOS, a systemd timer or Task Scheduler elsewhere. |
 | `digest where` | Print the config and data directories. |
 
 ### Where the API key goes
@@ -215,33 +166,16 @@ python -m digest doctor              # confirms it without printing it
 `.gitignore` only protects a directory that git is actually tracking — if you copy
 this project somewhere new, `git init` before putting a key in it.
 
-The key is looked up in this order, first hit winning:
+The key is looked up in two places, first hit winning: the real environment
+(`$GEMINI_API_KEY`), so a one-off run can override, then `.env` in the checkout's
+root. Same for `ANTHROPIC_API_KEY` and `BRAVE_SEARCH_API_KEY`. A local Ollama
+provider needs no key at all, so a fully local configuration never touches any of
+this. A worktree has no `.env` of its own, so a hosted-model run from one needs the
+key in the environment.
 
-1. `$GEMINI_API_KEY` in the real environment, so a one-off run can override
-2. `GEMINI_API_KEY` in `.env` — beside `digest.toml` first, then the project root,
-   then the working directory
-3. `~/.config/digest/gemini_key`, or wherever `[credentials]` in `digest.toml` points
-4. the system credential store — `digest key set gemini`, which uses the macOS
-   Keychain, the Windows Credential Locker or the Linux Secret Service
-5. the older macOS-only Keychain entry, service `digest-gemini`, so an existing
-   install keeps working without being asked to re-enter anything
-
-The real environment beating `.env` is the usual dotenv convention. The two options
-below `.env` exist for cases where a key in the working tree is awkward: several
-checkouts or worktrees of this project each need their own copy of `.env`, whereas
-`~/.config` and the Keychain are shared by all of them and survive deleting the
-directory. Use whichever suits you — the run reads all four the same way, and
-`doctor` tells you which one it actually used.
-
-Same four for `anthropic`, with `ANTHROPIC_API_KEY`, `anthropic_key`, and
-`digest-anthropic`. A local Ollama provider needs no key at all, so a fully local
-configuration never touches any of this.
-
-**Do not put the key in a scheduler file.** That file gets copied around. It is also why
-a key exported in `~/.zshrc` is not enough on its own: a scheduled job starts with a bare
-environment and never reads a shell profile, so an exported key works when you run
-the command yourself and silently fails every Friday morning. All four options above
-are read identically from both.
+A key exported in `~/.zshrc` is not enough on its own: the menu-bar plugin starts
+runs with a bare environment and never reads a shell profile. `.env` is read the
+same way however the run was started.
 
 `python -m digest doctor` reports which providers each stage will use, whether the
 key was found and where it came from, and whether each backend starts — printing
@@ -259,9 +193,8 @@ one-line blurbs, so the exposure is small, but it is a fact rather than a footno
 the limits are per-account and not published, which is why the pacing below is
 configurable rather than hard-coded.
 
-To run on Claude instead, set `provider = "anthropic"` in `digest.toml` (the block is
-written out in the comments there), `uv pip install -e ".[anthropic]"`, and export
-`ANTHROPIC_API_KEY`. Measured cost on that path is about $0.60 a week.
+To run on Claude instead, set `provider = "anthropic"` in `config/config.toml`,
+`uv pip install -e ".[anthropic]"`, and put `ANTHROPIC_API_KEY` in `.env`. Measured cost on that path is about $0.60 a week.
 
 ## Running
 
@@ -276,26 +209,11 @@ python -m digest speak --week 2026-W36            # audio from an existing .txt
 python -m digest doctor                          # keys, providers and backends
 ```
 
-To run it every week without remembering to:
-
-```bash
-digest schedule on --day friday --hour 7
-digest schedule show     # print the file it would write, without installing it
-digest schedule status
-```
-
-On macOS it writes no scheduler file. The SwiftBar menu-bar plugin
-(`weekly-digest.1h.py`) is the scheduler there: it reads the day and hour this
-saves to `config.toml` and starts the run itself. A launch agent ran the digest
-and told nobody, so saving a schedule also removes one left by an older version.
-
-On Linux and Windows it writes the operating system's own scheduler file — a
-systemd user timer (or a crontab line), or a scheduled task — and hands it to
-the operating system's own command. Two things it always does:
-it puts no API key in the file, because a scheduler file is a file that gets
-copied around; and it sets `PATH` explicitly, because a scheduled job starts
-with a bare environment and would otherwise fail to find the browser used for
-PDFs, quietly, while the rest of the run succeeds.
+The weekly run is started by the SwiftBar menu-bar plugin
+(`~/dev/swiftbar-plugins/weekly-digest.1h.py`). It reads the day and hour from
+`[schedule]` in `config/config.toml` (the web app's Schedule page edits them), runs
+`.venv/bin/digest run --scheduled`, and shows what needs attention. Nothing else
+schedules it — there is no launch agent.
 
 ## What a run does
 
@@ -303,7 +221,7 @@ PDFs, quietly, while the rest of the run succeeds.
 ingest → normalize → dedupe → classify → select → cluster → synthesize → emit → deliver
 ```
 
-Feeds come from `feeds.toml` (or `digest.toml` in a checkout). Classification is a model judging title and blurb
+Feeds come from `config/feeds.toml`. Classification is a model judging title and blurb
 against the rubric — never an article body, and never a keyword list. Selection applies
 the fit threshold, the saga rule and the contest cap. Clustering and writing are two
 further passes, so no single call has to hold the whole edition.
@@ -480,7 +398,7 @@ within a call or two of starting, which is what moved the writing back off it.
 
 There are two different limits and they need different handling.
 
-A **per-minute** cap is what `min_interval_seconds` in `digest.toml` is for. It spaces
+A **per-minute** cap is what `min_interval_seconds` in `config/config.toml` is for. It spaces
 calls out — the shipped value of 12 seconds paces a run at 5 requests a minute. Lower
 it if your dashboard says you have more room.
 
@@ -516,9 +434,9 @@ disk, so a crash mid-run costs nothing.
 
 Delivery is off until you do this. Two ways; the first is the default.
 
-**OAuth (default).** In the [Google Cloud console](https://console.cloud.google.com/), create a project, enable the Google Drive API, then create an OAuth client of type *Desktop app* and download its JSON to `~/.config/digest/credentials.json`. Open the Drive folder you want the digests in and copy the id out of its URL — the part after `/folders/`. Put that in `digest.toml` as `folder_id`, set `enabled = true`, then run `python -m digest run` once from a terminal where a browser can open: it walks the consent screen and caches a token at `~/.config/digest/token.json`. Every later run, scheduled ones included, uses the cached token and needs no browser.
+**OAuth (default).** In the [Google Cloud console](https://console.cloud.google.com/), create a project, enable the Google Drive API, then create an OAuth client of type *Desktop app* and download its JSON to `config/credentials.json` (gitignored). Open the Drive folder you want the digests in and copy the id out of its URL — the part after `/folders/`. Put that in `config/config.toml` under `[delivery.drive]` as `folder_id`, set `enabled = true`, then run `python -m digest run` once from a terminal where a browser can open: it walks the consent screen and caches a token at `config/token.json` (also gitignored). Every later run, scheduled ones included, uses the cached token and needs no browser.
 
-**rclone (alternative).** If the OAuth flow is more trouble than it is worth: `brew install rclone`, `rclone config` to add a Drive remote, then set `method = "rclone"` and `rclone_remote = "gdrive:digests"` in `digest.toml`. `folder_id` is unused in this mode.
+**rclone (alternative).** If the OAuth flow is more trouble than it is worth: `brew install rclone`, `rclone config` to add a Drive remote, then set `method = "rclone"` and `rclone_remote = "gdrive:digests"` in `config/config.toml`. `folder_id` is unused in this mode.
 
 Either way, uploads are idempotent — re-running a week replaces that week's files rather than adding a second copy — and a failed upload never costs you the edition, because the local files are written first and the upload retries on the next run.
 
@@ -534,10 +452,10 @@ made from the part above the dashes only.
 
 ## State
 
-SQLite at `~/.local/share/digest/state.db`: `seen` (never show an item twice),
+SQLite at `~/Library/Application Support/Digest/state.db`: `seen` (never show an item twice),
 `classified` (every verdict, so `audit` can explain any week), `editions` and `entries`
 (saga detection and "since last week" diffs), `deliveries` (so an upload is idempotent).
-Logs at `~/.local/share/digest/logs/<week>.log`.
+Logs at `~/Library/Application Support/Digest/logs/<week>.log`.
 
 ## Failure behaviour
 
@@ -616,7 +534,7 @@ default are:
 - [Financial Times](https://www.ft.com) — world headlines
 - [Semafor](https://www.semafor.com)
 
-Change or remove any of them in `digest.toml`; nothing in the code assumes a
+Change or remove any of them in `config/feeds.toml`; nothing in the code assumes a
 particular publisher. If you are a publisher and would rather not be in the default
 list, open an issue and I will remove it.
 

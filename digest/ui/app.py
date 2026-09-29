@@ -26,7 +26,7 @@ from fastapi.templating import Jinja2Templates
 
 from .. import discover, jobs, pipeline
 from ..config import ConfigError, load, paths
-from ..config.schema import SCHEMA_VERSION, validate_config, validate_feeds
+from ..config.schema import validate_config, validate_feeds
 from ..config.write import dumps, dumps_feeds, write
 from ..lens import presets, store
 from ..state import State
@@ -58,9 +58,14 @@ def _feeds() -> list[dict]:
     return validate_feeds(tomllib.loads(path.read_text(encoding="utf-8")))
 
 
-def _save_feeds(feeds: list[dict]) -> None:
-    from ..config.legacy import FEEDS_HEADER  # noqa: PLC0415
+FEEDS_HEADER = """Where the headlines come from.
 
+`weight` breaks a tie when two feeds carry the same story: the higher weight
+wins and the loser's link is kept as an "also in". `verified` is the last date
+the app fetched this feed successfully."""
+
+
+def _save_feeds(feeds: list[dict]) -> None:
     write(paths.feeds_file(), dumps_feeds(feeds, FEEDS_HEADER))
 
 
@@ -136,9 +141,7 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse)
     def home(request: Request):
-        cfg = _config_or_none()
-        if cfg is None:
-            return RedirectResponse("/setup", status_code=303)
+        cfg = load()  # a broken config.toml says so here rather than rendering blank
         with State(cfg.db_path) as state:
             runs = state.recent_runs(10)
             latest = state.load_edition(pipeline.iso_week())
@@ -262,22 +265,16 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
     @app.get("/schedule", response_class=HTMLResponse)
     def schedule_page(request: Request):
         from .. import schedule as scheduler  # noqa: PLC0415
+        from ..health import _scheduled_at  # noqa: PLC0415
 
-        backend = scheduler.backend()
-        return page(request, "schedule.html", backend=backend.name,
-                    status=backend.status(), days=scheduler.WEEKDAYS)
+        return page(request, "schedule.html", when=_scheduled_at(load()),
+                    days=scheduler.WEEKDAYS)
 
     @app.post("/schedule")
-    def set_schedule(day: str = Form("friday"), hour: int = Form(7), off: str = Form("")):
+    def set_schedule(day: str = Form("friday"), hour: int = Form(7)):
         from .. import schedule as scheduler  # noqa: PLC0415
 
-        backend = scheduler.backend()
-        if off:
-            backend.remove()
-            scheduler.record(False)
-        else:
-            backend.install(day, hour)
-            scheduler.record(True, day, hour)
+        scheduler.record(day, hour)
         return RedirectResponse("/schedule", status_code=303)
 
     @app.post("/open-folder")
@@ -293,57 +290,6 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
             subprocess.Popen([opener, folder])
         except OSError:
             pass
-        return RedirectResponse("/", status_code=303)
-
-    # ----------------------------------------------------------------- setup
-
-    @app.get("/setup", response_class=HTMLResponse)
-    def setup(request: Request):
-        found = discover.probe_ollama()
-        memory = discover.total_memory_gb()
-        return page(
-            request, "setup.html",
-            found=found, memory=memory,
-            classify=discover.recommend("classify", found, memory),
-            synthesize=discover.recommend("synthesize", found, memory),
-            lenses=[(n, presets.load(n).name, presets.calibrated(n))
-                    for n in presets.available()],
-            legacy=_legacy_path(),
-        )
-
-    @app.post("/setup")
-    def finish_setup(
-        lens: str = Form(...), classify: str = Form(...), synthesize: str = Form(...),
-        provider: str = Form("ollama"), minutes: int = Form(58),
-        folder: str = Form("~/digests"),
-    ):
-        from ..init import _advanced_defaults  # noqa: PLC0415
-
-        store.install_preset(lens)
-        models = {"classify": {"model": classify, "provider": provider},
-                  "synthesize": {"model": synthesize, "provider": provider}}
-        config = {
-            "schema_version": SCHEMA_VERSION,
-            "models": {"provider": provider, "classify_provider": None,
-                       "synthesize_provider": None,
-                       "classify": classify, "synthesize": synthesize},
-            "output": {"minutes": minutes, "folder": folder, "html": True,
-                       "pdf": False, "audio": False},
-            "schedule": {"enabled": False, "day": "friday", "hour": 7},
-            "delivery": {"drive": {"enabled": False, "folder_id": "",
-                                   "method": "oauth", "rclone_remote": ""}},
-            "advanced": _advanced_defaults(models, "http://localhost:11434"),
-        }
-        validate_config(config)
-        write(paths.config_file(), dumps(config))
-        _save_feeds([dict(f, enabled=True) for f in presets.load(lens).feeds])
-        return RedirectResponse("/", status_code=303)
-
-    @app.post("/setup/import")
-    def import_existing():
-        from ..config import legacy  # noqa: PLC0415
-
-        legacy.import_legacy()
         return RedirectResponse("/", status_code=303)
 
     # ------------------------------------------------------------------ lens
@@ -552,12 +498,6 @@ def create_app(runner: jobs.Runner | None = None) -> FastAPI:
                     data_dir=paths.data_dir())
 
     return app
-
-
-def _legacy_path():
-    from ..config import legacy  # noqa: PLC0415
-
-    return legacy.find_legacy_config()
 
 
 def serve(host: str = HOST, port: int = PORT, open_browser: bool = True) -> int:

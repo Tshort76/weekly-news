@@ -8,6 +8,8 @@ Everything the plan called for is built except where noted below. The suite is
 328 tests, runs in about a second, and now fails any test that opens a socket
 rather than merely being expected not to.
 
+**Since 2026-09-29 none of the distribution half exists.** The project runs from its checkout's `.venv` with its config versioned in `config/`; the installers, the setup wizard, `digest init`/`import`/`key`, the legacy importer, the keychain lookups and the OS scheduler backends were all removed, and the SwiftBar menu-bar plugin is the scheduler. Read what follows about those as history.
+
 ## Where the build departed from the plan
 
 **No pydantic.** The design proposed it for config validation and for giving the

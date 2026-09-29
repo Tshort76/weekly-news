@@ -1,3 +1,10 @@
+# Why the settings are what they are
+
+The comments below were written beside each value in the old `digest.toml`, and most record a measurement. `config.toml` cannot carry them, because the Settings page rewrites that file without comments.
+
+The key names are the old ones. `[run]` and most of `[models]` now live under `[advanced]`, `max_words` became `output.minutes` (at 145 words a minute), and `[tts]` became `output.audio` plus the `advanced.tts_*` keys. The values are as they stood on 2026-09-29; `config.toml` is the source of truth for what is set now.
+
+```toml
 # Weekly world digest. The rubric in digest/prompts/rubric.md is the product;
 # this file is only plumbing.
 
@@ -280,3 +287,4 @@ name = "Semafor"
 url = "https://www.semafor.com/rss.xml"
 section = "mixed"
 weight = 0.7
+```

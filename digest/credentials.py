@@ -1,39 +1,24 @@
-"""Where an API key comes from, in priority order.
+"""Where an API key comes from: the environment, then the checkout's `.env`.
 
-The scheduled job is the reason this exists. launchd starts with a bare
-environment and never reads a shell profile, so the obvious fix is to put the key
-in the plist — but the plist lives in the repository, and a key in a tracked file
-is a key that gets committed. A file outside the repo, or the macOS Keychain,
-avoids that without making the interactive case any harder.
+The menu-bar plugin starts runs with a bare environment and no shell profile,
+so a key exported in `~/.zshrc` is not enough on its own. The `.env` beside the
+code is gitignored and is read the same way however the run was started.
 """
 
 from __future__ import annotations
 
 import logging
 import os
-import shutil
 import stat
-import subprocess
 from pathlib import Path
+
+from .config.paths import REPO
 
 log = logging.getLogger("digest.credentials")
 
 ENV_VARS = {"gemini": "GEMINI_API_KEY", "anthropic": "ANTHROPIC_API_KEY",
             "brave": "BRAVE_SEARCH_API_KEY"}
-DOTENV_NAME = ".env"
-DEFAULT_KEY_FILES = {
-    "gemini": Path.home() / ".config/digest/gemini_key",
-    "anthropic": Path.home() / ".config/digest/anthropic_key",
-    "brave": Path.home() / ".config/digest/brave_key",
-}
-KEYCHAIN_SERVICES = {"gemini": "digest-gemini", "anthropic": "digest-anthropic",
-                     "brave": "digest-brave"}
-
-# One service name for the cross-platform store, with the provider as the
-# account. `keyring` wraps the macOS Keychain, the Windows Credential Locker and
-# the Linux Secret Service, and falls back to a file it encrypts itself on a
-# headless box with none of those.
-KEYRING_SERVICE = "digest"
+DOTENV = REPO / ".env"
 
 
 def parse_dotenv(text: str) -> dict[str, str]:
@@ -59,153 +44,38 @@ def parse_dotenv(text: str) -> dict[str, str]:
     return values
 
 
-def _from_dotenv(paths: list[Path], var: str) -> tuple[str | None, Path | None]:
-    for path in paths:
-        if not path.is_file():
-            continue
-        mode = stat.S_IMODE(path.stat().st_mode)
-        if mode & 0o077:
-            log.warning(
-                "%s is readable by others (mode %o); run: chmod 600 %s", path, mode, path
-            )
-        value = parse_dotenv(path.read_text(encoding="utf-8")).get(var, "").strip()
-        if value:
-            return value, path
-    return None, None
-
-
-def dotenv_paths(config_path: Path | None = None) -> list[Path]:
-    """Where a .env may live: beside digest.toml first, then the package's own
-    directory, then the working directory. Duplicates removed, order kept."""
-    candidates: list[Path] = []
-    if config_path:
-        candidates.append(Path(config_path).resolve().parent / DOTENV_NAME)
-    candidates.append(Path(__file__).resolve().parent.parent / DOTENV_NAME)
-    candidates.append(Path.cwd() / DOTENV_NAME)
-    seen: set[Path] = set()
-    return [p for p in candidates if not (p in seen or seen.add(p))]
-
-
-def _from_file(path: Path) -> str | None:
-    if not path.exists():
+def _from_dotenv(path: Path, var: str) -> str | None:
+    if not path.is_file():
         return None
     mode = stat.S_IMODE(path.stat().st_mode)
     if mode & 0o077:
-        log.warning(
-            "%s is readable by others (mode %o); run: chmod 600 %s", path, mode, path
-        )
-    key = path.read_text(encoding="utf-8").strip()
-    return key or None
+        log.warning("%s is readable by others (mode %o); run: chmod 600 %s", path, mode, path)
+    return parse_dotenv(path.read_text(encoding="utf-8")).get(var, "").strip() or None
 
 
-def _from_keychain(service: str) -> str | None:
-    """macOS only, and silent everywhere else."""
-    if not shutil.which("security"):
-        return None
-    try:
-        result = subprocess.run(
-            ["security", "find-generic-password", "-s", service, "-w"],
-            capture_output=True, text=True, timeout=10,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return result.stdout.strip() or None if result.returncode == 0 else None
-
-
-def _from_keyring(provider: str) -> str | None:
-    """The app's own store. Absent `keyring`, this is simply skipped."""
-    try:
-        import keyring  # noqa: PLC0415
-
-        return (keyring.get_password(KEYRING_SERVICE, provider) or "").strip() or None
-    except Exception as exc:  # no backend, locked store, not installed
-        log.debug("keyring unavailable: %s", exc)
-        return None
-
-
-def store(provider: str, key: str) -> str:
-    """Put a key where the app will find it. Raises if there is no backend."""
-    import keyring  # noqa: PLC0415
-
-    keyring.set_password(KEYRING_SERVICE, provider, key.strip())
-    return f"the credential store, account {provider!r}"
-
-
-def forget(provider: str) -> bool:
-    try:
-        import keyring  # noqa: PLC0415
-
-        keyring.delete_password(KEYRING_SERVICE, provider)
-        return True
-    except Exception:
-        return False
-
-
-def resolve(
-    provider: str,
-    key_file: Path | None = None,
-    config_path: Path | None = None,
-) -> tuple[str | None, str]:
-    """Return (key, where it came from): the real environment, then a .env file,
-    then a key file, then the credential store, then the old macOS Keychain.
-
-    A real environment variable beats .env, which is the dotenv convention and
-    what makes a one-off override work. Callers that report the source use this
-    rather than re-deriving it, so what `doctor` prints and what a run actually
-    reads can never disagree.
-    """
+def resolve(provider: str, dotenv: Path = DOTENV) -> tuple[str | None, str]:
+    """Return (key, where it came from). A real environment variable beats .env,
+    which is the dotenv convention and what makes a one-off override work."""
     env_var = ENV_VARS.get(provider)
-    if env_var and os.environ.get(env_var, "").strip():
+    if not env_var:
+        return None, "nowhere"
+    if os.environ.get(env_var, "").strip():
         return os.environ[env_var].strip(), f"${env_var}"
-
-    if env_var:
-        key, found_in = _from_dotenv(dotenv_paths(config_path), env_var)
-        if key:
-            return key, f"{found_in} ({env_var})"
-
-    path = key_file or DEFAULT_KEY_FILES.get(provider)
-    if path:
-        expanded = Path(os.path.expanduser(str(path)))
-        key = _from_file(expanded)
-        if key:
-            return key, str(expanded)
-
-    key = _from_keyring(provider)
+    key = _from_dotenv(dotenv, env_var)
     if key:
-        return key, f"the credential store, account {provider!r}"
-
-    # The old macOS-only lookup, kept so an existing install keeps working
-    # without being asked to re-enter anything.
-    service = KEYCHAIN_SERVICES.get(provider)
-    if service:
-        key = _from_keychain(service)
-        if key:
-            return key, f"the Keychain, service {service!r}"
+        return key, f"{dotenv} ({env_var})"
     return None, "nowhere"
 
 
-def api_key(
-    provider: str, key_file: Path | None = None, config_path: Path | None = None
-) -> str | None:
-    return resolve(provider, key_file, config_path)[0]
+def api_key(provider: str) -> str | None:
+    return resolve(provider)[0]
 
 
-def describe_sources(
-    provider: str, key_file: Path | None = None, config_path: Path | None = None
-) -> str:
+def describe_sources(provider: str, dotenv: Path = DOTENV) -> str:
     """What to tell someone whose key was not found anywhere."""
     env_var = ENV_VARS.get(provider, "the API key variable")
-    path = key_file or DEFAULT_KEY_FILES.get(provider)
-    service = KEYCHAIN_SERVICES.get(provider)
-    candidates = dotenv_paths(config_path)
-    dotenv = candidates[0] if candidates else Path.cwd() / DOTENV_NAME
     return (
-        f"no {provider} key found. Looked at, in order:\n"
-        f"  1. ${env_var} in the environment\n"
-        f"  2. {env_var} in {dotenv}\n"
-        f"  3. {path}\n"
-        f"  4. the credential store, account {provider!r}\n"
-        f"  5. the macOS Keychain, service {service!r}\n"
-        f"Add one with:  digest key set {provider}\n"
-        f"or:            printf '{env_var}=%s\\n' 'YOUR_KEY' > {dotenv} && chmod 600 {dotenv}"
+        f"no {provider} key found. Looked for ${env_var} in the environment, then "
+        f"in {dotenv}.\n"
+        f"Add one with:  printf '{env_var}=%s\\n' 'YOUR_KEY' >> {dotenv} && chmod 600 {dotenv}"
     )

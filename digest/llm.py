@@ -317,11 +317,9 @@ def make_backend(provider: str, cfg=None) -> Backend:
     else:
         from .credentials import api_key, describe_sources  # noqa: PLC0415
 
-        key_file = cfg.credentials.key_file(provider) if cfg is not None else None
-        config_path = cfg.config_path if cfg is not None else None
-        key = api_key(provider, key_file, config_path)
+        key = api_key(provider)
         if not key:
-            raise LLMError(describe_sources(provider, key_file, config_path))
+            raise LLMError(describe_sources(provider))
         kwargs = {"api_key": key}
 
     try:

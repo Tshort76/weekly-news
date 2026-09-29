@@ -211,7 +211,7 @@ def _advice(error: dict | None, run: dict) -> str:
                 "reset or switch that stage to a local model on the Settings page, "
                 "then re-run the week.")
     if "credential" in text.lower() or "api key" in text.lower() or "401" in text:
-        return "The API key was rejected. Set it again with <code>digest key set</code>."
+        return "The API key was rejected. Check it in the checkout's <code>.env</code>."
     return ("Nothing was marked seen, so re-running the week starts from the same "
             "headlines and loses nothing.")
 
@@ -392,9 +392,8 @@ def snapshot(cfg, state) -> dict:
 def _scheduled_at(cfg) -> dict:
     """When the weekly run is meant to happen, from the config file.
 
-    Day and hour live in config.toml's [schedule] and never made it onto
-    Config, because until now only `digest schedule` read them and it read the
-    file itself. Read rather than raise: a status display that cannot find a
+    Day and hour live in config.toml's [schedule] and are not on Config,
+    because only the menu-bar plugin acts on them. Read rather than raise: a status display that cannot find a
     schedule should say Friday at seven and carry on.
     """
     import tomllib  # noqa: PLC0415

@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT))
 from digest import calibrate  # noqa: E402
 from digest.classify import classify  # noqa: E402
 from digest.config import Config  # noqa: E402
-from digest.config import load as load_installed  # noqa: E402
+from digest.config import load  # noqa: E402
 from digest.ingest import sample as sample_feeds  # noqa: E402
 from digest.lens import presets  # noqa: E402
 from digest.lens.compile import compile_lens  # noqa: E402
@@ -42,7 +42,7 @@ from digest.models import Source  # noqa: E402
 def _config_for(name: str, tmp: Path) -> Config:
     """The installed config, with this preset's feeds and lens swapped in.
 
-    Built from the installed config rather than from `Config()` so the score is
+    Built from config/ rather than from `Config()` so the score is
     measured on the models actually in use. A bare `Config()` defaults to the
     hosted provider, which silently scored the first run of this script on
     Gemini rather than on the local model the app runs — a measurement of the
@@ -52,7 +52,7 @@ def _config_for(name: str, tmp: Path) -> Config:
     lens = tmp / f"{name}.md"
     lens.write_text(presets.markdown(name), encoding="utf-8")
     try:
-        base = load_installed()
+        base = load()
     except (FileNotFoundError, OSError, ValueError):
         base = Config()
         base.models.provider = "ollama"

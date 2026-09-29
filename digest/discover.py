@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import shutil
 import urllib.error
 import urllib.request
@@ -22,7 +21,6 @@ from pathlib import Path
 
 log = logging.getLogger("digest.discover")
 
-GIGABYTE = 1024 ** 3
 
 
 @dataclass(frozen=True)
@@ -134,82 +132,6 @@ def probe_ollama(host: str = "http://localhost:11434", fetch=None) -> Ollama:
         )
     models = payload.get("models", []) if isinstance(payload, dict) else []
     return Ollama(running=True, installed=True, models=models)
-
-
-def capabilities(model: str, host: str = "http://localhost:11434", fetch=None) -> list[str]:
-    fetch = fetch or _urlopen_fetch
-    try:
-        payload = json.loads(fetch(f"{host}/api/show", payload={"model": model}))
-    except Exception:
-        return []
-    caps = payload.get("capabilities") if isinstance(payload, dict) else None
-    return [str(c) for c in caps] if isinstance(caps, list) else []
-
-
-def wants_thinking_off(model: str, host: str = "http://localhost:11434", fetch=None) -> bool:
-    """A reasoning model must have its think block disabled for this workload.
-
-    Measured on qwen3:30b: a thinking block in front of a schema-constrained
-    answer comes back empty rather than as an error, so every item fell through
-    as unjudged — 0 exact and all eleven items that belonged dropped. With it
-    off, 76% exact and none dropped. The user never sees this setting.
-    """
-    return "thinking" in capabilities(model, host, fetch)
-
-
-def total_memory_gb() -> float:
-    try:
-        return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / GIGABYTE
-    except (ValueError, OSError, AttributeError):
-        pass
-    try:
-        import psutil  # noqa: PLC0415
-
-        return psutil.virtual_memory().total / GIGABYTE
-    except Exception:
-        return 0.0
-
-
-def fits(model: KnownModel, memory_gb: float) -> bool:
-    """Resident size plus room for everything else the machine is doing."""
-    return memory_gb <= 0 or model.gigabytes + 6 <= memory_gb
-
-
-def recommend(stage: str, found: Ollama, memory_gb: float | None = None) -> dict:
-    """What to suggest for one stage, and why, in the user's words.
-
-    The order is deliberate and never invents a score: a measured model that is
-    pulled and fits; else a measured model that fits and could be pulled; else
-    the largest pulled model, labelled untested; else hosted.
-    """
-    memory_gb = total_memory_gb() if memory_gb is None else memory_gb
-    pulled = set(found.names())
-    candidates = [m for m in KNOWN_MODELS if stage in m.roles and m.tier != "hosted"]
-
-    for model in candidates:
-        if model.recommended and model.name in pulled and fits(model, memory_gb):
-            return {"model": model.name, "provider": "ollama", "why": model.note,
-                    "measured": True}
-    for model in candidates:
-        if model.recommended and fits(model, memory_gb):
-            return {"model": model.name, "provider": "ollama", "pull": True,
-                    "why": f"{model.note} About {model.gigabytes:.0f} GB to download.",
-                    "measured": True}
-    untested = sorted(pulled - {m.name for m in KNOWN_MODELS})
-    if untested:
-        return {
-            "model": untested[0], "provider": "ollama", "measured": False,
-            "why": "Not yet measured against a lens. Run the check after setup to "
-                   "see what it does with your own headlines.",
-        }
-    hosted = next(m for m in KNOWN_MODELS if m.tier == "hosted" and m.recommended
-                  and stage in m.roles)
-    return {
-        "model": hosted.name, "provider": "anthropic", "measured": True,
-        "why": found.reason or (
-            f"No local model here fits in {memory_gb:.0f} GB of memory."
-        ) + " " + hosted.note,
-    }
 
 
 def writes_like_a_small_model(cfg) -> bool:

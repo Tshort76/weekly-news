@@ -1,18 +1,8 @@
-"""Configuration: the runtime shape, and the three places it can come from.
+"""Configuration: the runtime shape, and the four files it is read from.
 
-`from digest.config import Config, RunCfg, load` works exactly as it did when
-this was one module — that is deliberate, because every stage imports from here
-and none of them should care that an installer now exists.
-
-Three sources, tried in this order by `load()` with no argument:
-
-1. The installed config — four validated files in `paths.config_dir()`.
-2. A `digest.toml` in the working directory or at the old config path, which is
-   what a git checkout has. Loaded directly, so a contributor's clone keeps
-   working with no import step.
-3. Neither, which is an error naming both places it looked.
-
-An explicit path always means a `digest.toml`; that is what the scripts pass.
+`paths.config_dir()` — the checkout's `config/` directory — holds config.toml,
+feeds.toml, lens.md and lens.toml. `load()` validates them and builds the
+`Config` every stage takes.
 """
 
 from __future__ import annotations
@@ -21,27 +11,20 @@ import tomllib
 from pathlib import Path
 
 from ..models import Source
-from . import legacy, paths
-from .migrate import migrate
+from . import paths
 from .runtime import (
-    DEFAULT_CONFIG_PATHS,
-    STATE_DIR,
     Config,
-    CredentialsCfg,
     DriveCfg,
     ModelsCfg,
     PdfCfg,
     RunCfg,
     TtsCfg,
-    find_config,
 )
-from .runtime import load as load_toml
 from .schema import ConfigError, validate_config, validate_feeds
 
 __all__ = [
-    "Config", "ConfigError", "CredentialsCfg", "DEFAULT_CONFIG_PATHS", "DriveCfg",
-    "ModelsCfg", "PdfCfg", "RunCfg", "STATE_DIR", "TtsCfg", "find_config", "legacy",
-    "load", "load_installed", "load_toml", "paths", "validate_config", "validate_feeds",
+    "Config", "ConfigError", "DriveCfg", "ModelsCfg", "PdfCfg", "RunCfg", "TtsCfg",
+    "load", "paths", "validate_config", "validate_feeds",
 ]
 
 WORDS_PER_MINUTE = 145
@@ -51,11 +34,12 @@ def _read(path: Path) -> dict:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
-def load_installed() -> Config:
-    """Build the runtime config from the four files an installed app writes."""
+def load() -> Config:
+    """Build the runtime config from the four files in `paths.config_dir()`."""
     config_path = paths.config_file()
-    raw = migrate(_read(config_path), config_path)
-    data = validate_config(raw)
+    if not config_path.exists():
+        raise FileNotFoundError(f"no config at {config_path}")
+    data = validate_config(_read(config_path))
 
     feeds_path = paths.feeds_file()
     feeds = validate_feeds(_read(feeds_path)) if feeds_path.exists() else []
@@ -127,16 +111,3 @@ def load_installed() -> Config:
         lens_spec_path=paths.lens_spec_file(),
     )
 
-
-def load(path: str | Path | None = None) -> Config:
-    if path is not None:
-        return load_toml(path)
-    if paths.is_installed():
-        return load_installed()
-    if legacy.find_legacy_config() is not None:
-        return load_toml(None)
-    raise FileNotFoundError(
-        "no configuration found. Run `digest init` to set one up, or `digest "
-        f"import` if you have a digest.toml. Looked in {paths.config_dir()} and "
-        "for a digest.toml in the working directory."
-    )

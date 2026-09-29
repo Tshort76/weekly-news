@@ -1,0 +1,140 @@
+# Where the headlines come from.
+#
+# `weight` breaks a tie when two feeds carry the same story: the higher weight
+# wins and the loser's link is kept as an "also in". `verified` is the last date
+# the app fetched this feed successfully.
+
+schema_version = 1
+
+[[feed]]
+name = "Economist — The World This Week"
+url = "https://www.economist.com/the-world-this-week/rss.xml"
+section = "the-world-this-week"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — Leaders"
+url = "https://www.economist.com/leaders/rss.xml"
+section = "leaders"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — Business"
+url = "https://www.economist.com/business/rss.xml"
+section = "business"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — Finance and Economics"
+url = "https://www.economist.com/finance-and-economics/rss.xml"
+section = "finance-and-economics"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — Asia"
+url = "https://www.economist.com/asia/rss.xml"
+section = "asia"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — China"
+url = "https://www.economist.com/china/rss.xml"
+section = "china"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — Europe"
+url = "https://www.economist.com/europe/rss.xml"
+section = "europe"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — Britain"
+url = "https://www.economist.com/britain/rss.xml"
+section = "britain"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — International"
+url = "https://www.economist.com/international/rss.xml"
+section = "international"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — United States"
+url = "https://www.economist.com/united-states/rss.xml"
+section = "united-states"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — Middle East and Africa"
+url = "https://www.economist.com/middle-east-and-africa/rss.xml"
+section = "middle-east-and-africa"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — The Americas"
+url = "https://www.economist.com/the-americas/rss.xml"
+section = "the-americas"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Economist — Science and Technology"
+url = "https://www.economist.com/science-and-technology/rss.xml"
+section = "science-and-technology"
+weight = 1.0
+enabled = true
+
+[[feed]]
+name = "Ars Technica"
+url = "http://feeds.arstechnica.com/arstechnica/index"
+section = "science-and-technology"
+weight = 0.8
+enabled = true
+
+[[feed]]
+name = "IEEE Spectrum"
+url = "https://spectrum.ieee.org/feeds/feed.rss"
+section = "science-and-technology"
+weight = 0.8
+enabled = true
+
+[[feed]]
+name = "SCMP — This Week in Asia (Politics)"
+url = "https://www.scmp.com/rss/323046/feed"
+section = "asia"
+weight = 0.9
+enabled = true
+
+[[feed]]
+name = "SCMP — This Week in Asia (Economics)"
+url = "https://www.scmp.com/rss/323048/feed"
+section = "asia"
+weight = 0.9
+enabled = true
+
+[[feed]]
+name = "FT — World"
+url = "https://www.ft.com/world?format=rss"
+section = "world"
+weight = 0.9
+enabled = true
+
+[[feed]]
+name = "Semafor"
+url = "https://www.semafor.com/rss.xml"
+section = "mixed"
+weight = 0.7
+enabled = true

@@ -12,8 +12,6 @@ dependencies = [
     "feedparser>=6.0",
     "rapidfuzz>=3.9",
     "markdown>=3.6",
-    "platformdirs>=4.2",
-    "keyring>=25.0",
 ]
 
 [project.optional-dependencies]

@@ -9,7 +9,7 @@ A weekly briefing generator. It reads public RSS feeds, has a language model jud
 ## Commands
 
 ```bash
-uv venv --python 3.12 && uv pip install -e ".[dev]"   # add ,audio / ,drive / ,ui / ,pdf as needed
+uv venv --python 3.12 && uv pip install -e ".[dev,audio,ui]"   # add ,drive / ,pdf as needed
 
 python -m pytest -q                                     # whole suite: no network, no model calls
 python -m pytest digest/tests/test_emit.py::test_name   # one test
@@ -46,19 +46,21 @@ ingest → normalize → dedupe → classify → select → ground → partition
 
 **Lenses** (`digest/lens/`, presets in `digest/lenses/`): each lens is a `lens.md` (the rubric a person edits) plus `lens.toml` (the form's structured spec). `lens/compile.py` turns the form back into a rubric of the *shape* that `classify.md`, `selection.py` and `cluster.md` expect. `*.labels.json` are hand-labelled headlines used by the rubric eval.
 
-**Config has three sources**, tried in order by `digest.config.load()`: the installed app's validated files in the platform config directory (`config/paths.py`, overridden by `DIGEST_HOME`, which every test uses); a checkout's `digest.toml` in the working directory; and legacy migration (`config/legacy.py` copies an old `digest.toml` and `state.db` into an installed layout and never deletes them). `config/schema.py` validates fields and names the file and path of every error.
+**This is a local project, not an installed app.** It runs from the checkout's `.venv` (`.venv/bin/digest`, an editable install), so a change merged to `main` is live at once. There is no installer, setup wizard or keychain; API keys come from the environment or the repo-root `.env`.
+
+**Config is versioned in `config/`** (`config.toml`, `feeds.toml`, `lens.md`, `lens.toml`), read by `digest.config.load()` and validated by `config/schema.py`, which names the file and path of every error. `config/NOTES.md` records why the measured settings are what they are; read it before changing one. Data (`state.db`, logs) lives at `~/Library/Application Support/Digest`, outside every checkout, so worktrees share one history. `DIGEST_HOME` overrides both, and an autouse fixture sets it for every test, because a bare `Config()` otherwise points at the live `state.db`.
 
 **State** is SQLite (`digest/state.py`), keyed by ISO week so re-running a week overwrites. It holds `seen`, `classified`, `editions` and `entries` (used for saga detection and "since last week"), `deliveries` (idempotent Drive upload), and the `runs`/`run_events` that the dashboard (`health.py`) reads. A `--dry-run` still writes files and classifications but leaves `seen`, `editions` and `entries` untouched, so it can be repeated and never hides an item from next week.
 
 **UI** (`digest/ui/`, `digest open`): a FastAPI app bound to 127.0.0.1 only, server-rendered with about sixty lines of JavaScript (an `EventSource` progress stream). Long runs go through `digest/jobs.py`, which keeps events in a ring buffer so a reconnecting tab replays what it missed.
 
-**Scheduling** (`digest/schedule.py`) writes the OS scheduler's own file (launchd, systemd or Task Scheduler) with an explicit `PATH` and never an API key.
+**Scheduling** is the SwiftBar menu-bar plugin (`~/dev/swiftbar-plugins/weekly-digest.1h.py`), which reads `[schedule]` through `digest status --json` and runs `.venv/bin/digest run --scheduled`. The app writes no scheduler file; `digest/schedule.py` only records the day and hour and posts the desktop notification.
 
 ## Conventions that matter here
 
 - **No pull requests.** Worktrees are fine, but finished work is merged into `main` directly (fast-forward) and pushed, and the worktree's branch is then deleted.
 
-- **Keep dependencies minimal.** Core deps are deliberately short; anything only one provider or output needs is an extra. The installers (`install.sh`, `install.ps1`) target non-technical users on macOS, Linux and Windows, so don't add system requirements such as ffmpeg.
+- **Keep dependencies minimal.** Core deps are deliberately short; anything only one provider or output needs is an extra.
 - **Output filenames use the Monday's date** (`digest-2026-09-21.txt`, via `emit.week_stem`); the ISO week (`2026-W39`) stays the key everywhere else.
 - **Test fixtures in `digest/tests/fixtures/` are hand-authored model responses**, and providers are tested against fake SDK clients that record the request shape.
 - **Model evals are noisy.** `seed` and `temperature` are pinned, but repeated runs can still differ. Run an eval at least three times before believing a small delta. If a prompt edit changes *nothing* at all, suspect the edit never reached the model.

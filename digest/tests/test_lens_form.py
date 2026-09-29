@@ -7,7 +7,7 @@ import tomllib
 import pytest
 
 from digest.calibrate import Report, labels_from_choices, score
-from digest.config import legacy, paths
+from digest.config import paths
 from digest.jobs import Runner
 from digest.lens import presets, store
 from digest.lens.schema import LensSpec
@@ -15,20 +15,13 @@ from digest.lens.serialize import to_toml
 from digest.models import Classified
 from digest.ui.lensform import add_example, from_form
 
-from .conftest import make_item
+from .conftest import write_config, make_item
 
 pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from digest.ui.app import create_app  # noqa: E402
 
-LEGACY = """
-[models]
-provider = "ollama"
-[[sources]]
-name = "A feed"
-url = "https://example.com/rss"
-"""
 
 
 class Fields(dict):
@@ -44,9 +37,9 @@ class Fields(dict):
 
 
 @pytest.fixture
-def installed(digest_home, tmp_path):
-    (tmp_path / "digest.toml").write_text(LEGACY)
-    legacy.import_legacy(tmp_path / "digest.toml")
+def installed(digest_home):
+    write_config({"models": {"provider": "ollama", "classify": "qwen3:30b",
+                             "synthesize": "gemma3:27b"}})
     return digest_home
 
 

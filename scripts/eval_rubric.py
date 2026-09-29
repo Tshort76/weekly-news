@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Score a model's rubric judgement against hand-labelled items.
 
-    python scripts/eval_rubric.py                      # whatever digest.toml says
+    python scripts/eval_rubric.py                      # the lens and models in config/
     python scripts/eval_rubric.py --provider ollama --model qwen3:30b
     python scripts/eval_rubric.py --provider gemini --model gemini-3.8-flash
 
@@ -68,17 +68,16 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int)
     parser.add_argument("--no-think", action="store_true",
                         help="disable a reasoning model's think block (Ollama)")
-    parser.add_argument("--config", default=str(ROOT / "digest.toml"))
     parser.add_argument("--prompts-dir",
                         help="score a different rubric.md — a compiled lens, say")
     parser.add_argument("--lens-dir",
-                        help="a config directory holding lens.md and lens.toml — the "
-                             "installed lens, say. Needed for a lens with a gate: the "
-                             "question lives in the spec, which --prompts-dir cannot reach")
+                        help="a directory holding another lens.md and lens.toml. Needed "
+                             "for a lens with a gate: the question lives in the spec, "
+                             "which --prompts-dir cannot reach")
     parser.add_argument("--show", action="store_true", help="print every item, not just the misses")
     args = parser.parse_args()
 
-    cfg = cfgmod.load(args.config)
+    cfg = cfgmod.load()
     if args.provider:
         cfg.models.provider = args.provider
     if args.model:
@@ -88,6 +87,7 @@ def main() -> int:
     cfg.models.min_interval_seconds = 0.0
     if args.prompts_dir:
         cfg.prompts_dir = Path(args.prompts_dir)
+        cfg.lens_path = None  # config/lens.md would otherwise win over rubric.md
     if args.no_think:
         cfg.models.ollama_think = False
     if args.lens_dir:

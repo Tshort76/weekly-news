@@ -20,3 +20,13 @@ __pycache__/
 
 # setuptools build artifacts — a stale copy of the package that confuses grep
 build/
+
+# config/ is versioned, but not what the app writes beside it: one-generation
+# backups from every save, and Google Drive OAuth secrets.
+config/*.bak
+config/*.recompiled-*
+config/credentials.json
+config/token.json
+
+# Worktrees made by Claude Code sessions
+.claude/

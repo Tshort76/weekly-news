@@ -77,13 +77,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("models", nargs="+")
     parser.add_argument("--provider", default="ollama")
-    parser.add_argument("--config", default=str(ROOT / "digest.toml"))
     args = parser.parse_args()
 
     clusters = [build(*c) for c in CLUSTERS]
 
     for model in args.models:
-        cfg = cfgmod.load(args.config)
+        cfg = cfgmod.load()
         cfg.models.synthesize_provider = args.provider
         cfg.models.synthesize = model
         cfg.models.min_interval_seconds = 0.0

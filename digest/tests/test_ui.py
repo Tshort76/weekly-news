@@ -12,25 +12,16 @@ import threading
 
 import pytest
 
-from digest.config import legacy, paths
+from digest.config import paths
 from digest.jobs import Runner
+
+from .conftest import write_config
 
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from digest.ui.app import create_app  # noqa: E402
 
-LEGACY = """
-[run]
-output_dir = "~/digests"
-[models]
-provider = "ollama"
-classify = "qwen3:30b"
-synthesize = "gemma3:27b"
-[[sources]]
-name = "A feed"
-url = "https://example.com/rss"
-"""
 
 
 def fake_pipeline(events=("fetch", "classify"), block=None, fail=False):
@@ -46,10 +37,9 @@ def fake_pipeline(events=("fetch", "classify"), block=None, fail=False):
 
 
 @pytest.fixture
-def installed(digest_home, tmp_path):
-    source = tmp_path / "digest.toml"
-    source.write_text(LEGACY)
-    legacy.import_legacy(source)
+def installed(digest_home):
+    write_config({"models": {"provider": "ollama", "classify": "qwen3:30b",
+                             "synthesize": "gemma3:27b"}})
     return digest_home
 
 
@@ -59,34 +49,6 @@ def client(installed):
     app = create_app(runner)
     app.state.test_runner = runner
     return TestClient(app)
-
-
-def test_a_machine_with_no_config_is_sent_to_setup(digest_home, tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)  # no digest.toml here either
-    client = TestClient(create_app(Runner(digest_home, fake_pipeline())))
-    assert client.get("/", follow_redirects=False).headers["location"] == "/setup"
-
-
-def test_setup_offers_to_import_an_existing_checkout(digest_home, tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "digest.toml").write_text(LEGACY)
-    client = TestClient(create_app(Runner(digest_home, fake_pipeline())))
-    body = client.get("/setup").text
-    assert "Found an existing setup" in body and "digest.toml" in body
-
-
-def test_setup_writes_a_working_config(digest_home):
-    client = TestClient(create_app(Runner(digest_home, fake_pipeline())))
-    response = client.post("/setup", data={
-        "lens": "architecture-of-rule", "classify": "qwen3:30b",
-        "synthesize": "gemma3:27b", "provider": "ollama",
-        "minutes": "58", "folder": "~/digests",
-    }, follow_redirects=False)
-    assert response.headers["location"] == "/"
-    assert paths.config_file().exists()
-    assert paths.lens_file().read_text().startswith("LENS:")
-    # A preset brings its feeds, or the first week is quiet for no good reason.
-    assert paths.feeds_file().read_text().count("[[feed]]") == 19
 
 
 def test_the_home_page_names_the_lens_rather_than_the_app(client):
@@ -213,6 +175,12 @@ def test_review_of_a_week_that_was_never_run_says_so(client):
 def test_about_says_where_the_files_are(client):
     body = client.get("/about").text
     assert str(paths.config_dir()) in body and "never bypasses a paywall" in body
+
+
+def test_the_schedule_page_saves_the_day_and_hour_the_plugin_reads(client):
+    client.post("/schedule", data={"day": "sunday", "hour": "18"})
+    body = client.get("/schedule").text
+    assert "<b>sunday</b>" in body and "<b>18:00</b>" in body
 
 
 # ------------------- adding a lens example shows the damage before it saves

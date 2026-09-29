@@ -6,11 +6,8 @@
     python -m digest render --week ... --html --pdf
     python -m digest speak --week ...
 
-Setting up, once:
+Config lives in the checkout's config/ directory. Also:
 
-    digest init                     answer or press Enter through the questions
-    digest import                   bring a digest.toml checkout into the app
-    digest key set anthropic        store an API key in the system credential store
     digest lens list|use|show       the editorial lens: what gets in
     digest feeds add|check|list     where the headlines come from
     digest where                    print the config and data directories
@@ -28,10 +25,6 @@ from . import pipeline
 from .logging_setup import setup as setup_logging
 
 
-def schedule_days() -> tuple[str, ...]:
-    from .schedule import WEEKDAYS  # noqa: PLC0415
-
-    return WEEKDAYS
 from .state import State
 
 
@@ -42,7 +35,6 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__.split("\n", 2)[2],
     )
-    parser.add_argument("--config", help="path to a digest.toml (a checkout, not an install)")
     parser.add_argument("-v", "--verbose", action="store_true")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -87,20 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
     open_cmd.add_argument("--port", type=int, default=8765)
     open_cmd.add_argument("--no-browser", action="store_true")
 
-    sub.add_parser("init", help="set up the app, answering a few questions")
-    imp = sub.add_parser("import", help="bring an existing digest.toml into the app")
-    imp.add_argument("--from", dest="source", help="path to the digest.toml")
     sub.add_parser("where", help="print the config and data directories")
-
-    sched = sub.add_parser("schedule", help="run the digest every week, automatically")
-    sched.add_argument("action", choices=("on", "off", "status", "show"), nargs="?",
-                       default="status")
-    sched.add_argument("--day", default="", choices=("", *schedule_days()))
-    sched.add_argument("--hour", type=int, default=None)
-
-    key = sub.add_parser("key", help="store or forget an API key")
-    key.add_argument("action", choices=("set", "show", "forget"))
-    key.add_argument("provider", choices=("anthropic", "gemini", "brave"))
 
     lens = sub.add_parser("lens", help="the editorial lens: what gets into the briefing")
     lens.add_argument("action", choices=("list", "show", "use", "path"), nargs="?",
@@ -173,9 +152,7 @@ def doctor(cfg) -> int:
         print(f"  {stage:<11} {provider:<10} {model}")
         if provider == "ollama":
             continue
-        key, source = resolve(
-            provider, cfg.credentials.key_file(provider), cfg.config_path
-        )
+        key, source = resolve(provider)
         if key:
             print(f"  {'':<11} key from {source} — {len(key)} characters ending {key[-4:]}")
         else:
@@ -203,7 +180,7 @@ def doctor(cfg) -> int:
     return 1 if problems else 0
 
 
-NEEDS_NO_CONFIG = {"init", "import", "where", "open"}
+NEEDS_NO_CONFIG = {"where", "open"}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -213,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         return _setup_command(args)
 
     try:
-        cfg = config_module.load(args.config)
+        cfg = config_module.load()
     except FileNotFoundError as exc:
         print(exc, file=sys.stderr)
         return 1
@@ -221,10 +198,7 @@ def main(argv: list[str] | None = None) -> int:
         print(exc, file=sys.stderr)
         return 1
 
-    if args.command == "schedule":
-        return _schedule_command(args, cfg)
-
-    if args.command in {"key", "lens", "feeds"}:
+    if args.command in {"lens", "feeds"}:
         return _admin_command(args, cfg)
 
     week = getattr(args, "week", None) or pipeline.iso_week()
@@ -318,7 +292,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _setup_command(args) -> int:
-    from .config import legacy, paths  # noqa: PLC0415
+    from .config import paths  # noqa: PLC0415
 
     if args.command == "where":
         print(f"config  {paths.config_dir()}")
@@ -326,87 +300,14 @@ def _setup_command(args) -> int:
         print(f"lens    {paths.lens_file()}")
         return 0
 
-    if args.command == "open":
-        from .ui.app import serve  # noqa: PLC0415
+    from .ui.app import serve  # noqa: PLC0415
 
-        return serve(port=args.port, open_browser=not args.no_browser)
-
-    if args.command == "init":
-        from .init import main as init_main  # noqa: PLC0415
-
-        return init_main()
-
-    try:
-        report = legacy.import_legacy(Path(args.source) if args.source else None)
-    except FileNotFoundError as exc:
-        print(exc, file=sys.stderr)
-        return 1
-    print(f"imported {report['from']}")
-    print(f"  config   {report['config_dir']}")
-    print(f"  data     {report['data_dir']}")
-    print(f"  feeds    {report['feeds']}")
-    if report["database_copied"]:
-        print("  copied the record of what you have already seen")
-    return 0
-
-
-def _schedule_command(args, cfg) -> int:
-    from . import schedule as scheduler  # noqa: PLC0415
-
-    backend = scheduler.backend()
-    day = args.day or cfg.run.weekday
-    hour = args.hour if args.hour is not None else 7
-
-    if args.action == "show":
-        if isinstance(backend, scheduler.MenuBar):
-            print("nothing to write: the SwiftBar menu-bar plugin runs it")
-        elif isinstance(backend, scheduler.Systemd):
-            service, timer = backend.render(day, hour)
-            print(service + "\n" + timer)
-        else:
-            print(" ".join(getattr(backend, "arguments", lambda *a: scheduler.command())(day, hour)))
-        return 0
-
-    if args.action == "on":
-        where = backend.install(day, hour)
-        scheduler.record(True, day, hour)
-        print(f"scheduled for {day} at {hour:02d}:00 via {backend.name}")
-        print(f"  {where}")
-        return 0
-
-    if args.action == "off":
-        print("removed" if backend.remove() else "nothing was scheduled")
-        scheduler.record(False)
-        return 0
-
-    status = backend.status()
-    print(f"{backend.name}: {'on' if status.installed else 'off'} — {status.detail}")
-    if status.when:
-        print(f"  {status.when}")
-    return 0
+    return serve(port=args.port, open_browser=not args.no_browser)
 
 
 def _admin_command(args, cfg) -> int:
-    from . import credentials  # noqa: PLC0415
     from .config import paths  # noqa: PLC0415
     from .lens import presets, store  # noqa: PLC0415
-
-    if args.command == "key":
-        if args.action == "show":
-            key, source = credentials.resolve(args.provider, config_path=cfg.config_path)
-            print(f"{args.provider}: " + (f"…{key[-4:]} from {source}" if key else "not set"))
-            return 0 if key else 1
-        if args.action == "forget":
-            print("forgotten" if credentials.forget(args.provider) else "nothing stored")
-            return 0
-        import getpass  # noqa: PLC0415
-
-        value = getpass.getpass(f"{args.provider} API key (not shown): ").strip()
-        if not value:
-            print("nothing entered", file=sys.stderr)
-            return 1
-        print(f"stored in {credentials.store(args.provider, value)}")
-        return 0
 
     if args.command == "lens":
         if args.action == "list":

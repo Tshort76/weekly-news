@@ -90,7 +90,7 @@ def _upload_oauth(paths: list[Path], cfg: Config, state: State, week: str) -> No
 
 def _upload_rclone(paths: list[Path], cfg: Config, state: State, week: str) -> None:
     if not cfg.drive.rclone_remote:
-        raise DeliveryError("drive.rclone_remote is not set in digest.toml")
+        raise DeliveryError("drive.rclone_remote is not set in config/config.toml")
     for path in paths:
         subprocess.run(
             ["rclone", "copyto", str(path), f"{cfg.drive.rclone_remote}/{path.name}"],
