@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from rapidfuzz import fuzz
 
 from .models import Item
+from .normalize import title_key
 
 TITLE_THRESHOLD = 90
 
@@ -45,7 +46,7 @@ def dedupe(items: list[Item], seen_ids: Iterable[str] = ()) -> tuple[list[Item],
             (
                 k
                 for k in kept
-                if fuzz.token_set_ratio(k.title.lower(), it.title.lower()) >= TITLE_THRESHOLD
+                if fuzz.token_set_ratio(title_key(k.title), title_key(it.title)) >= TITLE_THRESHOLD
             ),
             None,
         )

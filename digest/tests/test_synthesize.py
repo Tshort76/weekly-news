@@ -415,6 +415,14 @@ def test_two_outlets_on_one_event_go_to_the_model_instead():
     carried, rest = partition_carried(rows, Config())
     assert carried == [] and len(rest) == 2
 
+    # W40: only the apostrophe differed in "SpaceX's", and the launch ran twice.
+    rows = [
+        report("SpaceX's Starship goes orbital, deploying first next-gen Starlinks"),
+        report("SpaceX’s Starship enters orbit, deploys satellites in landmark launch"),
+    ]
+    carried, rest = partition_carried(rows, Config())
+    assert carried == [] and len(rest) == 2
+
 
 def test_a_thin_story_is_never_carried():
     from digest.synthesize import partition_carried

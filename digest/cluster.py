@@ -11,6 +11,7 @@ from rapidfuzz import fuzz
 from .config import Config
 from .llm import Client, LLMError
 from .models import Classified, Cluster
+from .normalize import title_key
 
 log = logging.getLogger("digest.cluster")
 
@@ -59,7 +60,7 @@ def _same_event_groups(members: list[Classified]) -> list[list[Classified]]:
     for member in members:
         for group in groups:
             if any(
-                fuzz.token_set_ratio(member.item.title.lower(), other.item.title.lower())
+                fuzz.token_set_ratio(title_key(member.item.title), title_key(other.item.title))
                 >= SAME_EVENT_THRESHOLD
                 for other in group
             ):

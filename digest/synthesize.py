@@ -18,7 +18,7 @@ from .cluster import SAME_EVENT_THRESHOLD, theme_candidate
 from .config import Config
 from .llm import Client, LLMError
 from .models import Classified, Cluster, Edition, Entry
-from .normalize import strip_furniture
+from .normalize import strip_furniture, title_key
 
 log = logging.getLogger("digest.synthesize")
 
@@ -406,7 +406,7 @@ def partition_carried(
             continue
         covered_elsewhere = any(
             other.id != row.id
-            and fuzz.token_set_ratio(row.item.title.lower(), other.item.title.lower())
+            and fuzz.token_set_ratio(title_key(row.item.title), title_key(other.item.title))
             >= SAME_EVENT_THRESHOLD
             for other in selected
         )

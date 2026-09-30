@@ -14,6 +14,18 @@ from .models import Item
 # half a story finishes it from memory.
 BLURB_LIMIT = 2000
 
+_CURLY = str.maketrans({"’": "'", "‘": "'", "“": '"', "”": '"'})
+
+
+def title_key(title: str) -> str:
+    """A title as the fuzzy matchers compare it.
+
+    Outlets differ in quote style, and to a token matcher "SpaceX’s" and
+    "SpaceX's" are different words. In W40 that alone scored one Starship
+    launch 56 against a same-event bar of 60, and it was published twice.
+    """
+    return title.translate(_CURLY).lower()
+
 # utm_*, plus the tracking params the wire services and newsletters attach.
 _TRACKING_PREFIXES = ("utm_",)
 _TRACKING_EXACT = {
