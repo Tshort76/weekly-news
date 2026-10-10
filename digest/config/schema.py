@@ -70,6 +70,7 @@ CONFIG_FIELDS = (
     Field("schedule.day", str, "friday", choices=WEEKDAYS),
     Field("schedule.hour", int, 7, minimum=0, maximum=23),
 
+    Field("delivery.audio_folder", str, ""),
     Field("delivery.drive.enabled", bool, False),
     Field("delivery.drive.folder_id", str, ""),
     Field("delivery.drive.method", str, "oauth", choices=("oauth", "rclone")),

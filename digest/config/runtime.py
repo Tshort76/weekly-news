@@ -34,6 +34,9 @@ class RunCfg:
     # the briefing; the appendix link carries the rest.
     source_min_chars: int = 700
     source_max_words: int = 200
+    # A folder a sync client (Google Drive for desktop) watches, so the week's
+    # audio reaches the phone without the Drive API. None copies nothing.
+    audio_folder: Path | None = None
 
 
 @dataclass

@@ -8,6 +8,7 @@ to a configured remote. Both overwrite the week's files rather than duplicating.
 from __future__ import annotations
 
 import logging
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -98,6 +99,22 @@ def _upload_rclone(paths: list[Path], cfg: Config, state: State, week: str) -> N
         )
         state.record_delivery(week, path.name, f"rclone:{cfg.drive.rclone_remote}")
         log.info("uploaded %s via rclone", path.name)
+
+
+def copy_audio(mp3: Path, cfg: Config) -> Path | None:
+    """Copy the week's mp3 into `delivery.audio_folder`. Never raises."""
+    folder = cfg.run.audio_folder
+    if folder is None:
+        return None
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        dest = folder / mp3.name
+        shutil.copy2(mp3, dest)
+        log.info("copied %s to %s", mp3.name, folder)
+        return dest
+    except OSError as exc:
+        log.error("could not copy audio to %s: %s", folder, exc)
+        return None
 
 
 def deliver(paths: list[Path], cfg: Config, state: State, week: str) -> bool:

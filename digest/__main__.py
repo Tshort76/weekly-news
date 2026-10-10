@@ -286,6 +286,10 @@ def main(argv: list[str] | None = None) -> int:
             out = Path(str(txt).removesuffix(".txt") + ".mp3")
             speak(txt, out, cfg, state.load_edition(week))
             print(f"  mp3   {out}")
+            from .deliver import copy_audio  # noqa: PLC0415
+
+            if copied := copy_audio(out, cfg):
+                print(f"  copy  {copied}")
             return 0
 
     return 1
