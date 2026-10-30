@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 
-from digest.emit import DIVIDER, emit, render_md, render_txt, spoken_part, week_stem
+from digest.emit import DIVIDER, audio_title, emit, render_md, render_txt, spoken_part, week_stem
 from digest.models import Edition, Entry
 
 
@@ -140,3 +140,9 @@ def test_an_unparseable_week_keeps_the_key_rather_than_raising():
     # Week 53 does not exist in 2027. A bad filename must not lose an edition.
     assert week_stem("2027-W53") == "digest-2027-W53"
     assert week_stem("nonsense") == "digest-nonsense"
+
+
+def test_the_audio_title_names_the_weeks_friday():
+    assert audio_title("2026-W44") == "Weekly News October 30"
+    assert audio_title("2026-W01") == "Weekly News January 2"  # Friday of a week that starts in 2025
+    assert audio_title("2027-W53") == "Weekly News 2027-W53"

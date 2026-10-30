@@ -8,10 +8,11 @@ decides how it is spoken and how the file is built (docs/design/echo-as-library.
 from __future__ import annotations
 
 import logging
+from datetime import date
 from pathlib import Path
 
 from .config import Config
-from .emit import Segment, spoken_part, spoken_segments
+from .emit import Segment, audio_title, spoken_part, spoken_segments
 from .models import Edition
 
 log = logging.getLogger("digest.audio")
@@ -34,6 +35,16 @@ def _segments(text: str, edition: Edition | None, fallback_title: str) -> list[S
             return segments
         log.warning("the .txt no longer matches the stored edition; writing no chapters")
     return [Segment(fallback_title, text)]
+
+
+def _week_of(txt_path: Path) -> str:
+    """The ISO week a `digest-<monday>.txt` covers, for a .txt spoken with no
+    stored edition; a name that is not a week stem is returned as it is."""
+    try:
+        y, w, _ = date.fromisoformat(txt_path.stem.removeprefix("digest-")).isocalendar()
+    except ValueError:
+        return txt_path.stem
+    return f"{y}-W{w:02d}"
 
 
 def _piper_voice(model: str) -> str | None:
@@ -59,7 +70,7 @@ def speak(txt_path: Path, out_path: Path, cfg: Config, edition: Edition | None =
     text = spoken_part(txt_path.read_text(encoding="utf-8"))
     if not text.strip():
         raise AudioError("nothing to speak")
-    title = f"{edition.title} — {edition.week}" if edition else txt_path.stem
+    title = audio_title(edition.week if edition else _week_of(txt_path))
     chapters = [Chapter(s.title, s.text) for s in _segments(text, edition, title)]
 
     failures = []

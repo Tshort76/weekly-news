@@ -113,6 +113,20 @@ def week_stem(week: str) -> str:
     return f"digest-{monday.isoformat()}"
 
 
+def audio_title(week: str) -> str:
+    """The MP3's title tag: `Weekly News October 30`, the week's Friday.
+
+    The filename keeps the Monday so a folder sorts by the week it covers, but
+    the title is what a podcast player shows, and the edition is listened to on
+    the Friday. A malformed week falls back to the key, as `week_stem` does.
+    """
+    try:
+        friday = datetime.strptime(f"{week}-5", "%G-W%V-%u").date()
+    except ValueError:
+        return f"Weekly News {week}"
+    return f"Weekly News {friday:%B} {friday.day}"
+
+
 def _transition(previous_region: str | None, region: str) -> str:
     """A short spoken bridge between entries. Silent when the region has not moved."""
     if region == previous_region:

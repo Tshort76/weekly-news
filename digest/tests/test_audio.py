@@ -1,6 +1,8 @@
 """What is spoken, in what chapters, by which engine. The speaking itself is echo's."""
 
-from digest.audio import _piper_voice, _segments, engine_plan
+from pathlib import Path
+
+from digest.audio import _piper_voice, _segments, _week_of, engine_plan
 from digest.config import Config
 from digest.emit import DIVIDER, render_txt, spoken_part
 from digest.tests.test_emit import _edition
@@ -31,3 +33,8 @@ def test_piper_model_is_a_voice_id_or_a_local_model_path():
     assert _piper_voice("/models/en_GB-alan-medium.onnx") == "/models/en_GB-alan-medium.onnx"
     assert _piper_voice("en_US-lessac-high") == "en_US-lessac-high"
     assert _piper_voice("") is None
+
+
+def test_a_txt_with_no_edition_is_titled_from_the_week_in_its_name():
+    assert _week_of(Path("digest-2026-10-26.txt")) == "2026-W44"
+    assert _week_of(Path("notes.txt")) == "notes"
