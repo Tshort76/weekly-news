@@ -88,6 +88,15 @@ blockquote {
   font-size: .8rem; letter-spacing: .06em; text-transform: uppercase;
   color: var(--faint); margin: 0 0 2.5rem;
 }
+.toc {
+  font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  font-size: .9rem; line-height: 1.5; margin: 1.5rem 0 2rem;
+  padding: 1rem 1.2rem; border: 1px solid var(--rule); border-radius: 6px;
+}
+.toc ol { margin: 0; padding-left: 1.4rem; }
+.toc li { margin: .25rem 0; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
 @media print {
   body { background: #fff; color: #000; font-size: 11pt; }
   main { max-width: none; padding: 0; }
@@ -267,7 +276,16 @@ def render_md(edition: Edition) -> str:
 def render_html(markdown_text: str, edition: Edition) -> str:
     import markdown as md_lib
 
-    body = md_lib.markdown(markdown_text, extensions=["extra", "sane_lists"])
+    converter = md_lib.Markdown(extensions=["extra", "sane_lists", "toc"])
+    body = converter.convert(markdown_text)
+    # Every story is an h2 under the one h1, so the contents list is the h1's
+    # children. It sits under the facts line, which is always the first paragraph.
+    heads = [t for top in converter.toc_tokens for t in top["children"]]
+    if heads:
+        items = "".join(f'<li><a href="#{t["id"]}">{t["name"]}</a></li>' for t in heads)
+        nav = f'<nav class="toc" aria-label="Contents">\n<ol>{items}</ol>\n</nav>'
+        head, sep, rest = body.partition("</p>")
+        body = f"{head}{sep}\n{nav}{rest}" if sep else f"{nav}\n{body}"
     return (
         "<!doctype html>\n"
         '<html lang="en">\n<head>\n<meta charset="utf-8">\n'

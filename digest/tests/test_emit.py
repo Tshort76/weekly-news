@@ -112,6 +112,20 @@ def test_emit_writes_html_on_request(cfg):
     assert "http://" not in html.split("<main>")[0]  # nothing loaded from outside
 
 
+def test_the_html_opens_with_a_contents_list_linking_every_story(cfg):
+    html = emit(_edition(), cfg, want_html=True)["html"].read_text(encoding="utf-8")
+    nav = html.split('<nav class="toc"')[1].split("</nav>")[0]
+    links = re.findall(r'href="#([^"]+)">([^<]+)<', nav)
+    assert [name for _, name in links] == [
+        "Japan targets reserve quantity, not price",
+        "Brussels rolls a steel safeguard past its sunset",
+        "Three questions to chew on",
+    ]
+    for anchor, _ in links:
+        assert f'id="{anchor}"' in html
+    assert html.index('<nav class="toc"') < html.index("This week the shape")
+
+
 def test_a_lens_name_with_a_comma_does_not_stumble_before_the_week():
     """Spoken aloud, "…not the contest for it, week 2026-W36" is two commas."""
     edition = _edition()
