@@ -383,7 +383,7 @@ def test_the_reader_is_told_whose_words_they_are():
 
     edition = synthesize([_reported()], Config(), ScriptedClient(), "2026-W36")
     assert "Economist — Business's own words" in render_md(edition)
-    assert "In Economist — Business's own words." in render_txt(edition)
+    assert "From Economist — Business: " in render_txt(edition)
     assert "carried in the reporter's own words" in render_md(edition)
 
 

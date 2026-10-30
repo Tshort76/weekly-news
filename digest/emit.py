@@ -181,9 +181,13 @@ def spoken_segments(edition: Edition) -> list[Segment]:
         if bridge:
             paras.append(bridge)
         headline = entry.headline.rstrip(".")
-        paras.append(headline)
+        # A carried entry is the outlet's own paragraph, so it is credited, but
+        # inside the headline: "In Semafor's own words." as a sentence of its
+        # own sat between headline and story and broke the listener out of it.
         if entry.provenance == "source" and entry.attribution:
-            paras.append(f"In {entry.attribution}'s own words.")
+            paras.append(f"From {entry.attribution}: {headline}")
+        else:
+            paras.append(headline)
         if entry.body:
             paras.append(entry.body)
         # A carried entry's hook is its own opening sentence, so reading it

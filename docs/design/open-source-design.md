@@ -38,7 +38,7 @@ The companion documents are `implementation-plan.md` (the phased proposal) and
   schedule. It does not edit an edition's text and it does not override a
   classification.
 - **The carried-words feature is not a knob.** The 700-character floor, the
-  200-word ceiling and the "In X's own words" attribution stay fixed, because they
+  200-word ceiling and the spoken "From X:" attribution stay fixed, because they
   are what makes publishing a reporter's paragraph defensible when the feeds are no
   longer the owner's.
 
