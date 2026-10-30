@@ -61,7 +61,7 @@ ingest → normalize → dedupe → classify → select → ground → partition
 - **No pull requests.** Worktrees are fine, but finished work is merged into `main` directly (fast-forward) and pushed, and the worktree's branch is then deleted.
 
 - **Keep dependencies minimal.** Core deps are deliberately short; anything only one provider or output needs is an extra.
-- **Output filenames use the Monday's date** (`digest-2026-09-21.txt`, via `emit.week_stem`); the ISO week (`2026-W39`) stays the key everywhere else.
+- **Output filenames use the Friday's date** (`digest-2026-09-25.txt`, via `emit.week_stem`); the ISO week (`2026-W39`) stays the key everywhere else.
 - **Test fixtures in `digest/tests/fixtures/` are hand-authored model responses**, and providers are tested against fake SDK clients that record the request shape.
 - **Model evals are noisy.** `seed` and `temperature` are pinned, but repeated runs can still differ. Run an eval at least three times before believing a small delta. If a prompt edit changes *nothing* at all, suspect the edit never reached the model.
 - Comments and docstrings explain *why*, often with the measurement or incident behind a choice. Read them before changing a threshold or removing something that looks redundant.

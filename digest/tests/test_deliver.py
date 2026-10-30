@@ -56,7 +56,7 @@ def test_a_scheduled_run_skips_only_a_week_whose_mp3_exists(tmp_path, monkeypatc
     if where:
         folder = cfg.run.output_dir if where == "output" else cfg.run.sync_folder
         folder.mkdir()
-        (folder / "digest-2026-10-26.mp3").write_bytes(b"ID3")
+        (folder / "digest-2026-10-30.mp3").write_bytes(b"ID3")
     monkeypatch.setattr(cli.config_module, "load", lambda: cfg)
 
     def ran(*args, **kwargs):

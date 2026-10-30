@@ -97,28 +97,28 @@ blockquote {
 
 
 def week_stem(week: str) -> str:
-    """The filename for a week: `digest-2026-08-31`, the Monday it starts on.
+    """The filename for a week: `digest-2026-09-04`, the Friday it is listened on.
 
     The ISO key `2026-W36` stays the identity everywhere else — the state store,
     the URLs, the run records — because it is unambiguous and sorts. It just
     makes a poor filename: nobody reads a week number and knows what fortnight
     they are looking at, and a folder of them cannot be scanned by eye. A
     malformed week falls back to the key rather than raising, since a bad
-    filename is not worth losing a written edition over.
+    filename is not worth losing a written edition over. The Friday matches
+    `audio_title`, so the file and its title name the same day.
     """
     try:
-        monday = datetime.strptime(f"{week}-1", "%G-W%V-%u").date()
+        friday = datetime.strptime(f"{week}-5", "%G-W%V-%u").date()
     except ValueError:
         return f"digest-{week}"
-    return f"digest-{monday.isoformat()}"
+    return f"digest-{friday.isoformat()}"
 
 
 def audio_title(week: str) -> str:
     """The MP3's title tag: `Weekly News October 30`, the week's Friday.
 
-    The filename keeps the Monday so a folder sorts by the week it covers, but
-    the title is what a podcast player shows, and the edition is listened to on
-    the Friday. A malformed week falls back to the key, as `week_stem` does.
+    The edition is listened to on the Friday, so the title names it, as the
+    filename does. A malformed week falls back to the key, as `week_stem` does.
     """
     try:
         friday = datetime.strptime(f"{week}-5", "%G-W%V-%u").date()

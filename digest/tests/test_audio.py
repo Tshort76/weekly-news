@@ -36,5 +36,6 @@ def test_piper_model_is_a_voice_id_or_a_local_model_path():
 
 
 def test_a_txt_with_no_edition_is_titled_from_the_week_in_its_name():
-    assert _week_of(Path("digest-2026-10-26.txt")) == "2026-W44"
+    assert _week_of(Path("digest-2026-10-30.txt")) == "2026-W44"
+    assert _week_of(Path("digest-2026-10-26.txt")) == "2026-W44"  # a Monday-named file from before
     assert _week_of(Path("notes.txt")) == "notes"

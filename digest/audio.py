@@ -38,7 +38,7 @@ def _segments(text: str, edition: Edition | None, fallback_title: str) -> list[S
 
 
 def _week_of(txt_path: Path) -> str:
-    """The ISO week a `digest-<monday>.txt` covers, for a .txt spoken with no
+    """The ISO week a `digest-<date>.txt` covers, for a .txt spoken with no
     stored edition; a name that is not a week stem is returned as it is."""
     try:
         y, w, _ = date.fromisoformat(txt_path.stem.removeprefix("digest-")).isocalendar()
