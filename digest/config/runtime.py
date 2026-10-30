@@ -91,10 +91,7 @@ class ModelsCfg:
 @dataclass
 class TtsCfg:
     enabled: bool = False
-    engine: str = "edge"  # edge | piper
-    voice: str = "en-GB-RyanNeural"
-    offline: bool = False
-    piper_model: str = ""
+    voice: str = "en-GB-RyanNeural"  # an edge-tts voice
     chunk_chars: int = 3000
 
 

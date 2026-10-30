@@ -1,4 +1,6 @@
-"""Text to speech, through echo. edge-tts online by default, piper offline as the fallback.
+"""Text to speech, through echo and edge-tts. There is no fallback voice: piper's
+was bad enough that three editions read by it went unlistened, so a failure
+means no mp3 and a desktop notification instead.
 
 Only the part of the .txt above the divider is spoken — the sources appendix is
 for the eye. This module decides what is said and where the chapters fall; echo
@@ -47,22 +49,6 @@ def _week_of(txt_path: Path) -> str:
     return f"{y}-W{w:02d}"
 
 
-def _piper_voice(model: str) -> str | None:
-    """`piper_model` is a piper voice id (en_GB-alan-medium), which echo downloads
-    once, or a path to a local .onnx model with its .onnx.json beside it."""
-    if not model:
-        return None  # echo's default voice
-    return str(Path(model).expanduser()) if model.endswith(".onnx") else model
-
-
-def engine_plan(cfg: Config) -> list[tuple[str, str | None]]:
-    """(engine, voice) pairs in the order to try them."""
-    piper = ("piper", _piper_voice(cfg.tts.piper_model))
-    if cfg.tts.offline or cfg.tts.engine == "piper":
-        return [piper]
-    return [("edge", cfg.tts.voice), piper]
-
-
 def speak(txt_path: Path, out_path: Path, cfg: Config, edition: Edition | None = None) -> Path:
     """Speak the .txt. Given its edition, the MP3 also gets a chapter per item."""
     from echo import Chapter, EchoError, speak_chapters  # noqa: PLC0415
@@ -73,17 +59,12 @@ def speak(txt_path: Path, out_path: Path, cfg: Config, edition: Edition | None =
     title = audio_title(edition.week if edition else _week_of(txt_path))
     chapters = [Chapter(s.title, s.text) for s in _segments(text, edition, title)]
 
-    failures = []
-    for engine, voice in engine_plan(cfg):
-        try:
-            result = speak_chapters(
-                chapters, out_path, title=title, engine=engine, voice=voice,
-                chunk_size=cfg.tts.chunk_chars,
-            )
-        except EchoError as exc:
-            log.warning("%s could not make the audio (%s)", engine, exc)
-            failures.append(f"{engine}: {exc}")
-            continue
-        log.info("wrote %s with %s, %d chapters", result.path, engine, len(result.chapters))
-        return Path(result.path)
-    raise AudioError("; ".join(failures))
+    try:
+        result = speak_chapters(
+            chapters, out_path, title=title, engine="edge", voice=cfg.tts.voice,
+            chunk_size=cfg.tts.chunk_chars,
+        )
+    except EchoError as exc:
+        raise AudioError(str(exc)) from exc
+    log.info("wrote %s, %d chapters", result.path, len(result.chapters))
+    return Path(result.path)

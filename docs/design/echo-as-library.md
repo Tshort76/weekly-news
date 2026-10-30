@@ -49,5 +49,5 @@ Requirements 1, 2, 4, 6 and 7 block the switch. The rest can follow.
 
 - `digest/audio.py` becomes a thin adapter: `emit.spoken_segments(edition)` becomes echo chapters, and one call makes the file. The hand-written ID3 tag and MP3 frame parsing are removed.
 - `[tts]` in config maps directly to echo's engine and voice arguments.
-- Piper is either dropped or added to echo as an engine. That decision is open; a good local model in echo would make piper unnecessary.
+- Piper is either dropped or added to echo as an engine. Decided 2026-10-30: dropped. Its voice was bad enough that three editions read by it were unlistenable, so a failed edge run now means no mp3 and a desktop notification.
 - The `audio` extra depends on `echo-tts` with the engine extras it needs.

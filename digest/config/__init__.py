@@ -91,10 +91,7 @@ def load() -> Config:
         ),
         tts=TtsCfg(
             enabled=output["audio"],
-            engine=adv["tts_engine"],
             voice=adv["voice"],
-            offline=adv["tts_offline"],
-            piper_model=adv["piper_model"],
             chunk_chars=adv["chunk_chars"],
         ),
         drive=DriveCfg(

@@ -2,8 +2,7 @@
 
 from pathlib import Path
 
-from digest.audio import _piper_voice, _segments, _week_of, engine_plan
-from digest.config import Config
+from digest.audio import _segments, _week_of
 from digest.emit import DIVIDER, render_txt, spoken_part
 from digest.tests.test_emit import _edition
 
@@ -19,20 +18,6 @@ def test_segments_are_used_only_while_the_txt_still_matches():
     titles = [s.title for s in _segments(text, edition, "fallback")]
     assert titles[0] == "Opening" and titles[1].startswith("East Asia: ")
     assert [s.title for s in _segments(text + "\nEdited.", edition, "fallback")] == ["fallback"]
-
-
-def test_edge_first_then_piper_unless_offline():
-    cfg = Config()
-    cfg.tts.voice = "en-GB-RyanNeural"
-    assert engine_plan(cfg) == [("edge", "en-GB-RyanNeural"), ("piper", None)]
-    cfg.tts.offline = True
-    assert engine_plan(cfg) == [("piper", None)]
-
-
-def test_piper_model_is_a_voice_id_or_a_local_model_path():
-    assert _piper_voice("/models/en_GB-alan-medium.onnx") == "/models/en_GB-alan-medium.onnx"
-    assert _piper_voice("en_US-lessac-high") == "en_US-lessac-high"
-    assert _piper_voice("") is None
 
 
 def test_a_txt_with_no_edition_is_titled_from_the_week_in_its_name():

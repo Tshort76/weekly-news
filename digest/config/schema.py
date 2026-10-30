@@ -98,9 +98,6 @@ CONFIG_FIELDS = (
     Field("advanced.ollama_think", bool, False, optional=True),
     Field("advanced.ollama_temperature", float, 0.3, optional=True),
     Field("advanced.voice", str, "en-GB-RyanNeural"),
-    Field("advanced.tts_engine", str, "edge", choices=("edge", "piper")),
-    Field("advanced.tts_offline", bool, False),
-    Field("advanced.piper_model", str, ""),
     Field("advanced.chunk_chars", int, 3000, minimum=200),
     Field("advanced.pdf_engine", str, "chrome", choices=("chrome", "weasyprint")),
 )

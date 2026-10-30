@@ -82,6 +82,26 @@ def test_a_full_run_writes_the_files_and_records_the_week(cfg, tmp_path, monkeyp
         assert len(st.seen_ids()) == 3
 
 
+
+def test_a_failed_mp3_still_writes_the_edition_and_puts_a_notification_up(cfg, tmp_path, monkeypatch):
+    import digest.audio
+    import digest.schedule
+
+    def broken(*args, **kwargs):
+        raise digest.audio.AudioError("403 from edge")
+
+    posted = []
+    monkeypatch.setattr(digest.audio, "speak", broken)
+    monkeypatch.setattr(digest.schedule, "notify", lambda title, body: posted.append(body))
+    _patch_ingest(monkeypatch, _items())
+    with State(tmp_path / "s.db") as st:
+        result = pipeline.run(
+            cfg, st, week="2026-W36", no_drive=True, client=FakeClient(), want_audio=True
+        )
+        assert result.files["txt"].exists() and "mp3" not in result.files
+        assert st.load_edition("2026-W36") is not None
+    assert len(posted) == 1 and "403 from edge" in posted[0]
+
 def test_a_dry_run_writes_files_and_classifications_but_no_durable_state(cfg, tmp_path, monkeypatch):
     _patch_ingest(monkeypatch, _items())
     with State(tmp_path / "s.db") as st:

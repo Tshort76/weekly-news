@@ -178,7 +178,10 @@ def _run(
         try:
             files["mp3"] = speak(files["txt"], mp3, cfg, edition)
         except Exception as exc:  # audio never blocks the edition
+            from .schedule import notify  # noqa: PLC0415
+
             log.error("audio generation failed: %s", exc)
+            notify("Weekly digest: no audio", f"{mp3.stem} was written, but its mp3 failed: {exc}")
 
     result = RunResult(
         week=week, edition=edition, files=files, dropped=dropped,
