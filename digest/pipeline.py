@@ -196,8 +196,7 @@ def _run(
     state.save_edition(edition, files.get("txt"))
     state.mark_seen(items, week)
 
-    if "mp3" in files:
-        deliver_stage.copy_audio(files["mp3"], cfg)
+    deliver_stage.copy_to_sync(list(files.values()), cfg)
     if not no_drive:
         result.uploaded = deliver_stage.deliver(list(files.values()), cfg, state, week)
     return result

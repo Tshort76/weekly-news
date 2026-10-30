@@ -207,14 +207,22 @@ def main(argv: list[str] | None = None) -> int:
     with State(cfg.db_path) as state:
         if args.command in {"run", "classify-only"}:
             scheduled = getattr(args, "scheduled", False)
+            # A week already run by hand has its mp3; the timer must not redo it.
+            # The sync folder counts too, since files get moved there by hand.
+            name = f"{emit_stage.week_stem(week)}.mp3"
+            folders = [cfg.run.output_dir, cfg.run.sync_folder]
+            done = next((f / name for f in folders if f and (f / name).exists()), None)
+            if scheduled and done:
+                print(f"Week {week} already has {done}; skipping the scheduled run.")
+                return 0
             try:
                 result = pipeline.run(
                     cfg,
                     state,
                     week=week,
-                    want_html=getattr(args, "html", False),
-                    want_pdf=getattr(args, "pdf", False),
-                    want_audio=getattr(args, "audio", False),
+                    want_html=getattr(args, "html", False) or cfg.run.html,
+                    want_pdf=getattr(args, "pdf", False) or cfg.run.pdf,
+                    want_audio=getattr(args, "audio", False) or cfg.tts.enabled,
                     dry_run=getattr(args, "dry_run", False),
                     no_drive=getattr(args, "no_drive", False),
                     classify_only=args.command == "classify-only",
@@ -271,9 +279,13 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "render":
+            from .deliver import copy_to_sync  # noqa: PLC0415
+
             files = pipeline.render(cfg, state, week, args.html, args.pdf)
             for ext, path in sorted(files.items()):
                 print(f"  {ext:<5} {path}")
+            for copied in copy_to_sync(list(files.values()), cfg):
+                print(f"  copy  {copied}")
             return 0
 
         if args.command == "speak":
@@ -286,9 +298,9 @@ def main(argv: list[str] | None = None) -> int:
             out = Path(str(txt).removesuffix(".txt") + ".mp3")
             speak(txt, out, cfg, state.load_edition(week))
             print(f"  mp3   {out}")
-            from .deliver import copy_audio  # noqa: PLC0415
+            from .deliver import copy_to_sync  # noqa: PLC0415
 
-            if copied := copy_audio(out, cfg):
+            for copied in copy_to_sync([out], cfg):
                 print(f"  copy  {copied}")
             return 0
 

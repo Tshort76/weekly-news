@@ -25,8 +25,9 @@ day = "friday"
 hour = 17
 
 [delivery]
-# The week's mp3 is copied here; Google Drive for desktop syncs it to the phone.
-audio_folder = "~/Documents/sync/WeeklyDigest"
+# The week's mp3 and HTML are copied here; Google Drive for desktop syncs them
+# to the phone.
+sync_folder = "~/Documents/sync/WeeklyDigest"
 
 [delivery.drive]
 enabled = false

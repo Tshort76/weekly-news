@@ -35,8 +35,11 @@ class RunCfg:
     source_min_chars: int = 700
     source_max_words: int = 200
     # A folder a sync client (Google Drive for desktop) watches, so the week's
-    # audio reaches the phone without the Drive API. None copies nothing.
-    audio_folder: Path | None = None
+    # mp3 and HTML reach the phone without the Drive API. None copies nothing.
+    sync_folder: Path | None = None
+    # What `digest run` makes when no --html/--pdf flag asks for it.
+    html: bool = False
+    pdf: bool = False
 
 
 @dataclass

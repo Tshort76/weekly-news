@@ -62,10 +62,12 @@ def load() -> Config:
             search_backend=adv["search_backend"],
             source_min_chars=adv["source_min_chars"],
             source_max_words=adv["source_max_words"],
-            audio_folder=(
-                Path(data["delivery"]["audio_folder"]).expanduser()
-                if data["delivery"]["audio_folder"] else None
+            sync_folder=(
+                Path(data["delivery"]["sync_folder"]).expanduser()
+                if data["delivery"]["sync_folder"] else None
             ),
+            html=output["html"],
+            pdf=output["pdf"],
         ),
         models=ModelsCfg(
             provider=models["provider"],

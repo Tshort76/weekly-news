@@ -101,20 +101,27 @@ def _upload_rclone(paths: list[Path], cfg: Config, state: State, week: str) -> N
         log.info("uploaded %s via rclone", path.name)
 
 
-def copy_audio(mp3: Path, cfg: Config) -> Path | None:
-    """Copy the week's mp3 into `delivery.audio_folder`. Never raises."""
-    folder = cfg.run.audio_folder
+SYNCED = {".mp3", ".html"}
+
+
+def copy_to_sync(paths: list[Path], cfg: Config) -> list[Path]:
+    """Copy the week's mp3 and HTML into `delivery.sync_folder`. Never raises."""
+    folder = cfg.run.sync_folder
     if folder is None:
-        return None
-    try:
-        folder.mkdir(parents=True, exist_ok=True)
-        dest = folder / mp3.name
-        shutil.copy2(mp3, dest)
-        log.info("copied %s to %s", mp3.name, folder)
-        return dest
-    except OSError as exc:
-        log.error("could not copy audio to %s: %s", folder, exc)
-        return None
+        return []
+    copied = []
+    for path in paths:
+        if path.suffix not in SYNCED:
+            continue
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            dest = folder / path.name
+            shutil.copy2(path, dest)
+            log.info("copied %s to %s", path.name, folder)
+            copied.append(dest)
+        except OSError as exc:
+            log.error("could not copy %s to %s: %s", path.name, folder, exc)
+    return copied
 
 
 def deliver(paths: list[Path], cfg: Config, state: State, week: str) -> bool:
