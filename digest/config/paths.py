@@ -32,6 +32,13 @@ def data_dir() -> Path:
     return _home() or DATA
 
 
+def resolve(path: str) -> Path:
+    """A configured path: `~` expands, and a relative one sits in the checkout
+    (or `DIGEST_HOME`), never wherever the shell or the menu-bar plugin ran from."""
+    p = Path(path).expanduser()
+    return p if p.is_absolute() else (_home() or REPO) / p
+
+
 def config_file() -> Path:
     return config_dir() / "config.toml"
 

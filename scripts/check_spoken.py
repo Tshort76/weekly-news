@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Check a digest .txt against the acceptance criteria in the design spec.
 
-    python scripts/check_spoken.py ~/digests/digest-2026-W36.txt
+    python scripts/check_spoken.py digests/digest-2026-W36.txt
 
 Everything above the line of dashes is read aloud, so it should carry no URLs, no
 markdown, no unexpanded acronyms and no forecasting. These are the mechanical

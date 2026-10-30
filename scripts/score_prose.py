@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Count the mechanical faults in a finished edition, entry by entry.
 
-    python scripts/score_prose.py ~/digests/compare/digest-2026-W36-gemma3-v2.md
+    python scripts/score_prose.py digests/compare/digest-2026-W36-gemma3-v2.md
     python scripts/score_prose.py A.md --only B.md      # score only the entries B also has
     python scripts/score_prose.py A.md --week 2026-W36  # also flag detail the blurbs lack
 

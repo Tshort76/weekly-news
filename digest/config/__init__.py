@@ -56,7 +56,7 @@ def load() -> Config:
             max_items=adv["max_items"],
             contest_share=adv["contest_share"],
             fetch_days=adv["fetch_days"],
-            output_dir=Path(output["folder"]).expanduser(),
+            output_dir=paths.resolve(output["folder"]),
             ground=adv["ground"],
             ground_min_chars=adv["ground_min_chars"],
             search_backend=adv["search_backend"],

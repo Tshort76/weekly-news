@@ -20,7 +20,7 @@ class RunCfg:
     max_items: int = 60
     contest_share: float = 0.20
     fetch_days: int = 8
-    output_dir: Path = Path.home() / "digests"
+    output_dir: Path = Path(__file__).resolve().parents[2] / "digests"
     # Grounding: a selected item whose feed entry carries less than this gets
     # its own page fetched, and failing that a search. 500 is about three
     # sentences — below that a writer is describing a story it was barely told.

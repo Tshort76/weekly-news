@@ -442,7 +442,7 @@ Either way, uploads are idempotent — re-running a week replaces that week's fi
 
 ## Outputs
 
-`~/digests/digest-2026-W36.{txt,md,html,pdf,mp3}`, plus the same files in the
+`digests/digest-2026-W36.{txt,md,html,pdf,mp3}`, plus the same files in the
 configured Google Drive folder.
 
 The `.txt` is the contract. Everything above the line of dashes is spoken prose — no
@@ -483,7 +483,7 @@ and a weekly check that fails on that is one nobody reads. Pass `--strict`
 to exit 1 on any finding. Exit 2 means the check could not run at all:
 
 ```bash
-python scripts/check_spoken.py ~/digests/digest-2026-W36.txt
+python scripts/check_spoken.py digests/digest-2026-W36.txt
 ```
 
 It reads only the part above the line of dashes — the part that gets spoken — and

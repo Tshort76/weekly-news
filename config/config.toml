@@ -14,7 +14,7 @@ synthesize = "gemma3:27b"
 
 [output]
 minutes = 59
-folder = "~/digests"
+folder = "digests"         # in the checkout, gitignored; the sync folder is what the phone reads
 html = true
 pdf = false
 audio = true

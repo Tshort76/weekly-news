@@ -20,7 +20,7 @@ python -m digest render --week 2026-W36 --html
 python -m digest speak --week 2026-W36        # audio from an existing .txt
 python -m digest doctor                       # keys, backends, feeds, paths; spends nothing
 
-python scripts/check_spoken.py ~/digests/digest-<date>.txt   # lint the spoken part (warns, exits 0; --strict)
+python scripts/check_spoken.py digests/digest-<date>.txt   # lint the spoken part (warns, exits 0; --strict)
 python scripts/eval_rubric.py                 # does the model apply the lens? re-run after any rubric/model change
 ```
 

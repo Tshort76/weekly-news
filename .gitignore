@@ -7,7 +7,7 @@ __pycache__/
 # Secrets. Never commit; .env.example is the committed template.
 .env
 
-# Generated digests, if anyone points output_dir at the checkout
+# Generated digests: output.folder is `digests`, inside the checkout
 /digests/
 *.mp3
 

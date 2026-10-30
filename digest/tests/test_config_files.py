@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tomllib
+from pathlib import Path
 
 import pytest
 
@@ -110,6 +111,17 @@ def test_the_real_config_directory_is_the_checkout(monkeypatch):
     assert paths.config_dir() == paths.REPO / "config"
     assert paths.data_dir() == paths.DATA
 
+
+
+@pytest.mark.parametrize("folder, expected", [
+    ("digests", paths.REPO / "digests"),
+    ("~/elsewhere", Path.home() / "elsewhere"),
+    ("/abs/out", Path("/abs/out")),
+])
+def test_a_relative_output_folder_sits_in_the_checkout(monkeypatch, tmp_path, folder, expected):
+    monkeypatch.delenv("DIGEST_HOME")
+    monkeypatch.chdir(tmp_path)
+    assert paths.resolve(folder) == expected
 
 def test_feeds_written_by_the_app_are_read_back_by_it(digest_home):
     write(paths.feeds_file(), dumps_feeds([

@@ -61,7 +61,7 @@ CONFIG_FIELDS = (
     Field("models.synthesize", str, "gemma3:27b"),
 
     Field("output.minutes", int, 58, minimum=5, maximum=240),
-    Field("output.folder", str, "~/digests"),
+    Field("output.folder", str, "digests"),
     Field("output.html", bool, True),
     Field("output.pdf", bool, False),
     Field("output.audio", bool, False),
